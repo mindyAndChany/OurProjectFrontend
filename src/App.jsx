@@ -60,7 +60,7 @@ import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Navbar from "./components/Navbar";
-import LandingPage from "./pages/LandingPage";
+import LandingPage from "./pages/HomePage";
 
 function App() {
   return (
