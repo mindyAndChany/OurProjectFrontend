@@ -1,82 +1,65 @@
-// import { useState } from "react";
+// import React from "react";
+import { useNavigate } from "react-router-dom";
+import { Edulink } from "../components/Edulink";
+import '../tailwind.css';
 
-// export default function Login() {
-//   const [user, setUser] = useState({ username: "", password: "" });
+export const Screen = () => {
 
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     console.log("Login attempt:", user);
-//   };
+    const navigate = useNavigate();
 
-//   return (
-//     <div className="flex justify-center items-center min-h-[70vh]">
-//       <form
-//         onSubmit={handleSubmit}
-//         className="bg-white shadow-md rounded-2xl p-6 w-80"
-//       >
-//         <h2 className="text-xl font-bold mb-4 text-center">התחברות</h2>
-//         <input
-//           type="text"
-//           placeholder="שם משתמש"
-//           value={user.username}
-//           onChange={(e) => setUser({ ...user, username: e.target.value })}
-//           className="border w-full mb-3 p-2 rounded"
-//         />
-//         <input
-//           type="password"
-//           placeholder="סיסמה"
-//           value={user.password}
-//           onChange={(e) => setUser({ ...user, password: e.target.value })}
-//           className="border w-full mb-4 p-2 rounded"
-//         />
-//         <button
-//           type="submit"
-//           className="bg-blue-700 text-white w-full p-2 rounded hover:bg-blue-800"
-//         >
-//           התחברי
-//         </button>
-//       </form>
-//     </div>
-//   );
-// }
-import { useState } from "react";
-
-export default function Login() {
-  const [user, setUser] = useState({ username: "", password: "" });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Login attempt:", user);
-  };
-
+  function login() {
+    console.log("navigate");
+    
+     navigate('/home');
+  }
   return (
-    <div className="flex justify-center items-center min-h-[70vh] bg-gradient-to-br from-blue-50 to-blue-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-2xl rounded-2xl p-8 w-80 border border-gray-100"
-      >
-        <h2 className="text-2xl font-bold mb-6 text-center text-blue-700">התחברות</h2>
-        <input
-          type="text"
-          placeholder="שם משתמש"
-          value={user.username}
-          onChange={(e) => setUser({ ...user, username: e.target.value })}
-          className="border w-full mb-4 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+    <div className="bg-white overflow-hidden w-full min-w-[1920px] min-h-[1071px] relative">
+      <div className="top-[290px] left-[814px] w-[292px] [font-family:'Anomalia_ML_DemiBold_AAA-DemiBold',Helvetica] font-bold text-black text-[40px] text-left whitespace-nowrap absolute tracking-[0] leading-[normal] [direction:rtl]">
+        כניסה למערכת
+      </div>
+
+      <div className="absolute top-[356px] left-[741px] w-[436px] h-[71px] bg-variable-collection-color-4 rounded-[35.5px] border-[5px] border-solid border-black" />
+
+      <div className="absolute top-[465px] left-[741px] w-[436px] h-[71px] bg-variable-collection-color-4 rounded-[35.5px] border-[5px] border-solid border-black" />
+
+      <div className="absolute top-[570px] left-[741px] w-[436px] h-[71px] bg-variable-collection-color-2 rounded-[35.5px]" />
+
+      <div className="top-[378px] left-[1080px] w-[84px] [font-family:'Anomalia_ML_Medium_AAA-Medium',Helvetica] font-medium text-black text-xl absolute tracking-[0] leading-[normal] [direction:rtl]">
+        מייל:
+      </div>
+
+      <div className="top-[490px] left-[1053px] w-[111px] [font-family:'Anomalia_ML_Medium_AAA-Medium',Helvetica] font-medium text-black text-xl absolute tracking-[0] leading-[normal] [direction:rtl]">
+        סיסמא:
+      </div>
+
+      <button className="top-[584px] left-[759px] w-[405px] [font-family:'Anomalia_ML_DemiBold_AAA-DemiBold',Helvetica] font-bold text-white text-[32px] text-center absolute tracking-[0] leading-[normal] [direction:rtl]" onClick={login}>
+        התחברות
+      </button>
+
+      <div className="top-[650px] left-[993px] w-[157px] [font-family:'Anomalia_ML_DemiBold_AAA-DemiBold',Helvetica] font-bold text-black text-base absolute tracking-[0] leading-[normal] [direction:rtl]">
+        זכור אותי
+      </div>
+
+      <p className="top-[689px] left-[752px] w-[312px] [font-family:'Anomalia_ML_DemiBold_AAA-DemiBold',Helvetica] font-bold text-black text-base absolute tracking-[0] leading-[normal] [direction:rtl]">
+        אם טרם נרשמתם , תועברו לתהליך רישום
+      </p>
+
+      <div className="absolute top-[650px] left-[1157px] w-5 h-5 bg-[#d9d9d9] border border-solid border-black" />
+
+      <div className="absolute top-[689px] left-[747px] w-[22px] h-[22px] flex bg-black rounded-[11px]">
+        <img
+          className="mt-[3.6px] w-[15px] h-[14.73px] ml-[7px]"
+          alt="Arrow"
+        //   src={arrow1}
         />
-        <input
-          type="password"
-          placeholder="סיסמה"
-          value={user.password}
-          onChange={(e) => setUser({ ...user, password: e.target.value })}
-          className="border w-full mb-6 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          type="submit"
-          className="bg-blue-700 text-white w-full py-2 rounded-lg hover:bg-blue-800 transition-all shadow-md"
-        >
-          התחברי
-        </button>
-      </form>
+      </div>
+
+      <Edulink
+        EDULINKClassName="!text-[90px] !w-[499.73px]"
+        className="!h-32 !absolute !left-[1455px] !w-[500px] !top-[26px]"
+        spanClassName="!text-[#295f8b]"
+      />
     </div>
   );
-}
+};
+export default Screen;
