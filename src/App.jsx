@@ -65,7 +65,7 @@ import LandingPage from "./pages/HomePage";
 function App() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 font-[Rubik]">
-      <Navbar />
+      {/* <Navbar /> */}
       <div className="p-8">
         <Routes>
           <Route path="/" element={<LandingPage />} />
