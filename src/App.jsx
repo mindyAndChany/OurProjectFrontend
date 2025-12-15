@@ -59,7 +59,9 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import HomePage from "./pages/HomePage";
-import Navbar from "./components/Navbar";
+import Kattendence from "./pages/Kattendence";
+import Equipments from "./pages/Equipments";
+import Calendar from "./pages/Calendar";
 import './tailwind.css';
 
 function App() {
@@ -71,6 +73,10 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/Equipments" element={<Equipments />} />
+          <Route path="/Calendar" element={<Calendar />} />
+          <Route path="/Kattendence" element={<Kattendence />} />
+
         </Routes>
       </div>
     </div>

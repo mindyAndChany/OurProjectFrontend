@@ -9,8 +9,12 @@ import task01 from "../icons/task-01.png";
 import taskDone02 from "../icons/task-done-02.png";
 import line1 from "../icons/Line 1.png";
 import line2 from "../icons/Line 2.png";
+import { useNavigate } from "react-router-dom";
+
+  
 
 export const Screen = () => {
+  const navigate = useNavigate();
   return (
     <div className="bg-white overflow-hidden w-full min-w-[1920px] h-[1071px] relative">
       {/* Boxes */}
@@ -34,16 +38,16 @@ export const Screen = () => {
       <div className="absolute top-[347px] left-[485px] w-[221px] h-[141px] bg-white rounded-[35px] border-2 border-solid border-black" />
 
       {/* Text */}
-      <div className="top-[430px] left-[491px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]">
+      <div className="top-[430px] left-[491px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]" onClick={()=>navigate('/Kattendence')}>
         לימודי קודש
       </div>
-      <div className="top-[612px] left-[491px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]">
+      <div className="top-[612px] left-[491px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]" onClick={()=>navigate('/Calendar')}>
         לוח שנה
       </div>
       <div className="top-[430px] left-[728px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]">
         לימודי הוראה
       </div>
-      <div className="top-[612px] left-[728px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]">
+      <div className="top-[612px] left-[728px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]" onClick={()=>navigate('/Equipments')}>
         השאלת ציוד
       </div>
       <div className="top-[430px] left-[971px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]">
@@ -69,7 +73,7 @@ export const Screen = () => {
       <img
         className="absolute top-[135px] left-[23px] w-[1897px] h-[5px]"
         alt="Line"
-        src={line2}
+        // src={line2}
       />
 
       <Edulink
@@ -81,7 +85,7 @@ export const Screen = () => {
       <img
         className="absolute top-0 left-[1562px] w-[5px] h-[135px]"
         alt="Line"
-        src={line1}
+        // src={line1}
       />
 
       {/* Icons as <img> */}
