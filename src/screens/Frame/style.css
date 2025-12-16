@@ -1,0 +1,664 @@
+.frame {
+  background-color: #ffffff;
+  min-height: 3091px;
+  min-width: 1920px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.frame .EDULINK-instance {
+  height: 128px !important;
+  left: 1420px !important;
+  position:relative;
+  top: 7px !important;
+  width: 500px !important;
+}
+
+.frame .design-component-instance-node {
+  font-size: 90px !important;
+  width: 499.73px !important;
+}
+
+.frame .EDULINK-2 {
+  color: #295f8b !important;
+}
+
+.frame .p {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML DemiBold AAA-DemiBold", Helvetica;
+  font-size: 36px;
+  font-weight: 700;
+  left: 392px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 46px;
+  width: 992px;
+}
+
+.frame .line {
+  height: 135px;
+  left: 1420px;
+   position: absolute; 
+
+  top: 0;
+  width: 5px;
+}
+
+.frame .rectangle {
+  background-color: #295f8b;
+  border: 5px solid;
+  border-color: #000000;
+  height: 140px;
+  left: 0;
+   position: absolute; 
+
+  top: 0;
+  width: 355px;
+}
+
+.frame .text-wrapper-2 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML DemiBold AAA-DemiBold", Helvetica;
+  font-size: 96px;
+  font-weight: 700;
+  left: 114px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: left;
+  top: 278px;
+  width: 886px;
+}
+
+.frame .rectangle-2 {
+  background-color: #000000;
+  border-radius: 37.5px;
+  height: 75px;
+  left: 134px;
+   position: absolute; 
+
+  top: 1006px;
+  width: 221px;
+}
+
+.frame .rectangle-3 {
+  background-color: #000000;
+  border-radius: 37.5px;
+  height: 75px;
+  left: 403px;
+   position: absolute; 
+
+  top: 1006px;
+  width: 221px;
+}
+
+.frame .rectangle-4 {
+  background-color: #295f8b;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 37.5px;
+  height: 75px;
+  left: 123px;
+   position: absolute; 
+
+  top: 996px;
+  width: 221px;
+}
+
+.frame .rectangle-5 {
+  background-color: #ffffff;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 37.5px;
+  height: 75px;
+  left: 392px;
+   position: absolute; 
+
+  top: 996px;
+  width: 221px;
+}
+
+.frame .text-wrapper-3 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML DemiBold AAA-DemiBold", Helvetica;
+  font-size: 24px;
+  font-weight: 700;
+  left: 129px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 1017px;
+  width: 209px;
+}
+
+.frame .text-wrapper-4 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML DemiBold AAA-DemiBold", Helvetica;
+  font-size: 24px;
+  font-weight: 700;
+  left: 398px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 1017px;
+  width: 209px;
+}
+
+.frame .rectangle-6 {
+  background-color: #000000;
+  border-radius: 43px;
+  height: 219px;
+  left: 265px;
+   position: absolute; 
+
+  top: 1227px;
+  width: 443px;
+}
+
+.frame .rectangle-7 {
+  background-color: #000000;
+  border-radius: 30px;
+  height: 60px;
+  left: 738px;
+   position: absolute; 
+
+  top: 2860px;
+  width: 211px;
+}
+
+.frame .rectangle-8 {
+  background-color: #000000;
+  border-radius: 30px;
+  height: 60px;
+  left: 983px;
+   position: absolute; 
+
+  top: 2860px;
+  width: 211px;
+}
+
+.frame .rectangle-9 {
+  background-color: #000000;
+  border-radius: 43px;
+  height: 180px;
+  left: 302px;
+   position: absolute; 
+
+  top: 2604px;
+  width: 1376px;
+}
+
+.frame .rectangle-10 {
+  background-color: #000000;
+  border-radius: 43px;
+  height: 219px;
+  left: 749px;
+   position: absolute; 
+
+  top: 1227px;
+  width: 443px;
+}
+
+.frame .rectangle-11 {
+  background-color: #000000;
+  border-radius: 43px;
+  height: 219px;
+  left: 1233px;
+   position: absolute; 
+
+  top: 1227px;
+  width: 443px;
+}
+
+.frame .rectangle-12 {
+  background-color: #000000;
+  border-radius: 43px;
+  height: 219px;
+  left: 990px;
+   position: absolute; 
+
+  top: 1526px;
+  width: 443px;
+}
+
+.frame .rectangle-13 {
+  background-color: #000000;
+  border-radius: 43px;
+  height: 219px;
+  left: 506px;
+   position: absolute; 
+
+  top: 1526px;
+  width: 443px;
+}
+
+.frame .rectangle-14 {
+  background-color: #bda39b;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 44px;
+  height: 219px;
+  left: 243px;
+   position: absolute; 
+
+  top: 1199px;
+  width: 443px;
+}
+
+.frame .rectangle-15 {
+  background-color: #584041;
+  border: 0.95px solid;
+  border-color: #000000;
+  border-radius: 30px;
+  height: 60px;
+  left: 727px;
+   position: absolute; 
+
+  top: 2852px;
+  width: 211px;
+}
+
+.frame .rectangle-16 {
+  background-color: #bda39b;
+  border: 0.95px solid;
+  border-color: #000000;
+  border-radius: 30px;
+  height: 60px;
+  left: 972px;
+   position: absolute; 
+
+  top: 2852px;
+  width: 211px;
+}
+
+.frame .rectangle-17 {
+  background-color: #295f8b;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 43px;
+  height: 180px;
+  left: 234px;
+   position: absolute; 
+
+  top: 2581px;
+  width: 1420px;
+}
+
+.frame .rectangle-18 {
+  background-color: #bda39b;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 44px;
+  height: 219px;
+  left: 727px;
+   position: absolute; 
+
+  top: 1199px;
+  width: 443px;
+}
+
+.frame .rectangle-19 {
+  background-color: #bda39b;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 43px;
+  height: 219px;
+  left: 1211px;
+   position: absolute; 
+
+  top: 1199px;
+  width: 443px;
+}
+
+.frame .rectangle-20 {
+  background-color: #bda39b;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 43px;
+  height: 219px;
+  left: 968px;
+   position: absolute; 
+
+  top: 1498px;
+  width: 443px;
+}
+
+.frame .rectangle-21 {
+  background-color: #bda39b;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 43px;
+  height: 219px;
+  left: 484px;
+   position: absolute; 
+
+  top: 1498px;
+  width: 443px;
+}
+
+.frame .div-2 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 27px;
+  font-weight: 400;
+  left: 1269px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 1296px;
+  width: 327px;
+}
+
+.frame .text-wrapper-5 {
+  font-weight: 700;
+}
+
+.frame .text-wrapper-6 {
+  font-family: "Anomalia ML DemiBold AAA-Bold", Helvetica;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.frame .div-3 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 27px;
+  font-weight: 400;
+  left: 785px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 1296px;
+  width: 327px;
+}
+
+.frame .div-4 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 27px;
+  font-weight: 400;
+  left: 1029px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 1590px;
+  width: 327px;
+}
+
+.frame .div-5 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 27px;
+  font-weight: 400;
+  left: 556px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 1590px;
+  width: 327px;
+}
+
+.frame .div-6 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 27px;
+  font-weight: 400;
+  left: 313px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 1296px;
+  width: 327px;
+}
+
+.frame .div-7 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 48px;
+  font-weight: 400;
+  left: 587px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 2619px;
+  width: 769px;
+}
+
+.frame .rectangle-22 {
+  background-color: #584041;
+  height: 566px;
+  left: 0;
+   position: absolute; 
+
+  top: 1916px;
+  width: 1920px;
+}
+
+.frame .rectangle-23 {
+  background-color: #000000;
+  border-radius: 43px;
+  height: 293px;
+  left: 259px;
+   position: absolute; 
+
+  top: 2054px;
+  width: 327px;
+}
+
+.frame .rectangle-24 {
+  background-color: #000000;
+  border-radius: 43px;
+  height: 293px;
+  left: 737px;
+   position: absolute; 
+
+  top: 2060px;
+  width: 327px;
+}
+
+.frame .rectangle-25 {
+  background-color: #000000;
+  border-radius: 43px;
+  height: 293px;
+  left: 1231px;
+   position: absolute; 
+
+  top: 2062px;
+  width: 327px;
+}
+
+.frame .rectangle-26 {
+  background-color: #d8cdc2;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 43px;
+  height: 293px;
+  left: 243px;
+   position: absolute; 
+
+  top: 2033px;
+  width: 327px;
+}
+
+.frame .rectangle-27 {
+  background-color: #d8cdc2;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 43px;
+  height: 293px;
+  left: 721px;
+   position: absolute; 
+
+  top: 2033px;
+  width: 327px;
+}
+
+.frame .rectangle-28 {
+  background-color: #d8cdc2;
+  border: 2px solid;
+  border-color: #000000;
+  border-radius: 43px;
+  height: 293px;
+  left: 1215px;
+   position: absolute; 
+
+  top: 2036px;
+  width: 327px;
+}
+
+.frame .div-8 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 32px;
+  font-weight: 400;
+  left: 1215px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 2172px;
+  width: 327px;
+}
+
+.frame .EXEL-PDF {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 32px;
+  font-weight: 400;
+  left: 727px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 2172px;
+  width: 327px;
+}
+
+.frame .div-9 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 32px;
+  font-weight: 400;
+  left: 239px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 2172px;
+  width: 327px;
+}
+
+.frame .text-wrapper-7 {
+  color: #ffffff;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 27px;
+  font-weight: 700;
+  left: 990px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 2866px;
+  width: 185px;
+}
+
+.frame .text-wrapper-8 {
+  color: #0d0d0d;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 27px;
+  font-weight: 700;
+  left: 742px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 2866px;
+  width: 185px;
+}
+
+.frame .text-wrapper-9 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 48px;
+  font-weight: 700;
+  left: -5px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: center;
+  top: 36px;
+  width: 365px;
+}
+
+.frame .text-wrapper-10 {
+  color: #000000;
+  direction: rtl;
+  font-family: "Anomalia ML Bold AAA-Bold", Helvetica;
+  font-size: 32px;
+  font-weight: 700;
+  left: 97px;
+  letter-spacing: 0;
+  line-height: normal;
+   position: absolute; 
+
+  text-align: left;
+  top: 732px;
+  width: 863px;
+}
+
+.frame .crowdfunding-instance {
+  height: 69px !important;
+  left: 917px !important;
+  top: 1216px !important;
+  width: 69px !important;
+}
+
+.frame .license-draft-instance {
+  height: 62px !important;
+  left: 1411px !important;
+  top: 1223px !important;
+  width: 62px !important;
+}
