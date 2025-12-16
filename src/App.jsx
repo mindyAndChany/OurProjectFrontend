@@ -58,6 +58,7 @@
 // export default App;
 import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
+import Welcome from "./pages/Welcome";
 import HomePage from "./pages/HomePage";
 import Navbar from "./components/Navbar";
 import './tailwind.css';
@@ -68,7 +69,7 @@ function App() {
       <Navbar />
       <div className="p-8">
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Welcome />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
         </Routes>
