@@ -1,0 +1,1 @@
+export { SchoolBell } from "./SchoolBell";
