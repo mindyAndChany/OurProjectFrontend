@@ -62,6 +62,7 @@ import Welcome from "./pages/Welcome";
 import HomePage from "./pages/HomePage";
 import Kattendence from "./pages/Kattendence";
 import Equipments from "./pages/Equipments";
+import Approvals from "./pages/approvals";
 import Calendar from "./pages/Calendar";
 import './tailwind.css';
 
@@ -75,6 +76,7 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/Equipments" element={<Equipments />} />
+          <Route path="/approvals" element={<Approvals />} />
           <Route path="/Calendar" element={<Calendar />} />
           <Route path="/Kattendence" element={<Kattendence />} />
 
