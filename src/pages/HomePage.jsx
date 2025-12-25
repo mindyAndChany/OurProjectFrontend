@@ -59,7 +59,7 @@ export const Screen = () => {
       <div className="top-[430px] left-[1214px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]">
         אירועים
       </div>
-      <div className="top-[612px] left-[1214px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]">
+      <div className="top-[612px] left-[1214px] w-[209px] text-2xl absolute font-bold text-black text-center leading-[normal] [direction:rtl]" onClick={()=>navigate('/Approvals')}>
         אישורים
       </div>
 

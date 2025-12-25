@@ -1,1 +1,0 @@
-export { SquareLock } from "./SquareLock";
