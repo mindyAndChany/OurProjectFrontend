@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 // ...existing code...
-import Welcome from './pages/Welcome.tsx';
+import Welcome from './pages/Welcome.jsx';
 import HomePage from './pages/HomePage.jsx';
 import Login from './pages/Login.jsx';
 import Equipments from './pages/Equipments.jsx';
@@ -39,7 +39,6 @@ export default function Routing() {
            <Route path="/Kattendence" element={<Kattendence />} />
 
        </Routes>
-      <div style={{padding:20}}>Routing בדיקה: נראה אותי?</div>
 </>
   );
 
