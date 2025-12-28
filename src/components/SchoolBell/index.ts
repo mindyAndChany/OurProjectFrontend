@@ -1,1 +1,0 @@
-export { SchoolBell } from "./SchoolBell";

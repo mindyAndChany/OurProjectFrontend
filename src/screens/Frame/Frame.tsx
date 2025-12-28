@@ -10,29 +10,16 @@ import { Task } from "../../components/Task/Task.tsx";
 import { User } from "../../components/User/index.ts";
 import "./style.css";
 import { useNavigate } from "react-router-dom";
+import Navbar from "../../components/Navbar.jsx";
 
 export const Frame = (): JSX.Element => {
 const navigate=useNavigate();
 function login() {
  navigate("/login") ;
 }
-
   return (
     <div className="frame">
-      <Edulink
-        EDULINKClassName="design-component-instance-node"
-        className="EDULINK-instance"
-        spanClassName="EDULINK-2"
-      />
-      <p className="p">
-        השאלת ציוד&nbsp;&nbsp;&nbsp;&nbsp; לוח שנה&nbsp;&nbsp;&nbsp;&nbsp;
-        נוכחות&nbsp;&nbsp;&nbsp;&nbsp; מסד נתונים&nbsp;&nbsp;&nbsp;&nbsp; דף
-        הבית
-      </p>
 
-      <img className="line" alt="Line" src="/img/line-1-1.svg" />
-
-      <div className="rectangle" />
 
       <p className="text-wrapper-2">
         להחליף את הגליונות
@@ -206,7 +193,7 @@ function login() {
 
       <div className="text-wrapper-8">למד עוד</div>
 
-      <div className="text-wrapper-9" onClick={login}>התחברות</div>
+      {/* <div className="text-wrapper-9" onClick={login}>התחברות</div> */}
 
       <p className="text-wrapper-10">
         מערכת ניהול סמינר שמרכזת את כל המידע במקום אחד — מאגר תלמידות עם פרטי

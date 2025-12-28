@@ -1,1 +1,0 @@
-export { SecurityCheck } from "./SecurityCheck";
