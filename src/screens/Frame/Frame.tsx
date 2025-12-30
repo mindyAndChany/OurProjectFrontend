@@ -1,13 +1,13 @@
 import React, { JSX, use } from "react";
-import { Crowdfunding } from "../../components/Crowdfunding/Crowdfunding.tsx";
-import { Edulink } from "../../components/Edulink/Edulink.tsx";
-import { LicenseDraft } from "../../components/LicenseDraft/LicenseDraft.tsx";
-import { NoteEdit } from "../../components/NoteEdit/NoteEdit.tsx";
-import { SchoolBell } from "../../components/SchoolBell/SchoolBell.tsx";
-import { SecurityCheck } from "../../components/SecurityCheck/SecurityCheck.tsx";
-import { SquareLock } from "../../components/SquareLock/SquareLock.tsx";
-import { Task } from "../../components/Task/Task.tsx";
-import { User } from "../../components/User/index.ts";
+// import { Crowdfunding } from "../../components/Crowdfunding/Crowdfunding.tsx";
+// import { Edulink } from "../../components/Edulink/Edulink.tsx";
+// import { LicenseDraft } from "../../components/LicenseDraft/LicenseDraft.tsx";
+// import { NoteEdit } from "../../components/NoteEdit/NoteEdit.tsx";
+// import { SchoolBell } from "../../components/SchoolBell/SchoolBell.tsx";
+// import { SecurityCheck } from "../../components/SecurityCheck/SecurityCheck.tsx";
+// import { SquareLock } from "../../components/SquareLock/SquareLock.tsx";
+// import { Task } from "../../components/Task/Task.tsx";
+// import { User } from "../../components/User/index.ts";
 import "./style.css";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar.jsx";
@@ -96,7 +96,7 @@ function login() {
       </p>
 
       <p className="div-4">
-        <Task />
+        {/* <Task /> */}
         <span className="text-wrapper-5">
           לוח שנה משותף
           <br />
@@ -202,8 +202,8 @@ function login() {
         כלים חכמים לחיסכון בזמן וניהול פשוט של הפעילות היומיומית.
       </p>
 
-      <User />
-      <Crowdfunding
+      {/* <User /> */}
+      {/* <Crowdfunding
         className="crowdfunding-instance"
         crowdfunding="/img/crowdfunding-3.png"
       />
@@ -215,7 +215,7 @@ function login() {
       <SchoolBell />
       <Task />
       <SecurityCheck />
-      <NoteEdit />
+      <NoteEdit /> */}
     </div>
   );
 };

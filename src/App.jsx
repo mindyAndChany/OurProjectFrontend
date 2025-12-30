@@ -1,8 +1,8 @@
-<<<<<<< HEAD
+// <<<<<<< HEAD
 import Routing from './Routing.jsx';
 
-function App() {
-=======
+// function App() {
+// =======
 // import { useState } from 'react'
 // import reactLogo from './assets/react.svg'
 // import viteLogo from '/vite.svg'
@@ -72,19 +72,18 @@ import Calendar from "./pages/Calendar";
 import './tailwind.css';
 
 function App() {
-  return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 font-[Rubik]">
-      {/* <Navbar /> */}
-      <div className="p-8">
-        <Routes>
-          <Route path="/" element={<Welcome />} />
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/Equipments" element={<Equipments />} />
-          <Route path="/approvals" element={<Approvals />} />
-          <Route path="/Calendar" element={<Calendar />} />
-          <Route path="/Kattendence" element={<Kattendence />} />
->>>>>>> 121b97909abbdaafa311ec44a6c42e7700f38f9c
+  // return (
+  //   <div className="min-h-screen bg-gray-50 text-gray-800 font-[Rubik]">
+  //     {/* <Navbar /> */}
+  //     <div className="p-8">
+  //       <Routes>
+  //         <Route path="/" element={<Welcome />} />
+  //         <Route path="/home" element={<HomePage />} />
+  //         <Route path="/login" element={<Login />} />
+  //         <Route path="/Equipments" element={<Equipments />} />
+  //         <Route path="/approvals" element={<Approvals />} />
+  //         <Route path="/Calendar" element={<Calendar />} />
+  //         <Route path="/Kattendence" element={<Kattendence />} />
 
 
   return <Routing />;
