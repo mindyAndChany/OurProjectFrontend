@@ -1,12 +1,14 @@
-
-// import React from "react";
 import ReactDOM from "react-dom/client";
-// import "./index.css";
-import "./tailwind.css"
+import { Provider } from "react-redux";       // ← חובה
+import { STORE } from './redux/store.js';     // ← אתה כבר מייבא נכון
+import "./tailwind.css";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
+
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <BrowserRouter>
-    <App/>
-  </BrowserRouter>
+  <Provider store={STORE}>                    {/* ← עוטף את האפליקציה */}
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </Provider>
 );

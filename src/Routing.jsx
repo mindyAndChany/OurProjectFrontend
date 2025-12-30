@@ -39,7 +39,6 @@ export default function Routing() {
            <Route path="/Kattendence" element={<Kattendence />} />
 
        </Routes>
-      <div style={{padding:20}}>Routing בדיקה: נראה אותי?</div>
 </>
   );
 

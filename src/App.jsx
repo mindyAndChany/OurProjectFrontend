@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // <<<<<<< HEAD
 import Routing from './Routing.jsx';
 
@@ -84,6 +85,12 @@ function App() {
   //         <Route path="/approvals" element={<Approvals />} />
   //         <Route path="/Calendar" element={<Calendar />} />
   //         <Route path="/Kattendence" element={<Kattendence />} />
+=======
+import Routing from './Routing.jsx';
+
+function App() {
+
+>>>>>>> 07e97db307d155df8a571b09fabfc3fe5b79d49a
 
 
   return <Routing />;
