@@ -190,6 +190,7 @@ const navItems = [
   { to: "/Kattendence", label: "נוכחות" },
   { to: "/Calendar", label: "לוח שנה" },
   { to: "/Equipments", label: "השאלת ציוד" },
+  { to: "/Approvals", label: "אישורים" }
 ];
 
 export default function Navbar() {

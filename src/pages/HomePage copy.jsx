@@ -147,7 +147,6 @@ export default function LandingPage() {
     </div>
   );
 }
-<<<<<<< HEAD:src/pages/LandingPage.jsx
 
 function FeatureCard({ title, desc }) {
   return (
@@ -221,7 +220,6 @@ function FeatureCard({ title, desc }) {
 //     </div>
 //   );
 // }
-=======
 import { useState } from "react";
 import {
   BookOpen,
@@ -282,4 +280,3 @@ export default function Homepage() {
     </div>
   );
 }
->>>>>>> e7d777ffdb2e13fe8a3504793f7493af9a8b0164:src/pages/HomePage copy.jsx

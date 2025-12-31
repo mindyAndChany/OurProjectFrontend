@@ -8,7 +8,7 @@ import Login from './pages/Login.jsx';
 import Equipments from './pages/Equipments.jsx';
 import Calendar from './pages/Calendar.jsx';
 import Kattendence from './pages/Kattendence.jsx';
-
+import Approvals from './pages/Approvals.jsx';
 export default function Routing() {
 //   return (
 //     <>
@@ -37,6 +37,7 @@ export default function Routing() {
            <Route path="/Equipments" element={<Equipments />} />
            <Route path="/Calendar" element={<Calendar />} />
            <Route path="/Kattendence" element={<Kattendence />} />
+           <Route path="/Approvals" element={<Approvals />} />
 
        </Routes>
 </>
