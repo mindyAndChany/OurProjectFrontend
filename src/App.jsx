@@ -1,6 +1,5 @@
-<<<<<<< HEAD
 // <<<<<<< HEAD
-import Routing from './Routing.jsx';
+// import Routing from './Routing.jsx';
 
 // function App() {
 // =======
@@ -61,18 +60,18 @@ import Routing from './Routing.jsx';
 //   );
 // }
 
-// export default App;
-import { Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import Welcome from "./pages/Welcome";
-import HomePage from "./pages/HomePage";
-import Kattendence from "./pages/Kattendence";
-import Equipments from "./pages/Equipments";
-import Approvals from "./pages/approvals";
-import Calendar from "./pages/Calendar";
-import './tailwind.css';
+// // export default App;
+// import { Routes, Route } from "react-router-dom";
+// import Login from "./pages/Login";
+// import Welcome from "./pages/Welcome";
+// import HomePage from "./pages/HomePage";
+// import Kattendence from "./pages/Kattendence";
+// import Equipments from "./pages/Equipments";
+// import Approvals from "./pages/approvals";
+// import Calendar from "./pages/Calendar";
+// import './tailwind.css';
 
-function App() {
+// function App() {
   // return (
   //   <div className="min-h-screen bg-gray-50 text-gray-800 font-[Rubik]">
   //     {/* <Navbar /> */}
@@ -85,13 +84,9 @@ function App() {
   //         <Route path="/approvals" element={<Approvals />} />
   //         <Route path="/Calendar" element={<Calendar />} />
   //         <Route path="/Kattendence" element={<Kattendence />} />
-=======
 import Routing from './Routing.jsx';
 
 function App() {
-
->>>>>>> 07e97db307d155df8a571b09fabfc3fe5b79d49a
-
 
   return <Routing />;
 
