@@ -8,7 +8,7 @@ import Login from './pages/Login.jsx';
 import Equipments from './pages/Equipments.jsx';
 import Calendar from './pages/Calendar.jsx';
 import Kattendence from './pages/Kattendence.jsx';
-import Approvals from './pages/Approvals.jsx';
+import Approvals from './pages/approvals.jsx';
 export default function Routing() {
 //   return (
 //     <>
