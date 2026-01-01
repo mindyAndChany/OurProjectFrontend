@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { addEvent, updateEvent, removeEvent } from "../components/store/calendar/calendarSlice.js";
+import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 
 /** =========================
  *  הגדרות סוגי אירועים (עברית + צבעים בסגנון האתר)
@@ -279,6 +280,44 @@ function DayEventsModal({ open, dateISO, dateHeb, events, onClose, onAdd, onEdit
     </div>
   );
 }
+const ShabbatCandlesIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    className="text-[#295f8b]"
+  >
+    <path
+      d="M8 21V10M16 21V10"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <path
+      d="M8 6C8 4.343 9.343 3 11 3C11 4.657 9.657 6 8 6Z"
+      fill="currentColor"
+    />
+    <path
+      d="M16 6C16 4.343 14.657 3 13 3C13 4.657 14.343 6 16 6Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+function hebrewDateTextFromISO(iso, numberToHebrewLetters, formatHebrewYear, hebFullFormatter) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dateObj = new Date(y, m - 1, d);
+
+  const parts = hebFullFormatter.formatToParts(dateObj);
+  const dayNum = Number(parts.find((p) => p.type === "day")?.value);
+  const monthName = parts.find((p) => p.type === "month")?.value || "";
+  const yearNum = Number(parts.find((p) => p.type === "year")?.value);
+
+  const dayHeb = numberToHebrewLetters(dayNum);
+  const yearHeb = formatHebrewYear(yearNum);
+
+  return `${dayHeb} ${monthName} ${yearHeb}`;
+}
 
 /** =========================
  *  הקומפוננטה הראשית
@@ -308,7 +347,17 @@ export default function CalendarModern() {
   const gridDays = useMemo(() => buildMonthGrid(viewYear, viewMonth), [viewYear, viewMonth]);
 
   // כותרת חודש עברי (יפה וברורה)
-  const hebMonthTitle = useMemo(() => hebMonthFormatter.format(new Date(viewYear, viewMonth, 15)), [viewYear, viewMonth]);
+//   const hebMonthTitle = useMemo(() => hebMonthFormatter.format(new Date(viewYear, viewMonth, 15)), [viewYear, viewMonth]);
+const hebMonthTitle = useMemo(() => {
+  const mid = new Date(viewYear, viewMonth, 15);
+  const parts = hebMonthFormatter.formatToParts(mid);
+
+  const monthName = parts.find((p) => p.type === "month")?.value || "";
+  const yearNum = Number(parts.find((p) => p.type === "year")?.value);
+
+  const yearHeb = formatHebrewYear(yearNum); // תשפ״ו
+  return `${monthName} ${yearHeb}`;          // טבת תשפ״ו
+}, [viewYear, viewMonth]);
 
   // map אירועים לפי date (ISO YYYY-MM-DD)
   const eventsByDate = useMemo(() => {
@@ -327,14 +376,33 @@ export default function CalendarModern() {
 
   const selectedEvents = useMemo(() => eventsByDate.get(selectedDateISO) || [], [eventsByDate, selectedDateISO]);
 
-  // תאריך עליון לפי hovered אם קיים אחרת selected
-  const topDate = useMemo(() => {
-    const iso = hoveredISO || selectedDateISO;
-    const [y, m, d] = iso.split("-").map(Number);
-    const dateObj = new Date(y, m - 1, d);
-    const { heb, iso: isoOut } = formatTopDate(dateObj);
-    return { heb, iso: isoOut };
-  }, [hoveredISO, selectedDateISO]);
+//   // תאריך עליון לפי hovered אם קיים אחרת selected
+//   const topDate = useMemo(() => {
+//     const iso = hoveredISO || selectedDateISO;
+//     const [y, m, d] = iso.split("-").map(Number);
+//     const dateObj = new Date(y, m - 1, d);
+//     const { heb, iso: isoOut } = formatTopDate(dateObj);
+//     return { heb, iso: isoOut };
+//   }, [hoveredISO, selectedDateISO]);
+const selectedHebText = useMemo(() => {
+  return hebrewDateTextFromISO(selectedDateISO, numberToHebrewLetters, formatHebrewYear, hebFullFormatter);
+}, [selectedDateISO]);
+const topDate = useMemo(() => {
+  const iso = hoveredISO || selectedDateISO;
+  const [y, m, d] = iso.split("-").map(Number);
+  const dateObj = new Date(y, m - 1, d);
+
+  const parts = hebFullFormatter.formatToParts(dateObj);
+  const dayNum = Number(parts.find((p) => p.type === "day")?.value);
+  const monthName = parts.find((p) => p.type === "month")?.value || "";
+  const yearNum = Number(parts.find((p) => p.type === "year")?.value);
+
+  const dayHeb = numberToHebrewLetters(dayNum);  // י״ב
+  const yearHeb = formatHebrewYear(yearNum);     // תשפ״ו
+  const hebText = `${dayHeb} ${monthName} ${yearHeb}`;
+
+  return { heb: hebText, iso };
+}, [hoveredISO, selectedDateISO]);
 
   // מקרא קטן: מציג רק סוגים שמופיעים בפועל (אם אין, מציג סט בסיס)
   const legendItems = useMemo(() => {
@@ -496,13 +564,29 @@ export default function CalendarModern() {
           {/* Calendar */}
           <section className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
             {/* Week header */}
-            <div className="grid grid-cols-7 gap-3 mb-3">
+            {/* <div className="grid grid-cols-7 gap-3 mb-3">
               {WEEK_DAYS.map((d) => (
                 <div key={d} className="text-center font-bold text-lg text-gray-800">
                   {d}
                 </div>
               ))}
-            </div>
+            </div> */}
+<div className="grid grid-cols-7 gap-3 mb-3">
+  {WEEK_DAYS.map((d, idx) => {
+    const isShabbatCol = idx === 6; // עמודה 7 = "ש"
+    return (
+      <div
+        key={d}
+        className={[
+          "text-center font-bold text-lg",
+          isShabbatCol ? "text-[#295f8b]" : "text-gray-800",
+        ].join(" ")}
+      >
+        {d}
+      </div>
+    );
+  })}
+</div>
 
             {/* Days grid */}
             <div className="grid grid-cols-7 gap-3">
@@ -511,9 +595,18 @@ export default function CalendarModern() {
                 const inMonth = d >= monthStart && d <= monthEnd;
                 const isSelected = iso === selectedDateISO;
                 const isToday = iso === toISODate(today);
+               const hebParts = hebDayFormatter.formatToParts(d);
+const hebDayNum = Number(hebParts.find(p => p.type === "day")?.value);
+const isHebrewMonthEdge = hebDayNum === 1 || hebDayNum === 30;
+
+
+                const isShabbat = d.getDay() === 6; // שבת (JS: 0=א, 6=ש)
 
                 const dayEvents = eventsByDate.get(iso) || [];
-                const hebDay = hebDayFormatter.format(d);
+                // const hebDay = hebDayFormatter.format(d);
+                const hebDayNumber = Number(hebDayFormatter.format(d)); // יוצא 12
+                const hebDay = numberToHebrewLetters(hebDayNumber);     // יוצא י״ב
+
                 const gregDay = d.getDate();
 
                 return (
@@ -535,9 +628,24 @@ onClick={() => {
                       "border bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5",
                       inMonth ? "border-gray-200" : "border-gray-100 opacity-40",
                       isSelected && "ring-2 ring-[#295f8b]",
+               isHebrewMonthEdge && "bg-[#295f8b]/10",
+
+                      isShabbat && "bg-[#295f8b]/25 border-[#295f8b] ring-2 ring-[#295f8b]",
+                    
                       isToday && "border-[#295f8b] ring-1 ring-[#295f8b]/30"
                     )}
                   >
+                    {isHebrewMonthEdge && (
+  <span className="absolute bottom-2 right-2 text-[10px] font-bold text-[#295f8b]/70">
+    ראש חודש
+  </span>
+)}
+
+                    {isShabbat && (
+    <div className="absolute top-2 left-2 z-10">
+      <ShabbatCandlesIcon />
+    </div>
+     )}
                     {/* כותרת תא: עברי גדול + גרגוריאני קטן */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -633,7 +741,11 @@ onClick={() => {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">אירועים בתאריך</h2>
-                  <p className="mt-1 text-gray-600 font-semibold">{selectedDateISO}</p>
+                 <p className="mt-1 text-gray-600 font-semibold">
+  {hebrewDateTextFromISO(selectedDateISO, numberToHebrewLetters, formatHebrewYear, hebFullFormatter)}
+</p>
+
+                 {/* <p className="mt-1 text-gray-600 font-semibold">{selectedDateISO}</p> */}
                 </div>
 
                 <button
@@ -660,6 +772,7 @@ onClick={() => {
                             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: getTypeColor(ev.type) }} />
                             <span className="text-lg font-bold text-gray-900 truncate">{ev.title}</span>
                           </div>
+
 
                           <div className="mt-1 text-sm font-semibold text-gray-600">
                             <span className="font-bold text-[#295f8b]">{getTypeLabel(ev.type)}</span>
@@ -692,7 +805,8 @@ onClick={() => {
       <DayEventsModal
         open={dayModalOpen}
         dateISO={selectedDateISO}
-        dateHeb={dayModalHeb}
+        // dateHeb={dayModalHeb},
+        dateHeb={selectedHebText}
         events={dayModalEvents}
         onClose={closeDayModal}
         onAdd={() => {
