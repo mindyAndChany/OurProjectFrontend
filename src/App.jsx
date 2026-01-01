@@ -2,8 +2,6 @@ import Routing from './Routing.jsx';
 
 function App() {
 
-
-
   return <Routing />;
 
   }

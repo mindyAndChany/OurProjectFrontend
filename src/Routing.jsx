@@ -8,24 +8,10 @@ import Login from './pages/Login.jsx';
 import Equipments from './pages/Equipments.jsx';
 import Calendar from './pages/Calendar.jsx';
 import Kattendence from './pages/Kattendence.jsx';
+import StudentsData from './pages/StudentsData.jsx';
 
 export default function Routing() {
-//   return (
-//     <>
-//       <Navbar />
-//       <Routes>
-//       <div style={{padding:20}}>Routing בדיקה: נראה אותי?</div>
 
-//           <Route path="/" element={<Welcome />} />
-//           <Route path="/home" element={<HomePage />} />
-//           <Route path="/login" element={<Login />} />
-//           <Route path="/Equipments" element={<Equipments />} />
-//           <Route path="/Calendar" element={<Calendar />} />
-//           <Route path="/Kattendence" element={<Kattendence />} />
-
-//       </Routes>
-//   </>
-//   );
   return (
  <>
       <Navbar />
@@ -36,6 +22,7 @@ export default function Routing() {
            <Route path="/login" element={<Login />} />     
            <Route path="/Equipments" element={<Equipments />} />
            <Route path="/Calendar" element={<Calendar />} />
+           <Route path="/StudentsData" element={<StudentsData />} />
            <Route path="/Kattendence" element={<Kattendence />} />
 
        </Routes>
