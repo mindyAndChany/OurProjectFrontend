@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { addEvent, updateEvent, removeEvent } from "../components/store/calendar/calendarSlice.js";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
@@ -323,8 +323,12 @@ function hebrewDateTextFromISO(iso, numberToHebrewLetters, formatHebrewYear, heb
  *  הקומפוננטה הראשית
  *  ========================= */
 export default function CalendarModern() {
+
   const dispatch = useDispatch();
   const events = useSelector((s) => s?.calendar?.events ?? []);
+  useEffect(() => {
+  console.log("🔴 כל האירועים ברדאקס:", events);
+}, [events]);
 
   const today = new Date();
 
@@ -420,6 +424,14 @@ const topDate = useMemo(() => {
         color: getTypeColor(type),
       }));
   }, [events]);
+function goToToday() {
+  const now = new Date();
+  const iso = toISODate(now);
+  setViewYear(now.getFullYear());
+  setViewMonth(now.getMonth());
+  setSelectedDateISO(iso);
+  setHoveredISO(null);
+}
 
   function prevMonth() {
     const m = viewMonth - 1;
@@ -484,6 +496,9 @@ const topDate = useMemo(() => {
     if (!payload.title || !payload.date) return;
 
     if (!payload.id) {
+        console.log("new event payload", payload);
+        
+
       dispatch(
         addEvent({
           ...payload,
@@ -541,6 +556,7 @@ const topDate = useMemo(() => {
             </div>
           </div>
 
+
           <div className="flex items-center gap-3">
             <button
               onClick={prevMonth}
@@ -549,6 +565,12 @@ const topDate = useMemo(() => {
             >
               הקודם
             </button>
+            <button
+  onClick={goToToday}
+  className="px-5 py-3 rounded-full border border-gray-200 bg-white shadow-sm hover:shadow-md transition font-bold"
+  aria-label="חזרה להיום"
+>
+חזרה להיום</button>
             <button
               onClick={nextMonth}
               className="px-5 py-3 rounded-full border border-gray-200 bg-white shadow-sm hover:shadow-md transition font-bold"
