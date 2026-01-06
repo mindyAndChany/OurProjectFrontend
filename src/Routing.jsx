@@ -5,11 +5,10 @@ import Welcome from './pages/Welcome.jsx';
 import HomePage from './pages/HomePage.jsx';
 import Login from './pages/Login.jsx';
 import Equipments from './pages/Equipments.jsx';
-import Calendar from './pages/Calendar.jsx';
+import StudentsData from './pages/StudentsData.jsx';
 import Kattendence from './pages/Kattendence.jsx';
 import Approvals from './pages/approvals.jsx';
 import CalendarModern from './pages/CalendarModern.jsx';
-import StudentsData from './pages/StudentsData.jsx';
 
 export default function Routing() {
   const location = useLocation();
@@ -18,19 +17,20 @@ export default function Routing() {
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
 
   return (
- <>
-      <Navbar />
-          <Routes>
+    <>
+      {!shouldHideNavbar && <Navbar />}
+      <Routes>
+        <Route path="/" element={<Welcome />} />
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/Equipments" element={<Equipments />} />
+        <Route path="/Calendar" element={<CalendarModern />} />
+        <Route path="/Kattendence" element={<Kattendence />} />
+        <Route path="/Approvals" element={<Approvals />} />
+        <Route path="/StudentsData" element={<StudentsData />} />
 
-           <Route path="/" element={<Welcome />} />
-           <Route path="/home" element={<HomePage />} />
-           <Route path="/login" element={<Login />} />     
-           <Route path="/Equipments" element={<Equipments />} />
-           <Route path="/Calendar" element={<CalendarModern />} />
-           <Route path="/Kattendence" element={<Kattendence />} />
-            <Route path="/StudentsData" element={<StudentsData />} />
-
-       </Routes>
-</>
+      </Routes>
+    </>
   );
 }
+

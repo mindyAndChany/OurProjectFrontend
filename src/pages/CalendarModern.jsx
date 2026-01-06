@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addEvent, updateEvent, removeEvent } from "../components/store/calendar/calendarSlice.js";
+import { addEvent, updateEvent, removeEvent } from "../redux/slices/calendar/calendarSlice.js";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 
 /** =========================
