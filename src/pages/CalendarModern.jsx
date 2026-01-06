@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addEvent, updateEvent, removeEvent } from "../redux/slices/calendar/calendarSlice.js";
+import {  updateEvent, removeEvent } from "../redux/slices/calendar/calendarSlice.js";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
-
+import { addEvent } from "../redux/slices/calendar/calendarThunk.js"; 
+import { getEvents } from "../redux/slices/calendar/getEventThunk.js";
 /** =========================
  *  הגדרות סוגי אירועים (עברית + צבעים בסגנון האתר)
  *  ========================= */
@@ -328,7 +329,8 @@ export default function CalendarModern() {
   const events = useSelector((s) => s?.calendar?.events ?? []);
   useEffect(() => {
   console.log("🔴 כל האירועים ברדאקס:", events);
-}, [events]);
+  dispatch(getEvents());
+}, [events, dispatch]);
 
   const today = new Date();
 

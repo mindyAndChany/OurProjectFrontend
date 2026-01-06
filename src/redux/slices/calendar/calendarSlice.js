@@ -1,56 +1,51 @@
 import { createSlice } from "@reduxjs/toolkit";
-
+import { addEvent, getCalendarEventsThunk, postCalendarEventThunk } from "./calendarThunk.js";
+import { getEvents } from "./getEventThunk.js";
 const initialState = {
-  events: [
-    {
-      id: "1",
-      title: "מבחן מתמטיקה",
-      type: "exam",
-      date: "5786-09-10",
-      time_start: "09:00",
-      time_end: "11:00",
-      notes: "כיתה י״ב בלבד",
-    },
-    {
-      id: "2",
-      title: "טיול שנתי",
-      type: "trip",
-      date: "5786-09-15",
-      time_start: "08:00",
-      time_end: "18:00",
-      notes: "",
-    },
-  ],
-  status: "idle", // future: loading / success / error
+  events: [],
+  status: 'idle',
 };
 
 const calendarSlice = createSlice({
-  name: "calendar",
+  name: 'calendar',
   initialState,
   reducers: {
-    addEvent(state, action) {
-      state.events.push(action.payload);
-    },
-    removeEvent(state, action) {
-      state.events = state.events.filter(
-        (event) => event.id !== action.payload
-      );
-    },
+    // addEvent(state, action) {
+    //   state.events.push(action.payload);
+    // },
     updateEvent(state, action) {
-      const index = state.events.findIndex(
-        (event) => event.id === action.payload.id
-      );
+      const index = state.events.findIndex((e) => e.id === action.payload.id);
       if (index !== -1) {
         state.events[index] = action.payload;
       }
     },
+    removeEvent(state, action) {
+      state.events = state.events.filter((e) => e.id !== action.payload);
+    }
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(getCalendarEventsThunk.fulfilled, (state, action) => {
+        state.events = action.payload;
+      })
+      .addCase(addEvent.fulfilled, (state, action) => {
+        state.events.push(action.payload);
+      });
+    builder
+  .addCase(getEvents.pending, (state) => {
+    state.status = 'loading';
+  })
+  .addCase(getEvents.fulfilled, (state, action) => {
+    state.status = 'success';
+    state.events = action.payload;
+  })
+  .addCase(getEvents.rejected, (state) => {
+    state.status = 'error';
+  });
+  }
 });
 
-export const {
-  addEvent,
-  removeEvent,
-  updateEvent,
-} = calendarSlice.actions;
+// ✅ שורת הפתרון:
+export const {updateEvent, removeEvent } = calendarSlice.actions;
 
 export default calendarSlice.reducer;
