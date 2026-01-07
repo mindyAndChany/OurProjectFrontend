@@ -1,7 +1,7 @@
 import Routing from '../src/Routing.jsx';
 
 function App() {
-
+console.log("URL:", process.env.REACT_APP_BACKEND_URL);
 
   return <Routing />;
 
