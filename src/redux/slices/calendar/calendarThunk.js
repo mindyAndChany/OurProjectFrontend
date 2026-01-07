@@ -1,0 +1,43 @@
+import { createAsyncThunk } from "@reduxjs/toolkit";
+
+export const getCalendarEventsThunk = createAsyncThunk(
+  'calendar/getCalendarEvents',
+  async () => {
+    const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/calendar-events`);
+    
+    if (res.ok) {
+      const data = await res.json();
+      console.log("✔️ fetch calendar events success");
+      return data;
+    } else {
+      throw new Error('❌ failed to fetch calendar events');
+    }
+  }
+);
+
+export const addEvent = createAsyncThunk(
+  'calendar/postCalendarEvent',
+  async (eventData) => {
+    const { id, ...rest } = eventData;
+
+    const cleanedEvent = {
+      ...rest,
+      time_start: rest.time_start?.trim() || null,
+      time_end: rest.time_end?.trim() || null,
+    };
+
+    const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/calendar-events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanedEvent)
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      console.log("✔️ event added:", data);
+      return data;
+    } else {
+      throw new Error('❌ failed to post calendar event');
+    }
+  }
+);
