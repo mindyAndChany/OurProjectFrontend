@@ -18,23 +18,20 @@ export default function Routing() {
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
 
   return (
- <>
+    <>
       {!shouldHideNavbar && <Navbar />}
-          <Routes>
-
-           <Route path="/" element={<Welcome />} />
-           <Route path="/home" element={<HomePage />} />
-           <Route path="/login" element={<Login />} />     
-           <Route path="/Equipments" element={<Equipments />} />
+      <Routes>
+        <Route path="/" element={<Welcome />} />
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/Equipments" element={<Equipments />} />
         <Route path="/Calendar" element={<CalendarModern />} />
-           <Route path="/Kattendence" element={<Kattendence />} />
+        <Route path="/Kattendence" element={<Kattendence />} />
         <Route path="/Approvals" element={<Approvals />} />
         <Route path="/StudentsData" element={<StudentsData />} />
 
-       </Routes>
-      <div style={{padding:20}}>Routing בדיקה: נראה אותי?</div>
-</>
+      </Routes>
+    </>
   );
-
 }
 
