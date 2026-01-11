@@ -41,3 +41,40 @@ export const addEvent = createAsyncThunk(
     }
   }
 );
+
+export const updateEvent = createAsyncThunk(
+  'calendar/updateEvent',
+  async ({ id, data }) => {
+    const res = await fetch(
+      `${process.env.REACT_APP_BACKEND_URL}/api/calendar-events/${id}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error('failed to update event');
+    }
+
+    return await res.json(); // האירוע המעודכן מהשרת
+  }
+);
+
+export const removeEvent = createAsyncThunk(
+  'calendar/removeEvent',
+  async (id) => {
+    const res = await fetch(
+      `${process.env.REACT_APP_BACKEND_URL}/api/calendar-events/${id}`,
+      { method: 'DELETE' }
+    );
+
+    if (!res.ok) {
+      throw new Error('failed to delete event');
+    }
+
+    return id; // מחזירים id כדי למחוק מה־store
+  }
+);
+
