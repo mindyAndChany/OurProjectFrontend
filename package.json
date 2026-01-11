@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hebcal/core": "^6.0.8",
     "@reduxjs/toolkit": "^2.11.2",
     "axios": "^1.13.2",
     "framer-motion": "^12.23.24",
