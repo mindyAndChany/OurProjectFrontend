@@ -4,7 +4,7 @@ export const addStudentsThunk = createAsyncThunk(
   'students/addStudents',
   async (studentsArray, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/studentsData/addStudents`, {
+      const res = await fetch(`https://ourprojectbackend-1.onrender.com/api/studentsData/addStudents`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

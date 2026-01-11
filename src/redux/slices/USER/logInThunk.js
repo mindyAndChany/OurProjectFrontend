@@ -3,7 +3,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 export const logInThunk = createAsyncThunk(
     'logIn',
     async (details) => {
-        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/logIn`, {
+        const res = await fetch(`https://ourprojectbackend-1.onrender.com/api/auth/logIn`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
