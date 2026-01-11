@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Crowdfunding from "../icons/crowdfunding.png";
 import LicenseDraft from "../icons/license-draft.png";
 import SchoolBell02 from "../icons/school-bell-02.png";
@@ -9,6 +9,35 @@ import User from "../icons/user.png";
 import { useNavigate } from "react-router-dom";
 
 export default function Frame() {
+
+  // פונקציה לעורר את השרת
+  async function wakeUpServer() {
+    const serverUrl = 'https://ourprojectbackend-1.onrender.com';
+
+    try {
+      console.log('מעיר את השרת...');
+      const response = await fetch(`${serverUrl}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        console.log('השרת התעורר בהצלחה');
+      }
+    } catch (error) {
+      console.log('השרת עדיין מתעורר...', error.message);
+    }
+  }
+
+useEffect(() => {
+  wakeUpServer();
+  window.addEventListener('load', wakeUpServer);
+  return () => window.removeEventListener('load', wakeUpServer);
+}, []);
+
+
   const navigate = useNavigate();
 
   const mainFeatures = [
