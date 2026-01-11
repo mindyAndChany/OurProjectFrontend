@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { addEvent, getCalendarEventsThunk, postCalendarEventThunk } from "./calendarThunk.js";
+import { addEvent, removeEvent, getCalendarEventsThunk, updateEvent} from "./calendarThunk.js";
 import { getEvents } from "./getEventThunk.js";
 const initialState = {
   events: [],
@@ -13,15 +13,15 @@ const calendarSlice = createSlice({
     // addEvent(state, action) {
     //   state.events.push(action.payload);
     // },
-    updateEvent(state, action) {
-      const index = state.events.findIndex((e) => e.id === action.payload.id);
-      if (index !== -1) {
-        state.events[index] = action.payload;
-      }
-    },
-    removeEvent(state, action) {
-      state.events = state.events.filter((e) => e.id !== action.payload);
-    }
+    // updateEvent(state, action) {
+    //   const index = state.events.findIndex((e) => e.id === action.payload.id);
+    //   if (index !== -1) {
+    //     state.events[index] = action.payload;
+    //   }
+    // },
+    // removeEvent(state, action) {
+    //   state.events = state.events.filter((e) => e.id !== action.payload);
+    // }
   },
   extraReducers: (builder) => {
     builder
@@ -41,11 +41,20 @@ const calendarSlice = createSlice({
   })
   .addCase(getEvents.rejected, (state) => {
     state.status = 'error';
-  });
+  })
+   .addCase(updateEvent.fulfilled, (state, action) => {
+      const index = state.events.findIndex(e => e.id === action.payload.id);
+      if (index !== -1) {
+        state.events[index] = action.payload;
+      }
+    })
+    .addCase(removeEvent.fulfilled, (state, action) => {
+      state.events = state.events.filter(e => e.id !== action.payload);
+    });
   }
 });
 
 // ✅ שורת הפתרון:
-export const {updateEvent, removeEvent } = calendarSlice.actions;
+// export const {updateEvent, removeEvent } = calendarSlice.actions;
 
 export default calendarSlice.reducer;

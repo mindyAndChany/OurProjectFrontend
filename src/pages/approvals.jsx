@@ -166,14 +166,11 @@
 
 // export default Screen;
 // components/ApprovalScreen.jsx
-// components/ApprovalScreen.jsx
-// components/ApprovalScreen.jsx
-// components/ApprovalScreen.jsx
+
 // אישור לימודים מודרני ומעוצב עם תמיכה ב-PDF והדפסה
 
 import { useState, useRef } from "react"
 import { jsPDF } from "jspdf"
-import autoTable from "jspdf-autotable"
 import { motion } from "framer-motion"
 
 const approvals = [
