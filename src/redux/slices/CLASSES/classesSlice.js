@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { getClassesThunk } from './getClassesThunk';
+import { getClassesThunk } from './getClassesThunk.js';
 
 const classesSlice = createSlice({
   name: 'classes',
