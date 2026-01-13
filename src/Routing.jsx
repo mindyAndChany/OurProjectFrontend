@@ -9,6 +9,7 @@ import StudentsData from './pages/StudentsData.jsx';
 import Kattendence from './pages/Kattendence.jsx';
 import Approvals from './pages/approvals.jsx';
 import CalendarModern from './pages/CalendarModern.jsx';
+import Schedule from './pages/schedule.jsx';
 
 export default function Routing() {
   const location = useLocation();
@@ -28,6 +29,7 @@ export default function Routing() {
         <Route path="/Kattendence" element={<Kattendence />} />
         <Route path="/Approvals" element={<Approvals />} />
         <Route path="/StudentsData" element={<StudentsData />} />
+        <Route path="/schedule" element={<Schedule />} />
 
       </Routes>
     </>
