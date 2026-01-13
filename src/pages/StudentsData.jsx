@@ -76,19 +76,6 @@ const handleExcelImport = (event, dispatch) => {
 
 
 // רשימת כל השדות
-const fieldOptions = [
-    "first_name", "last_name", "id_number", "phone", "marital_status", "address",
-    "registration_year", "is_graduate", "class_kodesh", "class_teaching",
-    "track", "track2", "track3", "payment_status", "paid_amount", "birthdate_gregorian",
-    "birthdate_hebrew", "married_date", "married_name", "notes", "city_he", "zipcode",
-    "landline", "father_name_he", "father_mobile_he", "mother_name_he", "mother_mobile_he",
-    "bookshelf", "perach", "external_mother", "external_father", "birth_country",
-    "personal_mobile", "nickname", "serial_number"
-];
-
-
-
-
 const fieldsDict = {
     "ת. זהות": "id_number",
     "סכום ששלמה": "paid_amount",
@@ -125,6 +112,8 @@ const fieldsDict = {
     "טלפון": "phone",
     "א. תשלום": "Payment method"
 }
+
+const fieldOptions = [...new Set(Object.values(fieldsDict))];
 
 const fieldsDictHeb = Object.fromEntries(
     Object.entries(fieldsDict).map(([he, en]) => [en, he])
