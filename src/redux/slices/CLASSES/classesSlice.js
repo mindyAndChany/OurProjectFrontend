@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { getClassesThunk } from './getClassesThunk';
 
 const classesSlice = createSlice({
   name: 'classes',
@@ -9,6 +10,19 @@ const classesSlice = createSlice({
     setClasses(state, action) {
       state.data = action.payload;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(getClassesThunk.pending, (state) => {
+        console.log("getClasses start");
+      })
+      .addCase(getClassesThunk.fulfilled, (state, action) => {
+        state.data = action.payload;
+        console.log("classes loaded:", state.data.length);
+      })
+      .addCase(getClassesThunk.rejected, (state, action) => {
+        console.log("getClasses error:", action.error);
+      });
   },
 });
 

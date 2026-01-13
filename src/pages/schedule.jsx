@@ -1,13 +1,19 @@
-import React, { useState, useMemo } from "react";
-import { useSelector } from "react-redux";
+import React, { useState, useMemo, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns";
 import heLocale from 'date-fns/locale/he';
+import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
 
 export default function ScheduleViewer() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const lessons = useSelector((state) => state.lessons.data);
   const schedule = useSelector((state) => state.weekly_schedule.data);
   const classes = useSelector((state) => state.classes.data);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(getClassesThunk());
+  }, [dispatch]);
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(selectedDate, { weekStartsOn: 0 });
