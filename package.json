@@ -11,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
     "@hebcal/core": "^6.0.8",
     "@mui/icons-material": "^7.3.7",
     "@reduxjs/toolkit": "^2.11.2",
