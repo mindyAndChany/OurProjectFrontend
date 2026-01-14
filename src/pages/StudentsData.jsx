@@ -7,6 +7,7 @@ import { FileDown, Printer, FileUp,UserRoundPlus ,UserPen } from "lucide-react";
 import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { TextField, Button, IconButton } from "@mui/material";
 import { addStudentsThunk } from "../redux/slices/STUDENTS/addStudentsThunk";
+import { updateStudentThunk } from "../redux/slices/STUDENTS/updateStudentThunk";
 
 const normalizeKey = (key) =>
     key
@@ -261,6 +262,8 @@ const [studentToEdit, setStudentToEdit] = useState(null);
     };
 
    const handleAddStudent = () => {
+    console.log("try adding student",newStudent);
+    
     dispatch(addStudentsThunk([newStudent]));
     setNewStudent(initialNewStudent);
     setOpen(false); // לסגור את הדיאלוג אחרי ההוספה
@@ -429,7 +432,7 @@ setStudentToEdit({ ...initialNewStudent, ...student });
     <Button onClick={() => setEditDialogOpen(false)}>ביטול</Button>
     <Button
       onClick={() => {
-        dispatch(editStudentThunk(studentToEdit));
+        dispatch(updateStudentThunk(studentToEdit));
         setEditDialogOpen(false);
       }}
     >
