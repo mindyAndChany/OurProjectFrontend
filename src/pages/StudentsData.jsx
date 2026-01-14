@@ -8,11 +8,6 @@ import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material
 import { TextField, Button, IconButton } from "@mui/material";
 import { addStudentsThunk } from "../redux/slices/STUDENTS/addStudentsThunk";
 
-
-
-
-
-
 const normalizeKey = (key) =>
     key
         .replace(/\u200f|\u200e/g, '') // הסרת תווי RTL חבויים
@@ -128,21 +123,21 @@ const fieldsDictHeb = Object.fromEntries(
 
 
 const fieldGroups = {
-    basic: ["first_name", "last_name", "id_number", "class_kodesh"],
+    basic: [ "id_number","first_name", "last_name", "class_kodesh"],
     personal: [
-        "first_name", "last_name", "id_number", "phone", "marital_status", "address",
+         "id_number", "first_name", "last_name","phone", "marital_status", "address",
         "father_name_he", "father_mobile_he", "mother_name_he", "mother_mobile_he", "class_kodesh"
     ],
-    payments: ["first_name", "last_name", "id_number", "payment_status", "paid_amount", "class_kodesh"],
-    phonebook: ["first_name", "last_name", "phone", "class_kodesh"]
+    payments: ["id_number", "first_name", "last_name", "payment_status", "paid_amount", "class_kodesh"],
+    phonebook: ["id_number", "first_name", "last_name", "phone", "class_kodesh"]
 };
 
-const filterFields = ["class_kodesh", "id_number", "first_name", "last_name"];
+const filterFields = ["id_number", "class_kodesh", "first_name", "last_name"];
 
 const fieldLabels = {
+    id_number: "ת.ז.",
     first_name: "שם פרטי",
     last_name: "שם משפחה",
-    id_number: "ת.ז.",
     phone: "טלפון",
     marital_status: "מצב אישי",
     address: "כתובת",
