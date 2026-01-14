@@ -105,7 +105,6 @@ const fieldsDict = {
     "התמתחות נוספת": "track2",
     "אופציה ב": "track3",
     " מצב אישי": "marital_status",
-    "הוראה": "class_teaching",
     "מדפית": "bookshelf",
     "הערות": "notes",
     "פרח": "perach",
