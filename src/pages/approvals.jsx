@@ -385,7 +385,7 @@ export default function CertificateGenerator() {
     const embeddedImage = await pdfDoc.embedJpg(imageBytes);
     page.drawImage(embeddedImage, { x: 0, y: 0, width: 595, height: 842 });
 
-    const fontBytes = await fetch("/fonts/David.ttf").then((res) => res.arrayBuffer());
+    const fontBytes = await fetch("/fonts/david.ttf").then((res) => res.arrayBuffer());
     const customFont = await pdfDoc.embedFont(fontBytes);
 
     const positions = selectedTemplate.positions;
