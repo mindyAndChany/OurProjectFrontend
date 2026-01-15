@@ -4,6 +4,7 @@ import { format, startOfWeek, addDays, parseISO } from "date-fns";
 import heLocale from 'date-fns/locale/he';
 import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
 import { getweeklySchedulesThunk } from "../redux/slices/SCHEDULE/getScheduleThunk";
+import { addRealyLessonThunk } from "../redux/slices/LESSONS/addRealyLessonThunk";
 
 /**
  * קומפוננטת מערכת שבועית - מציגה את לוח השעות של כל הכיתות או כיתה ספציפית
@@ -15,6 +16,10 @@ export default function ScheduleViewer() {
   // State: תאריך נבחר ומזהה כיתה נבחרת
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedClassId, setSelectedClassId] = useState("kodesh"); // "kodesh" = לימודי קודש
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalLesson, setModalLesson] = useState(null);
+  const [modalCancelled, setModalCancelled] = useState(false);
+  const [modalReason, setModalReason] = useState("");
 
   // קבלת נתונים מה-Redux store
   const lessons = useSelector((state) => state.lessons?.data ?? []); // שיעורים ספציפיים לתאריך
@@ -27,6 +32,44 @@ export default function ScheduleViewer() {
     dispatch(getClassesThunk());
     dispatch(getweeklySchedulesThunk());
   }, [dispatch]);
+
+  // פתיחת מודל לאישור/ביטול שיעור
+  const openLessonModal = (lesson, date, classIdOverride) => {
+    const classId = classIdOverride ?? lesson.class_id;
+    const payload = {
+      id: 0,
+      class_id: classId,
+      date: format(date, "yyyy-MM-dd"),
+      start_time: lesson.start_time || "",
+      end_time: lesson.end_time || "",
+      topic: lesson.topic || "",
+      teacher_name: lesson.teacher_name || "",
+      is_cancelled: false,
+      cancellation_reason: "",
+    };
+    setModalLesson(payload);
+    setModalCancelled(false);
+    setModalReason("");
+    setModalOpen(true);
+  };
+
+  const closeLessonModal = () => {
+    setModalOpen(false);
+    setModalLesson(null);
+    setModalCancelled(false);
+    setModalReason("");
+  };
+
+  const confirmLessonModal = () => {
+    if (!modalLesson) return;
+    const finalPayload = {
+      ...modalLesson,
+      is_cancelled: modalCancelled,
+      cancellation_reason: modalCancelled ? (modalReason || "התקבל ביטול ללא סיבה") : "",
+    };
+    dispatch(addRealyLessonThunk(finalPayload));
+    closeLessonModal();
+  };
 
   // יצירת מערך של 6 ימים (ראשון עד שישי, ללא שבת)
   const weekDays = useMemo(() => {
@@ -236,7 +279,11 @@ export default function ScheduleViewer() {
                                   className="border border-gray-300 p-2 text-center align-middle"
                                 >
                                   {lesson ? (
-                                    <div className="text-gray-800 font-medium">
+                                    <div
+                                      className="text-gray-800 font-medium cursor-pointer hover:text-indigo-700"
+                                      onClick={() => openLessonModal(lesson, day, cls.id)}
+                                      title="לחץ לאישור/ביטול שיעור"
+                                    >
                                       {lesson.topic || "-"}
                                     </div>
                                   ) : (
@@ -355,7 +402,9 @@ export default function ScheduleViewer() {
                               {lessonsAtSlot.map((lesson) => (
                                 <div
                                   key={`${lesson.id ?? lesson.class_id}-${time}`}
-                                  className="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-300 rounded-lg p-4 hover:shadow-md transition"
+                                  className="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-300 rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                                  onClick={() => openLessonModal(lesson, day)}
+                                  title="לחץ לאישור/ביטול שיעור"
                                 >
                                   {/* שורת כותרת: שם כיתה + טווח שעות */}
                                   <div className="flex items-center justify-between text-xs text-gray-700 mb-2">
@@ -394,6 +443,70 @@ export default function ScheduleViewer() {
             </tbody>
           </table>
         </div>
+
+        {/* מודל אישור/ביטול שיעור */}
+        {modalOpen && modalLesson && (
+          <div
+            className="fixed inset-0 z-[80] bg-black/40 flex items-center justify-center px-4"
+            dir="rtl"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmLessonModal();
+              }
+            }}
+          >
+            <div className="w-full max-w-xl bg-white rounded-3xl p-6 shadow-xl">
+              <h3 className="text-2xl font-bold mb-4">אישור שיעור לתאריך נבחר</h3>
+              <div className="space-y-2 text-sm text-gray-700">
+                <div><span className="font-semibold">כיתה:</span> {getClassName(Number(modalLesson.class_id))}</div>
+                <div><span className="font-semibold">תאריך:</span> {modalLesson.date}</div>
+                <div><span className="font-semibold">שעה:</span> {formatTime(modalLesson.start_time)} - {formatTime(modalLesson.end_time)}</div>
+                <div><span className="font-semibold">נושא:</span> {modalLesson.topic || 'ללא נושא'}</div>
+                {modalLesson.teacher_name && (
+                  <div><span className="font-semibold">מורה:</span> {modalLesson.teacher_name}</div>
+                )}
+              </div>
+
+              <div className="mt-4 p-3 border rounded-lg bg-gray-50">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="scale-110"
+                    checked={modalCancelled}
+                    onChange={(e) => setModalCancelled(e.target.checked)}
+                  />
+                  <span className="font-semibold">סמן אם השיעור מבוטל</span>
+                </label>
+                {modalCancelled && (
+                  <textarea
+                    className="mt-3 w-full border rounded px-3 py-2"
+                    rows={3}
+                    placeholder="סיבת ביטול (חובה)"
+                    value={modalReason}
+                    onChange={(e) => setModalReason(e.target.value)}
+                  />
+                )}
+              </div>
+
+              <div className="mt-5 flex gap-2">
+                <button
+                  onClick={confirmLessonModal}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                >
+                  אשר (ENTER)
+                </button>
+                <button
+                  onClick={closeLessonModal}
+                  className="border px-4 py-2 rounded"
+                >
+                  סגור
+                </button>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">בברירת מחדל (ENTER) השיעור מאושר לתאריך זה.</div>
+            </div>
+          </div>
+        )}
 
         {/* הערה תחתונה */}
         <div className="mt-6 p-4 bg-white rounded-lg shadow border-l-4 border-indigo-600">
