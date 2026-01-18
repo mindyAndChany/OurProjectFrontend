@@ -19,6 +19,16 @@ const TYPE_META = {
 
 const WEEK_DAYS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
 
+const HEB_WEEKDAY_FULL = [
+  "יום ראשון",
+  "יום שני",
+  "יום שלישי",
+  "יום רביעי",
+  "יום חמישי",
+  "יום שישי",
+  "שבת",
+];
+
 // תאריך עברי מלא למעלה
 const hebFullFormatter = new Intl.DateTimeFormat("he-u-ca-hebrew", {
   day: "numeric",
@@ -292,6 +302,22 @@ function hebrewDateTextFromISO(iso, numberToHebrewLetters, formatHebrewYear, heb
   const yearHeb = formatHebrewYear(yearNum);
 
   return `${dayHeb} ${monthName} ${yearHeb}`;
+}
+function fullHebDayTitleFromISO(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dateObj = new Date(y, m - 1, d);
+
+  const weekday = HEB_WEEKDAY_FULL[dateObj.getDay()];
+
+  const parts = hebFullFormatter.formatToParts(dateObj);
+  const dayNum = Number(parts.find((p) => p.type === "day")?.value);
+  const monthName = parts.find((p) => p.type === "month")?.value || "";
+  const yearNum = Number(parts.find((p) => p.type === "year")?.value);
+
+  const dayHeb = numberToHebrewLetters(dayNum);
+  const yearHeb = formatHebrewYear(yearNum);
+
+  return `${weekday} ${dayHeb} ${monthName} ${yearHeb}`;
 }
 
 /** =========================
@@ -1579,7 +1605,7 @@ function DayGridView({
       {/* Header יום */}
       <div className="relative border-b border-gray-200 bg-white px-4 py-4">
         <div className="text-center">
-          <div className="text-xl font-bold text-gray-900">{hebHeaderForISO(selectedDateISO)}</div>
+          <div className="text-xl font-bold text-gray-900">{fullHebDayTitleFromISO(selectedDateISO)}</div>
           {/* אם תרצי להשאיר גם ISO קטן: */}
           {/* <div className="text-sm font-semibold text-gray-500">{selectedDateISO}</div> */}
         </div>
