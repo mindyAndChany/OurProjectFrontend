@@ -19,6 +19,16 @@ const TYPE_META = {
 
 const WEEK_DAYS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
 
+const HEB_WEEKDAY_FULL = [
+  "יום ראשון",
+  "יום שני",
+  "יום שלישי",
+  "יום רביעי",
+  "יום חמישי",
+  "יום שישי",
+  "שבת",
+];
+
 // תאריך עברי מלא למעלה
 const hebFullFormatter = new Intl.DateTimeFormat("he-u-ca-hebrew", {
   day: "numeric",
@@ -148,7 +158,8 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete ,
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-bold text-gray-800 mb-2">שעת התחלה</label>
+              <label   type="time"
+             className="block text-sm font-bold text-gray-800 mb-2">שעת התחלה</label>
               <input
                 value={editing.time_start}
                 onChange={(e) => onChange({ ...editing, time_start: e.target.value })}
@@ -158,7 +169,8 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete ,
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-bold text-gray-800 mb-2">שעת סיום</label>
+              <label   type="time"
+                     className="block text-sm font-bold text-gray-800 mb-2">שעת סיום</label>
               <input
                 value={editing.time_end}
                 onChange={(e) => onChange({ ...editing, time_end: e.target.value })}
@@ -291,6 +303,22 @@ function hebrewDateTextFromISO(iso, numberToHebrewLetters, formatHebrewYear, heb
 
   return `${dayHeb} ${monthName} ${yearHeb}`;
 }
+function fullHebDayTitleFromISO(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dateObj = new Date(y, m - 1, d);
+
+  const weekday = HEB_WEEKDAY_FULL[dateObj.getDay()];
+
+  const parts = hebFullFormatter.formatToParts(dateObj);
+  const dayNum = Number(parts.find((p) => p.type === "day")?.value);
+  const monthName = parts.find((p) => p.type === "month")?.value || "";
+  const yearNum = Number(parts.find((p) => p.type === "year")?.value);
+
+  const dayHeb = numberToHebrewLetters(dayNum);
+  const yearHeb = formatHebrewYear(yearNum);
+
+  return `${weekday} ${dayHeb} ${monthName} ${yearHeb}`;
+}
 
 /** =========================
  *  הקומפוננטה הראשית
@@ -407,7 +435,28 @@ export default function CalendarModern() {
     setSelectedDateISO(iso);
     setHoveredISO(null);
   }
-
+function prev() {
+if (viewMode === "month") {
+  prevMonth();
+}
+else if (viewMode === "week") {
+  prevWeek();
+}
+else if (viewMode === "day") {
+  prevDay();
+}
+}
+function next() {
+  if (viewMode === "month") {
+    nextMonth();
+  }
+  else if (viewMode === "week") {
+    nextWeek();
+  }
+  else if (viewMode === "day") {
+    nextDay();
+  }
+}
   function prevMonth() {
     const m = viewMonth - 1;
     if (m < 0) {
@@ -423,6 +472,48 @@ export default function CalendarModern() {
       setViewYear((y) => y + 1);
     } else setViewMonth(m);
   }
+function shiftDay(deltaDays) {
+  const [y, m, d] = selectedDateISO.split("-").map(Number);
+  const base = new Date(y, m - 1, d);
+  base.setDate(base.getDate() + deltaDays);
+
+  const iso = toISODate(base);
+  setSelectedDateISO(iso);
+  setHoveredISO(null);
+
+  setViewYear(base.getFullYear());
+  setViewMonth(base.getMonth());
+}
+
+function prevDay() {
+  shiftDay(-1);
+}
+
+function nextDay() {
+  shiftDay(1);
+}
+
+function shiftWeek(deltaDays) {
+  const [y, m, d] = selectedDateISO.split("-").map(Number);
+  const base = new Date(y, m - 1, d);
+  base.setDate(base.getDate() + deltaDays);
+
+  const iso = toISODate(base);
+  setSelectedDateISO(iso);
+  setHoveredISO(null);
+
+  // כדי שהכותרות (חודש עברי/תאריך למעלה) יישארו מסונכרנות
+  setViewYear(base.getFullYear());
+  setViewMonth(base.getMonth());
+}
+
+function prevWeek() {
+  shiftWeek(-7);
+}
+
+function nextWeek() {
+  shiftWeek(7);
+}
 
   function openAdd(dateISO) {
     setEditing({
@@ -554,17 +645,22 @@ export default function CalendarModern() {
             </div>
 
             <div className="flex items-center gap-2">
-              <button onClick={prevMonth} className="px-4 py-2 rounded-full border">הקודם</button>
+              <button onClick={prev} className="px-4 py-2 rounded-full border">הקודם</button>
               <button onClick={goToToday} className="px-4 py-2 rounded-full border">היום</button>
-              <button onClick={nextMonth} className="px-4 py-2 rounded-full border">הבא</button>
+              <button onClick={next} className="px-4 py-2 rounded-full border">הבא</button>
             </div>
           </div>
 
         </div>
 
         {/* Layout */}
-        <div className="mt-10 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10">
-          {/* Calendar */}
+           <div
+               className={[
+              "mt-10 grid gap-10",
+          viewMode === "week" ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-[1fr_360px]",
+         ].join(" ")}
+        >     
+             {/* Calendar */}
 
           <section className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 min-h-[300px]">
             {viewMode === "month" && (
@@ -699,7 +795,7 @@ export default function CalendarModern() {
               </>
             )}
 
-            {viewMode === "week" && (
+            {/* {viewMode === "week" && (
               <WeeklyView
                 selectedDateISO={selectedDateISO}
                 eventsByDate={eventsByDate}
@@ -707,19 +803,33 @@ export default function CalendarModern() {
                 onOpenAdd={openAdd}
                 onOpenEdit={openEdit}
               />
-            )}
+            )} */}
+{viewMode === "week" && (
+  <WeekGridView
+  weekDates={daysInWeek(selectedDateISO)}
+    eventsByDate={eventsByDate}
+    onEdit={openEdit}
+    onOpenAdd={openAdd}
+    selectedDateISO={selectedDateISO}
+    onSelectDate={setSelectedDateISO}
+    onHoverDate={setHoveredISO}
+  />
+)}
 
-            {viewMode === "day" && (
-              <DailyView
-                selectedDateISO={selectedDateISO}
-                eventsByDate={eventsByDate}
-                onOpenAdd={openAdd}
-                onOpenEdit={openEdit}
-              />
-            )}
+         {viewMode === "day" && (
+  <DayGridView
+    selectedDateISO={selectedDateISO}
+    eventsByDate={eventsByDate}
+    onEdit={openEdit}
+    onOpenAdd={openAdd}
+    onHoverDate={setHoveredISO}
+  />
+)}
+
           </section>
           {/* Sidebar */}
-          <aside className="space-y-6">
+          {viewMode !== "week" && (
+<aside className="space-y-6">
             {/* Legend קטן בצד */}
             <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-5">
               <div className="flex items-center justify-between">
@@ -799,6 +909,8 @@ export default function CalendarModern() {
               </div>
             </div>
           </aside>
+)}
+          
         </div>
       </div>
 
@@ -863,6 +975,18 @@ className="mt-2 text-sm text-blue-600 underline"
 /** =========================
 *   סרגל שעות לתצוגה שבועית
 * ========================= */
+function daysInWeek(dateISO) {
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const base = new Date(y, m - 1, d);
+  const weekStart = new Date(base);
+  weekStart.setDate(base.getDate() - weekStart.getDay()); // Sunday (א)
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const dd = new Date(weekStart);
+    dd.setDate(weekStart.getDate() + i);
+    return toISODate(dd);
+  });
+}
 
 function WeeklyTimeline({ eventsByDate, weekDates, onEdit }) {
   const hourHeight = 50;
@@ -1054,6 +1178,508 @@ function DayTimeline({ events, onEdit }) {
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/** =========================
+* קומפוננטה: WeekGridView
+* ========================= */
+function WeekGridView({
+  weekDates,
+  selectedDateISO,
+  eventsByDate,
+  onEdit,
+  onOpenAdd,
+  onSelectDate,
+  onHoverDate,
+}) {
+  const startHour = 8;
+  const endHour = 24;
+
+  const rowHeight = 52;
+  const bodyHeight = (endHour - startHour) * rowHeight;
+
+  const todayISO = toISODate(new Date());
+
+  const parseTime = (timeStr) => {
+    if (!timeStr || typeof timeStr !== "string") return null;
+    const [h, m] = timeStr.split(":").map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h + m / 60;
+  };
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  // כותרת עברית (יום+חודש)
+  const hebHeaderForISO = (iso) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const parts = hebFullFormatter.formatToParts(dateObj);
+    const dayNum = Number(parts.find((p) => p.type === "day")?.value);
+    const monthName = parts.find((p) => p.type === "month")?.value || "";
+    const dayHeb = numberToHebrewLetters(dayNum);
+    return `${dayHeb} ${monthName}`;
+  };
+
+  const dayLetter = (iso) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    const jsDay = new Date(y, m - 1, d).getDay();
+    const map = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
+    return map[jsDay] || "";
+  };
+
+  const isShabbatISO = (iso) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d).getDay() === 6;
+  };
+
+  // חפיפות: layout
+  const layoutDayEvents = (dayEvents) => {
+    const items = dayEvents
+      .map((ev) => {
+        const s0 = parseTime(ev.time_start);
+        const e0 = parseTime(ev.time_end);
+        if (s0 == null || e0 == null) return null;
+
+        const s1 = Math.min(s0, e0);
+        const e1 = Math.max(s0, e0);
+
+        if (e1 <= startHour || s1 >= endHour) return null;
+
+        const start = clamp(s1, startHour, endHour);
+        const end = clamp(e1, startHour, endHour);
+
+        return { ev, start, end };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.start - b.start || a.end - b.end);
+
+    const clusters = [];
+    let current = [];
+    let clusterEnd = -Infinity;
+
+    for (const it of items) {
+      if (current.length === 0) {
+        current = [it];
+        clusterEnd = it.end;
+        continue;
+      }
+      if (it.start < clusterEnd) {
+        current.push(it);
+        clusterEnd = Math.max(clusterEnd, it.end);
+      } else {
+        clusters.push(current);
+        current = [it];
+        clusterEnd = it.end;
+      }
+    }
+    if (current.length) clusters.push(current);
+
+    const result = [];
+    for (const cluster of clusters) {
+      const colEnd = [];
+      const placed = [];
+
+      for (const it of cluster) {
+        let col = -1;
+        for (let i = 0; i < colEnd.length; i++) {
+          if (it.start >= colEnd[i]) {
+            col = i;
+            break;
+          }
+        }
+        if (col === -1) {
+          col = colEnd.length;
+          colEnd.push(it.end);
+        } else {
+          colEnd[col] = it.end;
+        }
+        placed.push({ it, colIndex: col });
+      }
+
+      const colsInCluster = colEnd.length;
+      for (const p of placed) {
+        const top = (p.it.start - startHour) * rowHeight;
+        const height = Math.max((p.it.end - p.it.start) * rowHeight, 26);
+        result.push({
+          ev: p.it.ev,
+          top,
+          height,
+          colIndex: p.colIndex,
+          colsInCluster,
+        });
+      }
+    }
+
+    return result;
+  };
+
+  const hours = useMemo(
+    () => Array.from({ length: endHour - startHour }, (_, i) => startHour + i),
+    []
+  );
+
+  return (
+    <div className="w-full bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden" dir="rtl">
+      <div
+        className="grid"
+        style={{
+          // שעות מימין (ב־RTL זה יוצא מימין)
+          gridTemplateColumns: `90px repeat(7, minmax(0, 1fr))`,
+        }}
+      >
+        {/* Header שעות (ריק) */}
+        <div className="border-b border-gray-200 bg-white" />
+
+        {/* Header ימים */}
+        {weekDates.map((iso) => {
+          const isToday = iso === todayISO;
+          const isSelected = iso === selectedDateISO;
+          const isShabbat = isShabbatISO(iso);
+
+          return (
+            <div
+              key={iso}
+              onMouseEnter={() => onHoverDate?.(iso)}
+              onMouseLeave={() => onHoverDate?.(null)}
+              onClick={() => onSelectDate?.(iso)}
+              className={[
+                "group relative border-b border-gray-200 border-l border-gray-200",
+                "bg-white px-3 py-3 text-center cursor-pointer transition-all",
+                "hover:shadow-md hover:-translate-y-0.5",
+                isSelected ? "ring-2 ring-[#295f8b] ring-inset" : "",
+                isToday ? "bg-[#295f8b]/5" : "",
+                isShabbat ? "bg-[#295f8b]/10" : "",
+              ].join(" ")}
+            >
+              {isShabbat && (
+                <div className="absolute top-2 left-2">
+                  <ShabbatCandlesIcon />
+                </div>
+              )}
+
+              <div className="font-bold text-gray-900 text-base">{dayLetter(iso)}</div>
+              <div className="text-sm font-semibold text-gray-700">{hebHeaderForISO(iso)}</div>
+
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelectDate?.(iso);
+                  onOpenAdd?.(iso);
+                }}
+                className="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#295f8b] text-white text-lg font-bold hover:bg-[#1e4a6b] transition"
+                title="הוספת אירוע"
+                aria-label="הוספת אירוע"
+                type="button"
+              >
+                +
+              </button>
+
+              {isToday && (
+                <span className="absolute bottom-2 left-2 px-2 py-1 rounded-full bg-[#295f8b]/10 text-[#295f8b] text-xs font-extrabold">
+                  היום
+                </span>
+              )}
+            </div>
+          );
+        })}
+
+        {/* גוף: עמודת שעות (ללא פסים/קווי שעה) */}
+        <div className="bg-white" style={{ height: bodyHeight }}>
+          {hours.map((h) => (
+            <div
+              key={h}
+              className="flex items-start justify-center pt-3 text-sm font-bold text-gray-700"
+              style={{ height: rowHeight }}
+            >
+              {String(h).padStart(2, "0")}:00
+            </div>
+          ))}
+        </div>
+
+        {/* גוף: עמודות ימים — בלי קווי שעות אופקיים */}
+        {weekDates.map((iso) => {
+          const isToday = iso === todayISO;
+          const isSelected = iso === selectedDateISO;
+          const isShabbat = isShabbatISO(iso);
+
+          const dayEvents = eventsByDate.get(iso) || [];
+          const layout = layoutDayEvents(dayEvents);
+
+          return (
+            <div
+              key={iso}
+              onMouseEnter={() => onHoverDate?.(iso)}
+              onMouseLeave={() => onHoverDate?.(null)}
+              onClick={() => onSelectDate?.(iso)}
+              className={[
+                "group relative border-l border-gray-200 cursor-pointer transition-all",
+                "hover:shadow-md hover:-translate-y-0.5",
+                isSelected ? "ring-2 ring-[#295f8b] ring-inset" : "",
+                isToday ? "bg-[#295f8b]/5" : "bg-white",
+                isShabbat ? "bg-[#295f8b]/5" : "",
+              ].join(" ")}
+              style={{ height: bodyHeight }}
+            >
+              {layout.map(({ ev, top, height, colIndex, colsInCluster }) => {
+                const gap = 6;
+                const widthPct = 100 / colsInCluster;
+
+                return (
+                  <button
+                    key={ev.id}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onEdit(ev);
+                    }}
+                    className="absolute rounded-xl text-white text-xs font-bold px-2 py-2 shadow-md overflow-hidden hover:brightness-110 transition"
+                    style={{
+                      top,
+                      height,
+                      backgroundColor: getTypeColor(ev.type),
+                      width: `calc(${widthPct}% - ${gap * 2}px)`,
+                      right: `calc(${colIndex * widthPct}% + ${gap}px)`,
+                    }}
+                    title={`${ev.title} • ${ev.time_start || ""}-${ev.time_end || ""}`}
+                    type="button"
+                  >
+                    <div className="truncate">{ev.title}</div>
+                    <div className="text-[11px] font-semibold opacity-90">
+                      {ev.time_start} - {ev.time_end}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+/** =========================
+* קומפוננטה: DayGridView
+* ========================= */
+function DayGridView({
+  selectedDateISO,
+  eventsByDate,
+  onEdit,
+  onOpenAdd,
+  onHoverDate, // אופציונלי: כדי לעדכן topDate למעלה כמו חודש/שבוע
+}) {
+  const startHour = 8;
+  const endHour = 24;
+
+  const rowHeight = 52;
+  const bodyHeight = (endHour - startHour) * rowHeight;
+
+  const todayISO = toISODate(new Date());
+
+  const parseTime = (timeStr) => {
+    if (!timeStr || typeof timeStr !== "string") return null;
+    const [h, m] = timeStr.split(":").map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h + m / 60;
+  };
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  const hours = useMemo(
+    () => Array.from({ length: endHour - startHour }, (_, i) => startHour + i),
+    []
+  );
+
+  // כותרת עברית ליום
+  const hebHeaderForISO = (iso) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const parts = hebFullFormatter.formatToParts(dateObj);
+    const dayNum = Number(parts.find((p) => p.type === "day")?.value);
+    const monthName = parts.find((p) => p.type === "month")?.value || "";
+    const yearNum = Number(parts.find((p) => p.type === "year")?.value);
+    const dayHeb = numberToHebrewLetters(dayNum);
+    const yearHeb = formatHebrewYear(yearNum);
+    return `${dayHeb} ${monthName} ${yearHeb}`;
+  };
+
+  // חפיפות באותו יום (מקביל) – כמו בשבוע
+  const layoutDayEvents = (dayEvents) => {
+    const items = dayEvents
+      .map((ev) => {
+        const s0 = parseTime(ev.time_start);
+        const e0 = parseTime(ev.time_end);
+        if (s0 == null || e0 == null) return null;
+
+        const s1 = Math.min(s0, e0);
+        const e1 = Math.max(s0, e0);
+
+        if (e1 <= startHour || s1 >= endHour) return null;
+
+        const start = clamp(s1, startHour, endHour);
+        const end = clamp(e1, startHour, endHour);
+
+        return { ev, start, end };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.start - b.start || a.end - b.end);
+
+    const clusters = [];
+    let current = [];
+    let clusterEnd = -Infinity;
+
+    for (const it of items) {
+      if (current.length === 0) {
+        current = [it];
+        clusterEnd = it.end;
+        continue;
+      }
+      if (it.start < clusterEnd) {
+        current.push(it);
+        clusterEnd = Math.max(clusterEnd, it.end);
+      } else {
+        clusters.push(current);
+        current = [it];
+        clusterEnd = it.end;
+      }
+    }
+    if (current.length) clusters.push(current);
+
+    const result = [];
+    for (const cluster of clusters) {
+      const colEnd = [];
+      const placed = [];
+
+      for (const it of cluster) {
+        let col = -1;
+        for (let i = 0; i < colEnd.length; i++) {
+          if (it.start >= colEnd[i]) {
+            col = i;
+            break;
+          }
+        }
+        if (col === -1) {
+          col = colEnd.length;
+          colEnd.push(it.end);
+        } else {
+          colEnd[col] = it.end;
+        }
+        placed.push({ it, colIndex: col });
+      }
+
+      const colsInCluster = colEnd.length;
+      for (const p of placed) {
+        const top = (p.it.start - startHour) * rowHeight;
+        const height = Math.max((p.it.end - p.it.start) * rowHeight, 26);
+        result.push({
+          ev: p.it.ev,
+          top,
+          height,
+          colIndex: p.colIndex,
+          colsInCluster,
+        });
+      }
+    }
+
+    return result;
+  };
+
+  const dayEvents = eventsByDate.get(selectedDateISO) || [];
+  const layout = layoutDayEvents(dayEvents);
+
+  const isToday = selectedDateISO === todayISO;
+
+  return (
+    <div
+      className={[
+        "w-full bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden",
+        isToday ? "ring-2 ring-[#295f8b]/30" : "",
+      ].join(" ")}
+      dir="rtl"
+      onMouseEnter={() => onHoverDate?.(selectedDateISO)}
+      onMouseLeave={() => onHoverDate?.(null)}
+    >
+      {/* Header יום */}
+      <div className="relative border-b border-gray-200 bg-white px-4 py-4">
+        <div className="text-center">
+          <div className="text-xl font-bold text-gray-900">{fullHebDayTitleFromISO(selectedDateISO)}</div>
+          {/* אם תרצי להשאיר גם ISO קטן: */}
+          {/* <div className="text-sm font-semibold text-gray-500">{selectedDateISO}</div> */}
+        </div>
+
+        <button
+          onClick={() => onOpenAdd?.(selectedDateISO)}
+          className="absolute top-3 right-3 inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#295f8b] text-white text-xl font-bold hover:bg-[#1e4a6b] transition"
+          title="הוספת אירוע"
+          type="button"
+        >
+          +
+        </button>
+
+        {isToday && (
+          <span className="absolute bottom-3 left-3 px-2 py-1 rounded-full bg-[#295f8b]/10 text-[#295f8b] text-xs font-extrabold">
+            היום
+          </span>
+        )}
+      </div>
+
+      {/* גוף: שעות + עמודת אירועים */}
+      <div
+        className="grid"
+        style={{
+          // שעות מימין (ב־RTL זה מימין)
+          gridTemplateColumns: `90px 1fr`,
+        }}
+      >
+        {/* עמודת שעות */}
+        <div className="bg-white" style={{ height: bodyHeight }}>
+          {hours.map((h) => (
+            <div
+              key={h}
+              className="flex items-start justify-center pt-3 text-sm font-bold text-gray-700"
+              style={{ height: rowHeight }}
+            >
+              {String(h).padStart(2, "0")}:00
+            </div>
+          ))}
+        </div>
+
+        {/* אזור אירועים (ללא פסים אופקיים, כמו השבועי אחרי ההורדה) */}
+        <div className="relative border-r border-gray-200 bg-white" style={{ height: bodyHeight }}>
+          {layout.map(({ ev, top, height, colIndex, colsInCluster }) => {
+            const gap = 8;
+            const widthPct = 100 / colsInCluster;
+
+            return (
+              <button
+                key={ev.id}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit(ev);
+                }}
+                className="absolute rounded-xl text-white text-xs font-bold px-2 py-2 shadow-md overflow-hidden hover:brightness-110 transition"
+                style={{
+                  top,
+                  height,
+                  backgroundColor: getTypeColor(ev.type),
+                  width: `calc(${widthPct}% - ${gap * 2}px)`,
+                  right: `calc(${colIndex * widthPct}% + ${gap}px)`,
+                }}
+                title={`${ev.title} • ${ev.time_start || ""}-${ev.time_end || ""}`}
+                type="button"
+              >
+                <div className="truncate">{ev.title}</div>
+                <div className="text-[11px] font-semibold opacity-90">
+                  {ev.time_start} - {ev.time_end}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
