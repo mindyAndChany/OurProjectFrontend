@@ -129,9 +129,10 @@ const items = [
     bg: "bg-[#295f8b] text-white",
   },
   {
-    title: "אירועים",
+    title: "מערכת שעות",
     icon: taskDone02,
     bg: "bg-[#d8cdc2]",
+    to: "/schedule",
   },
   {
     title: "לוח שנה",
