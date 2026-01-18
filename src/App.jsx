@@ -4,7 +4,7 @@ import Routing from './Routing.jsx';
 
 function App() {
   useEffect(() => {
-    console.log("URL:", process.env.REACT_APP_BACKEND_URL);
+    console.log("URL:", import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000');
   }, []);
 
   return <Routing />;

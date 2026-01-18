@@ -8,7 +8,8 @@ const navItems = [
   { to: "/Kattendence", label: "נוכחות" },
   { to: "/Calendar", label: "לוח שנה" },
   { to: "/Equipments", label: "השאלת ציוד" },
-  { to: "/Approvals", label: "אישורים" }
+  { to: "/Approvals", label: "אישורים" },
+  { to: "/schedule", label: "מערכת" }
 ];
 
 export default function Navbar() {

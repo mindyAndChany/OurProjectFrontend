@@ -1,93 +1,84 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect } from "react";
 import { getStudentDataThunk } from "../redux/slices/STUDENTS/getStudentDataThunk";
+import { motion } from "framer-motion";
 import * as XLSX from "xlsx";
+import { FileDown, Printer, FileUp,UserRoundPlus ,UserPen } from "lucide-react";
+import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { TextField, Button, IconButton } from "@mui/material";
 import { addStudentsThunk } from "../redux/slices/STUDENTS/addStudentsThunk";
-
+import { updateStudentThunk } from "../redux/slices/STUDENTS/updateStudentThunk";
 
 const normalizeKey = (key) =>
-  key
-    .replace(/\u200f|\u200e/g, '') // הסרת תווי RTL חבויים
-    .replace(/\s+/g, ' ')          // המרת רווחים כפולים
-    .trim();
+    key
+        .replace(/\u200f|\u200e/g, '') // הסרת תווי RTL חבויים
+        .replace(/\s+/g, ' ')          // המרת רווחים כפולים
+        .trim();
 
 const handleExcelImport = (event, dispatch) => {
-  console.log("📥 התחלת ייבוא קובץ אקסל...");
+    console.log("📥 התחלת ייבוא קובץ אקסל...");
 
-  const file = event.target.files[0];
-  if (!file) return;
+    const file = event.target.files[0];
+    if (!file) return;
 
-  const reader = new FileReader();
+    const reader = new FileReader();
 
-  reader.onload = () => {
-    try {
-      const data = new Uint8Array(reader.result);
-      const workbook = XLSX.read(data, { type: "array" });
+    reader.onload = () => {
+        try {
+            const data = new Uint8Array(reader.result);
+            const workbook = XLSX.read(data, { type: "array" });
 
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-      if (rows.length === 0) {
-        console.warn("❗ הקובץ ריק או ללא שורות נתונים");
-        return;
-      }
+            if (rows.length === 0) {
+                console.warn("❗ הקובץ ריק או ללא שורות נתונים");
+                return;
+            }
 
-      // בדיקת כותרות
-      const headers = Object.keys(rows[0]).map(normalizeKey);
-      const unknownHeaders = headers.filter((h) => !fieldsDict[h]);
-      if (unknownHeaders.length > 0) {
-        console.warn("⚠️ כותרות לא מזוהות:", unknownHeaders);
-      }
+            // בדיקת כותרות
+            const headers = Object.keys(rows[0]).map(normalizeKey);
+            const unknownHeaders = headers.filter((h) => !fieldsDict[h]);
+            if (unknownHeaders.length > 0) {
+                console.warn("⚠️ כותרות לא מזוהות:", unknownHeaders);
+            }
 
-      // מיפוי שורות
-      const mappedStudents = rows.map((row, i) => {
-        const newStudent = {};
-        Object.entries(row).forEach(([key, value]) => {
-          const normKey = normalizeKey(key);
-          const field = fieldsDict[normKey];
-          if (field && value !== "") {
-            newStudent[field] = value;
-          }
-        });
-        return newStudent;
-      });
+            // מיפוי שורות
+            const mappedStudents = rows.map((row, i) => {
+                const newStudent = {};
+                Object.entries(row).forEach(([key, value]) => {
+                    const normKey = normalizeKey(key);
+                    const field = fieldsDict[normKey];
+                    if (field && value !== "") {
+                        newStudent[field] = value;
+                    }
+                });
+                return newStudent;
+            });
 
-      // סינון אובייקטים ריקים
-      const filtered = mappedStudents.filter((s) => Object.keys(s).length > 0);
+            // סינון אובייקטים ריקים
+            const filtered = mappedStudents.filter((s) => Object.keys(s).length > 0);
 
-      if (filtered.length === 0) {
-        console.warn("❗ כל השורות ריקות אחרי מיפוי – ודא שהכותרות נכונות");
-        return;
-      }
+            if (filtered.length === 0) {
+                console.warn("❗ כל השורות ריקות אחרי מיפוי – ודא שהכותרות נכונות");
+                return;
+            }
 
-      console.log(`✅ ${filtered.length} תלמידים ייובאו:`, filtered);
-      dispatch(addStudentsThunk(filtered));
+            console.log(`✅ ${filtered.length} תלמידים ייובאו:`, filtered);
+            dispatch(addStudentsThunk(filtered));
 
-    } catch (err) {
-      console.error("❌ שגיאה בקריאת הקובץ:", err);
-    }
-  };
+        } catch (err) {
+            console.error("❌ שגיאה בקריאת הקובץ:", err);
+        }
+    };
 
-  reader.readAsArrayBuffer(file);
+    reader.readAsArrayBuffer(file);
 };
 
 
 
 // רשימת כל השדות
-const fieldOptions = [
-    "first_name", "last_name", "id_number", "phone", "marital_status", "address",
-    "registration_year", "is_graduate", "class_kodesh", "class_teaching",
-    "track", "track2", "track3", "payment_status", "paid_amount", "birthdate_gregorian",
-    "birthdate_hebrew", "married_date", "married_name", "notes", "city_he", "zipcode",
-    "landline", "father_name_he", "father_mobile_he", "mother_name_he", "mother_mobile_he",
-    "bookshelf", "perach", "external_mother", "external_father", "birth_country",
-    "personal_mobile", "nickname", "serial_number"
-];
-
-
-
 
 const fieldsDict = {
     "ת. זהות": "id_number",
@@ -110,7 +101,6 @@ const fieldsDict = {
     "התמתחות נוספת": "track2",
     "אופציה ב": "track3",
     " מצב אישי": "marital_status",
-    "הוראה": "class_teaching",
     "מדפית": "bookshelf",
     "הערות": "notes",
     "פרח": "perach",
@@ -126,22 +116,71 @@ const fieldsDict = {
     "א. תשלום": "Payment method"
 }
 
+const fieldOptions = [...new Set(Object.values(fieldsDict))];
+
 const fieldsDictHeb = Object.fromEntries(
     Object.entries(fieldsDict).map(([he, en]) => [en, he])
 );
 
-// תא טבלה
+
+const fieldGroups = {
+    basic: [ "id_number","first_name", "last_name", "class_kodesh"],
+    personal: [
+         "id_number", "first_name", "last_name","phone", "marital_status", "address",
+        "father_name_he", "father_mobile_he", "mother_name_he", "mother_mobile_he", "class_kodesh"
+    ],
+    payments: ["id_number", "first_name", "last_name", "payment_status", "paid_amount", "class_kodesh"],
+    phonebook: ["id_number", "first_name", "last_name", "phone", "class_kodesh"]
+};
+
+const filterFields = ["id_number", "class_kodesh", "first_name", "last_name"];
+
+const fieldLabels = {
+    id_number: "ת.ז.",
+    first_name: "שם פרטי",
+    last_name: "שם משפחה",
+    phone: "טלפון",
+    marital_status: "מצב אישי",
+    address: "כתובת",
+    father_name_he: "שם אבא",
+    father_mobile_he: "נייד אבא",
+    mother_name_he: "שם אמא",
+    mother_mobile_he: "נייד אמא",
+    payment_status: "סטטוס תשלום",
+    paid_amount: "סכום שולם",
+    class_kodesh: "כיתה"
+};
+
 const Cell = ({ children }) => (
-    <td className="border border-black px-4 py-2 text-center">{children || "-"}</td>
+    <td className="border border-gray-300 px-4 py-2 text-center text-sm">{children || "-"}</td>
 );
 
+const initialNewStudent = Object.fromEntries(
+  Object.values(fieldsDict).map((key) => [key, ""])
+);
+
+
 const StudentsTable = () => {
-    const [selectedFields, setSelectedFields] = useState([
-        "first_name", "last_name", "id_number"
-    ]);
-    const [students, setStudents] = useState([]);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
     const dispatch = useDispatch();
+
+    const allStudentData = useSelector((state) => state.student.studentsData);
+    const [selectedFields, setSelectedFields] = useState(fieldGroups.basic);
+    const [students, setStudents] = useState([]);
+    const [selectedGroup, setSelectedGroup] = useState("basic");
+    const [filters, setFilters] = useState({});
+const [newStudent, setNewStudent] = useState(initialNewStudent);
+    const [open, setOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+const [studentToEdit, setStudentToEdit] = useState(null);
+
+
+
+    const fileInputRef = useRef(null);
+
+    const uploadExcel = () => {
+        fileInputRef.current?.click();
+    };
 
     const toggleField = (field) => {
         setSelectedFields((prev) =>
@@ -151,7 +190,6 @@ const StudentsTable = () => {
         );
     };
 
-    const allStudentData = useSelector((state) => state.student.studentsData);
 
     // קריאה לשרת
     const fetchData = async () => {
@@ -163,87 +201,247 @@ const StudentsTable = () => {
         }
     };
 
-    // סינון הנתונים מה־slice
     useEffect(() => {
-        if (Array.isArray(allStudentData) && allStudentData.length > 0) {
-            const filtered = allStudentData.map((student) => {
-                const result = {};
-                selectedFields.forEach((f) => result[f] = student[f]);
-                return result;
-            });
-            setStudents(filtered); // state מקומי
+        const categories = selectedFields.join(',');
+        dispatch(getStudentDataThunk(categories));
+    }, [selectedFields]);
+
+    useEffect(() => {
+        if (Array.isArray(allStudentData)) {
+            const filtered = allStudentData
+                .filter((student) => {
+                    return Object.entries(filters).every(([field, value]) => {
+                        if (!value) return true;
+                        return student[field]?.toString().includes(value);
+                    });
+                })
+                .map((student) => {
+                    const result = {};
+                    selectedFields.forEach((f) => result[f] = student[f]);
+                    return result;
+                });
+            setStudents(filtered);
         }
-    }, [allStudentData, selectedFields]);
+    }, [allStudentData, selectedFields, filters]);
+
+    const handleGroupChange = (group) => {
+        setSelectedGroup(group);
+        setSelectedFields(fieldGroups[group]);
+    };
+
+    const handleFilterChange = (field, value) => {
+        setFilters((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const exportToExcel = () => {
+        const translated = students.map((student) => {
+            const row = {};
+            selectedFields.forEach((field) => {
+                row[fieldLabels[field] || field] = student[field];
+            });
+            return row;
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(translated);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+        XLSX.writeFile(workbook, "students_data.xlsx");
+    };
+
+    const printTable = () => {
+        const printWindow = window.open("", "_blank");
+        const tableHTML = document.getElementById("students-table").outerHTML;
+        printWindow.document.write(`
+      <html>
+      <head><title>הדפסת טבלה</title></head>
+      <body dir="rtl" style="font-family:sans-serif;">${tableHTML}</body>
+      </html>
+    `);
+        printWindow.document.close();
+        printWindow.print();
+    };
+
+   const handleAddStudent = () => {
+    console.log("try adding student",newStudent);
+    
+    dispatch(addStudentsThunk([newStudent]));
+    setNewStudent(initialNewStudent);
+    setOpen(false); // לסגור את הדיאלוג אחרי ההוספה
+};
+
 
     return (
         <div className="pt-28 p-6 [direction:rtl] font-sans bg-gray-100 min-h-screen">
+            <div className="mb-6 space-y-6 max-w-6xl mx-auto">
 
-            {/* תפריט שדות */}
-            <div className="mb-6 max-w-5xl">
-                <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="bg-[#584041] text-white rounded px-4 py-2 hover:bg-[#6d5455]"
-                >
-                    בחירת שדות להצגה
-                </button>
+                <motion.div className="flex gap-4 flex-wrap justify-start items-center"
+                    initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+                    <button
+                        onClick={() => handleGroupChange('basic')}
+                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'basic' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    >נתונים בסיסיים</button>
+                    <button
+                        onClick={() => handleGroupChange('personal')}
+                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'personal' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    >נתונים אישיים</button>
+                    <button
+                        onClick={() => handleGroupChange('payments')}
+                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'payments' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    >פרטי תשלומים</button>
+                    <button
+                        onClick={() => handleGroupChange('phonebook')}
+                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'phonebook' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    >אלפון</button>
 
-                {isDropdownOpen && (
-                    <div className="mt-4 bg-white border border-black rounded p-4 shadow-lg">
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[400px] overflow-y-auto">
-                            {fieldOptions.map((field) => (
-                                <label key={fieldsDictHeb[field] || field} className="flex items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedFields.includes(field)}
-                                        onChange={() => toggleField(field)}
-                                        className="w-4 h-4 appearance-auto accent-blue-600 cursor-pointer"
-                                    />
+                    <button
+                        onClick={exportToExcel}
+                        className="p-2 rounded-full hover:bg-gray-200 transition"
+                        title="יצוא לאקסל"
+                    >
+                        <FileDown className="w-5 h-5" />
+                    </button>
+
+                    <button
+                        onClick={uploadExcel}
+                        className="p-2 rounded-full hover:bg-gray-200 transition"
+                        title="ייבוא מאקסל"
+                    >
+                        <FileUp className="w-5 h-5" />
+                    </button>
+
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept=".xlsx, .xls"
+                        onChange={(event) => handleExcelImport(event, dispatch)}
+                        className="hidden"
+                    />
+
+                    <button
+                        onClick={printTable}
+                        className="p-2 rounded-full hover:bg-gray-200 transition"
+                        title="הדפסה"
+                    >
+                        <Printer className="w-5 h-5" />
+                    </button>
+                     <button
+                        onClick={() => setOpen(true)}
+                        className="p-2 rounded-full hover:bg-gray-200 transition"
+                        title="הוספת תלמידה"
+                    >
+                        <UserRoundPlus className="w-5 h-5" />
+                    </button>
+
+<Dialog open={open} onClose={() => setOpen(false)}>
+                        <DialogContent className="space-y-4 rtl text-right">
+                            <h2 className="text-lg font-semibold mb-2">פרטי תלמידה חדשה</h2>
+                           {Object.keys(fieldsDictHeb).map((key) => (
+  <TextField
+    key={key}
+    label={fieldsDictHeb[key] || key}
+    value={newStudent[key]}
+    onChange={(e) =>
+      setNewStudent((prev) => ({ ...prev, [key]: e.target.value }))
+    }
+    fullWidth
+    variant="outlined"
+    size="small"
+  />
+))}
 
 
+                            <Button onClick={handleAddStudent}>שמור</Button>
+                        </DialogContent>
+                    </Dialog>
 
+                </motion.div>
 
-                                    {fieldsDictHeb[field] || field}
-                                </label>
-                            ))}
-                        </div>
-                        <button
-                            onClick={fetchData}
-                            className="mt-4 bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700"
-                        >
-                            הצג נתונים
-                        </button>
-                    </div>
-                )}
+                <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+                    {filterFields.map((field) => (
+                        <input
+                            key={field}
+                            type="text"
+                            placeholder={`סנן לפי ${fieldLabels[field] || field}`}
+                            value={filters[field] || ""}
+                            onChange={(e) => handleFilterChange(field, e.target.value)}
+                            className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
+                        />
+                    ))}
+                </motion.div>
             </div>
 
-            {/* טבלה */}
-            {students.length > 0 && selectedFields.length > 0 && (
-                <div className="overflow-auto max-w-full">
-                    <table className="min-w-full mt-6 border-collapse border border-black text-sm text-right bg-white">
+            {students.length > 0 && (
+                <motion.div className="overflow-auto max-w-full"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+                    <table id="students-table" className="min-w-full mt-6 border-collapse border border-gray-400 text-sm text-right bg-white shadow rounded-xl overflow-hidden">
                         <thead>
-                            <tr className="bg-[#584041] text-white">
+                            <tr className="bg-[#0A3960] text-white">
+                                <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>עריכה</th>
                                 {selectedFields.map((field) => (
-                                    <th key={field} className="border border-black px-4 py-2">
-                                        {fieldsDictHeb[field] || field}
+                                    <th key={field} className="border border-gray-300 px-4 py-2">
+                                        {fieldLabels[field] || field}
                                     </th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
                             {students.map((student, idx) => (
-                                <tr key={idx}>
+                                <motion.tr key={idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.03 }}>
+                                    <Cell style={{ width: "80px", minWidth: "80px" }}>
+  <IconButton onClick={() => {
+setStudentToEdit({ ...initialNewStudent, ...student });
+    setEditDialogOpen(true);
+  }}>
+    <UserPen />
+  </IconButton>
+</Cell>
+
                                     {selectedFields.map((field) => (
-                                        <Cell key={fieldsDictHeb[field] || field}>{student[field]}</Cell>
+                                        <Cell key={field}>{student[field]}</Cell>
                                     ))}
-                                </tr>
+                                </motion.tr>
                             ))}
                         </tbody>
                     </table>
-                </div>
+                </motion.div>
             )}
+            <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
+  <DialogTitle>עריכת תלמידה</DialogTitle>
+  <DialogContent className="space-y-4 rtl text-right">
+    {studentToEdit &&
+      Object.keys(initialNewStudent).map((key) => (
+        <TextField
+          key={key}
+          label={fieldLabels[key] || key}
+          value={studentToEdit[key] || ""}
+          onChange={(e) =>
+            setStudentToEdit((prev) => ({
+              ...prev,
+              [key]: e.target.value,
+            }))
+          }
+          fullWidth
+          variant="outlined"
+          size="small"
+          disabled={key === "id_number"} // שדה ת"ז לא ניתן לעריכה
+        />
+      ))}
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setEditDialogOpen(false)}>ביטול</Button>
+    <Button
+      onClick={() => {
+        dispatch(updateStudentThunk(studentToEdit));
+        setEditDialogOpen(false);
+      }}
+    >
+      שמירה
+    </Button>
+  </DialogActions>
+</Dialog>
 
-
-            <div className="mt-14 max-w-2xl ">
+            {/* <div className="mt-14 max-w-2xl ">
                 <label className="block mb-2 text-sm font-medium text-gray-700">
                     ייבוא תלמידות מאקסל:
                 </label>
@@ -253,11 +451,9 @@ const StudentsTable = () => {
                     onChange={(event) => handleExcelImport(event, dispatch)}
                     className="block w-full text-sm text-gray-900 bg-gray-50 border border-gray-300 rounded cursor-pointer focus:outline-none"
                 />
-            </div>
+            </div> */}
 
         </div>
-
-
     );
 };
 

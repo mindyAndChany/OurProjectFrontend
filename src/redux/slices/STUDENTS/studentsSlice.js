@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { getStudentDataThunk } from "./getStudentDataThunk.js";
 import { addStudentsThunk } from "./addStudentsThunk.js";
+import { updateStudentThunk } from "./updateStudentThunk.js";
 
 export const INITIAL_STATE_STUDENTS = {
   studentsData: []
@@ -32,6 +33,23 @@ export const studentSlice = createSlice({
       })
       .addCase(addStudentsThunk.rejected, (state, action) => {
         console.log("addStudents error:", action.error);
+      })
+      .addCase(updateStudentThunk.pending, (state) => {
+        console.log("updateStudents start");
+      })
+      .addCase(updateStudentThunk.fulfilled, (state, action) => {
+        const updatedStudent = action.payload;
+        const index = state.studentsData.findIndex(s => s.id === updatedStudent.id);
+        if (index !== -1) {
+          state.studentsData[index] = updatedStudent;
+        } else {
+          state.studentsData.push(updatedStudent);
+        }
+        console.log("updateStudents success:", updatedStudent);
+      })
+
+      .addCase(updateStudentThunk.rejected, (state, action) => {
+        console.log("updateStudents error:", action.error);
       });
   }
 });

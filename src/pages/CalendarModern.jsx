@@ -148,7 +148,8 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete ,
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-bold text-gray-800 mb-2">שעת התחלה</label>
+              <label   type="time"
+             className="block text-sm font-bold text-gray-800 mb-2">שעת התחלה</label>
               <input
                 value={editing.time_start}
                 onChange={(e) => onChange({ ...editing, time_start: e.target.value })}
@@ -158,7 +159,8 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete ,
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-bold text-gray-800 mb-2">שעת סיום</label>
+              <label   type="time"
+                     className="block text-sm font-bold text-gray-800 mb-2">שעת סיום</label>
               <input
                 value={editing.time_end}
                 onChange={(e) => onChange({ ...editing, time_end: e.target.value })}
