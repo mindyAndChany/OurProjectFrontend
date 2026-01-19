@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
+
 import Welcome from './pages/Welcome.jsx';
 import HomePage from './pages/HomePage.jsx';
 import Login from './pages/Login.jsx';

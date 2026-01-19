@@ -19,6 +19,7 @@ export const addRealyLessonThunk = createAsyncThunk(
     try {
       // Attempt to persist to backend if available
       const res = await fetch("https://ourprojectbackend-1.onrender.com/api/lessons", {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(lessonPayload),
