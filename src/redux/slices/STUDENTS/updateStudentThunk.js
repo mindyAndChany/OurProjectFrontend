@@ -9,7 +9,7 @@ export const updateStudentThunk = createAsyncThunk(
       
       console.log("updatethunk trying");
       
-      const res = await fetch(`http://localhost:4000/api/studentsData/updateStudent/${id}`, {
+      const res = await fetch(`https://ourprojectbackend-1.onrender.com/api/studentsData/updateStudent/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
