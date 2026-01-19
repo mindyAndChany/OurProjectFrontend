@@ -5,6 +5,7 @@ import heLocale from 'date-fns/locale/he';
 import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
 import { getweeklySchedulesThunk } from "../redux/slices/SCHEDULE/getScheduleThunk";
 import { addRealyLessonThunk } from "../redux/slices/LESSONS/addRealyLessonThunk";
+import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
 
 /**
  * קומפוננטת מערכת שבועית - מציגה את לוח השעות של כל הכיתות או כיתה ספציפית
@@ -31,6 +32,7 @@ export default function ScheduleViewer() {
   useEffect(() => {
     dispatch(getClassesThunk());
     dispatch(getweeklySchedulesThunk());
+    dispatch(getLessonsThunk());
   }, [dispatch]);
 
 
