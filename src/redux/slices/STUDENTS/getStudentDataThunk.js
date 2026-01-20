@@ -4,6 +4,8 @@ export const getStudentDataThunk = createAsyncThunk(
   'getstudentData',
   async (categories) => {
     const encodedCategories = encodeURIComponent(categories);
+    console.log(`https://ourprojectbackend-1.onrender.com/api/studentsData/getstudentData/${encodedCategories}`);
+    
     const res = await fetch(`https://ourprojectbackend-1.onrender.com/api/studentsData/getstudentData/${encodedCategories}`);
 
     if (res.ok) {
