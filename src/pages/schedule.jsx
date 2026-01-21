@@ -21,6 +21,17 @@ export default function ScheduleViewer() {
   const [modalLesson, setModalLesson] = useState(null);
   const [modalCancelled, setModalCancelled] = useState(false);
   const [modalReason, setModalReason] = useState("");
+  // מודל להוספת שיעור ידני
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [newLessonData, setNewLessonData] = useState({
+    class_id: "",
+    date: format(new Date(), "yyyy-MM-dd"),
+    start_time: "",
+    end_time: "",
+    topic: "",
+    is_cancelled: false,
+    cancellation_reason: "",
+  });
 
   // קבלת נתונים מה-Redux store
   const lessons = useSelector((state) => state.lessons?.data ?? []); // שיעורים ספציפיים לתאריך
@@ -72,6 +83,88 @@ export default function ScheduleViewer() {
     };
     dispatch(addRealyLessonThunk(finalPayload));
     closeLessonModal();
+  };
+
+  // אישור כל השיעורים ביום הנבחר (לפי מצב תצוגה)
+  const confirmAllLessonsForDate = () => {
+    const date = selectedDate;
+    const dateStr = format(date, "yyyy-MM-dd");
+    const dayOfWeek = date.getDay();
+
+    // סינון מתוך המערכת השבועית ליום זה + לפי תצוגה (כיתה או לימודי קודש)
+    const weeklyForDay = schedule.filter((s) => s.day_of_week === dayOfWeek);
+    const filteredWeekly =
+      selectedClassId === "kodesh"
+        ? weeklyForDay.filter((s) => s.class_id >= 14 && s.class_id <= 22)
+        : weeklyForDay.filter((s) => String(s.class_id) === String(selectedClassId));
+
+    // שיעורים שכבר קיימים ביום זה (כדי להימנע מכפילות)
+    const realOnDate = lessons.filter((l) => l.date === dateStr);
+
+    if (filteredWeekly.length === 0) {
+      alert("אין שיעורים במערכת ביום זה.");
+      return;
+    }
+
+    const ok = window.confirm(
+      `לאשר ${filteredWeekly.length} שיעורים ליום ${format(date, "dd/MM/yyyy")}?`
+    );
+    if (!ok) return;
+
+    filteredWeekly.forEach((lesson) => {
+      const exists = realOnDate.find(
+        (l) =>
+          String(l.class_id) === String(lesson.class_id) &&
+          l.start_time === lesson.start_time &&
+          l.end_time === lesson.end_time
+      );
+      if (!exists) {
+        const payload = {
+          class_id: lesson.class_id,
+          date: dateStr,
+          start_time: lesson.start_time || "",
+          end_time: lesson.end_time || "",
+          topic: lesson.topic || "",
+          is_cancelled: false,
+          cancellation_reason: "",
+        };
+        dispatch(addRealyLessonThunk(payload));
+      }
+    });
+
+    // רענון אופציונלי
+    setTimeout(() => dispatch(getLessonsThunk()), 0);
+  };
+
+  // פתיחת מודל הוספת שיעור ידני
+  const openAddLessonModal = () => {
+    const defaultClassId =
+      selectedClassId === "kodesh"
+        ? (classes.find((c) => c.id >= 14 && c.id <= 22)?.id ?? "")
+        : selectedClassId;
+    setNewLessonData({
+      class_id: defaultClassId || "",
+      date: format(selectedDate, "yyyy-MM-dd"),
+      start_time: "",
+      end_time: "",
+      topic: "",
+      is_cancelled: false,
+      cancellation_reason: "",
+    });
+    setAddModalOpen(true);
+  };
+
+  const closeAddLessonModal = () => {
+    setAddModalOpen(false);
+  };
+
+  const confirmAddLessonModal = () => {
+    if (!newLessonData.class_id || !newLessonData.date || !newLessonData.start_time || !newLessonData.end_time) {
+      alert("יש למלא כיתה, תאריך, שעת התחלה ושעת סיום.");
+      return;
+    }
+    dispatch(addRealyLessonThunk(newLessonData));
+    setAddModalOpen(false);
   };
 
   // יצירת מערך של 6 ימים (ראשון עד שישי, ללא שבת)
@@ -219,6 +312,22 @@ const getDailyLessons = (date) => {
                 {format(weekDays[0], "dd/MM")} - {format(weekDays[5], "dd/MM/yyyy")}
               </span>
 
+              {/* פעולות מהירות */}
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  onClick={confirmAllLessonsForDate}
+                >
+                  אשר כל השיעורים ביום
+                </button>
+                <button
+                  className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                  onClick={openAddLessonModal}
+                >
+                  הוסף שיעור בתאריך
+                </button>
+              </div>
+
               {/* בחירת כיתה */}
               <div className="flex items-center gap-2 ml-auto">
                 <label className="text-lg font-semibold text-gray-700">בחר כיתה:</label>
@@ -257,7 +366,7 @@ const getDailyLessons = (date) => {
                   {/* כותרת יום */}
                   <div className="mb-4 flex items-center gap-3">
                     <h3 className="text-2xl font-bold text-indigo-700">
-                      {dayNames[dayOfWeek]} - {format(day, "dd/MM/yyyy")}
+                        {dayNames[dayOfWeek]} - {format(day, "dd/MM/yyyy")}
                     </h3>
                     {/* תגית מיוחדת לימי ראשון ורביעי */}
                     {[0, 3].includes(dayOfWeek) && (
@@ -323,6 +432,69 @@ const getDailyLessons = (date) => {
             })}
           </div>
         </div>
+        {/* מודל הוספת שיעור ידני */}
+        {addModalOpen && (
+          <div className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center px-4" dir="rtl">
+            <div className="w-full max-w-xl bg-white rounded-3xl p-6 shadow-xl">
+              <h3 className="text-2xl font-bold mb-4">הוספת שיעור לתאריך</h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <label className="flex flex-col">
+                  <span className="font-semibold mb-1">כיתה</span>
+                  <select
+                    className="border rounded px-3 py-2"
+                    value={newLessonData.class_id}
+                    onChange={(e) => setNewLessonData({ ...newLessonData, class_id: e.target.value })}
+                  >
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>{cls.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col">
+                  <span className="font-semibold mb-1">תאריך</span>
+                  <input
+                    type="date"
+                    className="border rounded px-3 py-2"
+                    value={newLessonData.date}
+                    onChange={(e) => setNewLessonData({ ...newLessonData, date: e.target.value })}
+                  />
+                </label>
+                <label className="flex flex-col">
+                  <span className="font-semibold mb-1">שעת התחלה</span>
+                  <input
+                    type="time"
+                    className="border rounded px-3 py-2"
+                    value={newLessonData.start_time}
+                    onChange={(e) => setNewLessonData({ ...newLessonData, start_time: e.target.value })}
+                  />
+                </label>
+                <label className="flex flex-col">
+                  <span className="font-semibold mb-1">שעת סיום</span>
+                  <input
+                    type="time"
+                    className="border rounded px-3 py-2"
+                    value={newLessonData.end_time}
+                    onChange={(e) => setNewLessonData({ ...newLessonData, end_time: e.target.value })}
+                  />
+                </label>
+                <label className="flex flex-col col-span-2">
+                  <span className="font-semibold mb-1">נושא (אופציונלי)</span>
+                  <input
+                    type="text"
+                    className="border rounded px-3 py-2"
+                    placeholder="לדוגמה: דקדוק - זמנים"
+                    value={newLessonData.topic}
+                    onChange={(e) => setNewLessonData({ ...newLessonData, topic: e.target.value })}
+                  />
+                </label>
+              </div>
+              <div className="mt-5 flex gap-2">
+                <button className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700" onClick={confirmAddLessonModal}>אישור</button>
+                <button className="border px-4 py-2 rounded" onClick={closeAddLessonModal}>ביטול</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -350,6 +522,22 @@ const getDailyLessons = (date) => {
             <span className="text-lg text-gray-600 ml-4">
               {format(weekDays[0], "dd/MM")} - {format(weekDays[5], "dd/MM/yyyy")}
             </span>
+
+            {/* פעולות מהירות */}
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                onClick={confirmAllLessonsForDate}
+              >
+                אשר כל השיעורים ביום
+              </button>
+              <button
+                className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                onClick={openAddLessonModal}
+              >
+                הוסף שיעור בתאריך
+              </button>
+            </div>
 
             {/* בחירת כיתה */}
             <div className="flex items-center gap-2 ml-auto">
@@ -535,6 +723,69 @@ const getDailyLessons = (date) => {
       </div>
     )
   }
+  {/* מודל הוספת שיעור ידני */}
+  {addModalOpen && (
+    <div className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center px-4" dir="rtl">
+      <div className="w-full max-w-xl bg-white rounded-3xl p-6 shadow-xl">
+        <h3 className="text-2xl font-bold mb-4">הוספת שיעור לתאריך</h3>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <label className="flex flex-col">
+            <span className="font-semibold mb-1">כיתה</span>
+            <select
+              className="border rounded px-3 py-2"
+              value={newLessonData.class_id}
+              onChange={(e) => setNewLessonData({ ...newLessonData, class_id: e.target.value })}
+            >
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col">
+            <span className="font-semibold mb-1">תאריך</span>
+            <input
+              type="date"
+              className="border rounded px-3 py-2"
+              value={newLessonData.date}
+              onChange={(e) => setNewLessonData({ ...newLessonData, date: e.target.value })}
+            />
+          </label>
+          <label className="flex flex-col">
+            <span className="font-semibold mb-1">שעת התחלה</span>
+            <input
+              type="time"
+              className="border rounded px-3 py-2"
+              value={newLessonData.start_time}
+              onChange={(e) => setNewLessonData({ ...newLessonData, start_time: e.target.value })}
+            />
+          </label>
+          <label className="flex flex-col">
+            <span className="font-semibold mb-1">שעת סיום</span>
+            <input
+              type="time"
+              className="border rounded px-3 py-2"
+              value={newLessonData.end_time}
+              onChange={(e) => setNewLessonData({ ...newLessonData, end_time: e.target.value })}
+            />
+          </label>
+          <label className="flex flex-col col-span-2">
+            <span className="font-semibold mb-1">נושא (אופציונלי)</span>
+            <input
+              type="text"
+              className="border rounded px-3 py-2"
+              placeholder="לדוגמה: דקדוק - זמנים"
+              value={newLessonData.topic}
+              onChange={(e) => setNewLessonData({ ...newLessonData, topic: e.target.value })}
+            />
+          </label>
+        </div>
+        <div className="mt-5 flex gap-2">
+          <button className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700" onClick={confirmAddLessonModal}>אישור</button>
+          <button className="border px-4 py-2 rounded" onClick={closeAddLessonModal}>ביטול</button>
+        </div>
+      </div>
+    </div>
+  )}
     </div >
   );
 }
