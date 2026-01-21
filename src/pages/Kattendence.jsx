@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
 import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
 import { getStudentDataThunk } from "../redux/slices/STUDENTS/getStudentDataThunk";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
-import FlexcalPicker from "../components/FlexcalPicker.jsx";
+import HebrewDateSelector from "../components/HebrewDateSelector.jsx";
+import { HebrewDateShow } from "../components/HebrewDateShow.jsx";
 
 const Cell = ({ children, className = "" }) => (
   <td className={`border border-black px-4 py-2 text-center align-middle ${className}`}>
@@ -14,7 +15,6 @@ const Cell = ({ children, className = "" }) => (
 
 export const Screen = () => {
   const dispatch = useDispatch();
-  const [hebrewDate, setHebrewDate] = useState("");
   const [selectedClassId, setSelectedClassId] = useState("");
   // Flexcal provides Hebrew date; we keep ISO + formatted Hebrew
   const [selectedDateISO, setSelectedDateISO] = useState("");
@@ -44,26 +44,24 @@ export const Screen = () => {
     return byClass && byDate;
   });
 
-  // Hebrew date formatting consistent with CalendarModern
-  const hebFullFormatter = new Intl.DateTimeFormat("he-u-ca-hebrew", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+ 
+  // Map numeric Hebrew month index (1-12) to Hebcal API month names
+  const HEB_MONTH_NAME_BY_INDEX = {
+    1: "Tishrei",
+    2: "Cheshvan",
+    3: "Kislev",
+    4: "Tevet",
+    5: "Shevat",
+    6: "Adar",
+    7: "Nisan",
+    8: "Iyar",
+    9: "Sivan",
+    10: "Tammuz",
+    11: "Av",
+    12: "Elul",
+  };
 
-  function hebrewDateTextFromISO(iso) {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-").map(Number);
-    const dateObj = new Date(y, m - 1, d);
-    const parts = hebFullFormatter.formatToParts(dateObj);
-    const dayNum = Number(parts.find((p) => p.type === "day")?.value);
-    const monthName = parts.find((p) => p.type === "month")?.value || "";
-    const yearNum = Number(parts.find((p) => p.type === "year")?.value);
-    const dayHeb = numberToHebrewLetters(dayNum);
-    const yearHeb = formatHebrewYear(yearNum);
-    return `${dayHeb} ${monthName} ${yearHeb}`;
-  }
-
+  // Zero-pad helper used by commit handler
   function pad2(n) {
     return String(n).padStart(2, "0");
   }
@@ -71,18 +69,34 @@ export const Screen = () => {
   // Handle Flexcal commit: formatted Hebrew yyyy-mm-dd -> convert to Gregorian ISO then format Hebrew text
   async function handleHebCommit(hebFormatted, ctx) {
     try {
-      // hebFormatted is yyyy-mm-dd for Hebrew calendar
-      const [hy, hm, hd] = hebFormatted.split("-");
-      const url = `https://www.hebcal.com/converter?cfg=json&h2g=1&strict=0&hy=${hy}&hm=${hm}&hd=${hd}`;
+      // Flexcal may send either Hebrew (YYYY-MM-DD Hebrew year) or Gregorian ISO
+      const [yStr, mStr, dStr] = hebFormatted.split("-");
+      const y = Number(yStr);
+      const m = Number(mStr);
+      const d = Number(dStr);
+
+      if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+        throw new Error("Invalid date parts");
+      }
+
+      // If year looks Gregorian (< 4000), treat as ISO directly
+      if (y < 4000) {
+        const iso = `${yStr}-${pad2(m)}-${pad2(d)}`;
+        setSelectedDateISO(iso);
+        // setHebrewDate(hebrewDateTextFromISO(iso));
+        return;
+      }
+
+      // Otherwise, it's Hebrew date: convert via Hebcal h2g
+      const hmParam = HEB_MONTH_NAME_BY_INDEX[m] || mStr; // map numeric month to name
+      const url = `https://www.hebcal.com/converter?cfg=json&h2g=1&strict=0&hy=${y}&hm=${encodeURIComponent(hmParam)}&hd=${d}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed heb->greg conversion");
       const data = await res.json();
       const iso = `${data.gy}-${pad2(data.gm)}-${pad2(data.gd)}`;
       setSelectedDateISO(iso);
-      setHebrewDate(hebrewDateTextFromISO(iso));
     } catch {
       setSelectedDateISO("");
-      setHebrewDate("");
     }
   }
 
@@ -92,12 +106,14 @@ export const Screen = () => {
       <div className="flex flex-wrap gap-6 mb-10 text-lg font-bold items-center">
         {/* Hebrew date picker (jQuery Flexcal) */}
         <div className="flex items-center gap-2">
-          <label htmlFor="flexcal-input">תאריך עברי:</label>
-          <FlexcalPicker id="flexcal-input" onCommit={handleHebCommit} />
+          {/* בחירת תאריך עברי  */}
+          <HebrewDateSelector id="flexcal-input" onCommit={handleHebCommit} />
+
+          <HebrewDateShow isoDate={selectedDateISO} />
         </div>
 
+
         <div className="flex items-center gap-2">
-          <label htmlFor="class">כיתה:</label>
           <select
             id="class"
             className="border border-black rounded px-2 py-1 z-10 relative"
@@ -125,17 +141,7 @@ export const Screen = () => {
           </select>
         </div> */}
 
-        {/* Display the formatted Hebrew date (CalendarModern style)
-        <div className="flex items-center gap-2">
-          <label htmlFor="hebrew-date">תאריך עברי נבחר:</label>
-          <input
-            id="hebrew-date"
-            className="border border-black rounded px-2 py-1 z-10 relative bg-white"
-            value={hebrewDate || "בחרי תאריך"}
-            readOnly
-          />
-        </div>*/}
-      </div> 
+      </div>
 
       {/* TABLE */}
       <table className="w-full border-collapse border border-black text-right">
@@ -144,7 +150,7 @@ export const Screen = () => {
             <th className="border border-black px-4 py-2">שם התלמידה</th>
             {filteredLessons.map((lesson, index) => (
               <th key={index} className="border border-black px-4 py-2">
-                {lesson.topic} 
+                {lesson.topic}
               </th>
             ))}
           </tr>

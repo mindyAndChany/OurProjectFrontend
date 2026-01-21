@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 
 /**
  * אינפוט לבחירת תאריך עברי
- * FlexcalPicker: wraps jQuery flexcal in a React component.
+ * HebrewDateSelector: wraps jQuery flexcal in a React component.
  * Requires global jQuery, jQuery UI, and flexcal scripts loaded in index.html.
  * Props:
  * - onCommit(hebDateStr, context): callback when a date is chosen
@@ -11,8 +11,14 @@ import React, { useEffect, useRef } from "react";
  * - id: optional DOM id to target; auto-generated if omitted
  * - placeholder: input placeholder
  */
-export default function FlexcalPicker({ onCommit, id = "flexcal-input", placeholder = "בחרי תאריך" }) {
+export default function HebrewDateSelector({ onCommit, id = "flexcal-input", placeholder = "בחרי תאריך" }) {
   const inputRef = useRef(null);
+  const onCommitRef = useRef(onCommit);
+
+  // Keep latest onCommit without re-initializing the plugin
+  useEffect(() => {
+    onCommitRef.current = onCommit;
+  }, [onCommit]);
 
   useEffect(() => {
     const $ = window.jQuery || window.$;
@@ -26,7 +32,7 @@ export default function FlexcalPicker({ onCommit, id = "flexcal-input", placehol
       const jq = window.jQuery || window.$;
       if (!(jq && jq.fn)) return false;
       if (!jq.fn.flexcal) {
-        console.warn("FlexcalPicker: $.fn.flexcal not found. Waiting for scripts to load...");
+        console.warn("HebrewDateSelector: $.fn.flexcal not found. Waiting for scripts to load...");
         return false;
       }
       $el = jq(inputRef.current);
@@ -36,9 +42,11 @@ export default function FlexcalPicker({ onCommit, id = "flexcal-input", placehol
         commit: function (e, d) {
           try {
             const formatted = $el.flexcal("format", d);
-            if (typeof onCommit === "function") onCommit(formatted, { event: e, raw: d, formatted });
+            if (typeof onCommitRef.current === "function") onCommitRef.current(formatted, { event: e, raw: d, formatted });
           } catch (err) {
-            console.warn("FlexcalPicker commit error", err);
+            console.warn("HebrewDateSelector commit error", err);
+          } finally {
+            try { $el.val(""); } catch {}
           }
         },
         buttons: ["today commit"],
@@ -57,7 +65,7 @@ export default function FlexcalPicker({ onCommit, id = "flexcal-input", placehol
         if (init()) { clearInterval(handle); }
         if (attempts >= maxAttempts) {
           clearInterval(handle);
-          console.error("FlexcalPicker: failed to initialize. Check script URLs in index.html");
+          console.error("HebrewDateSelector: failed to initialize. Check script URLs in index.html");
         }
       }, 100);
     }
@@ -68,14 +76,13 @@ export default function FlexcalPicker({ onCommit, id = "flexcal-input", placehol
         try { $el.flexcal("destroy"); } catch {}
       }
     };
-  }, [onCommit, id]);
+  }, [id]);
 
   return (
     <input
       id={id}
       ref={inputRef}
-      type="text"
-      className="border border-black rounded px-2 py-1 z-10 relative"
+      className="border border-black rounded px-2 py-1 z-10 relative bg-white cursor-pointer"
       placeholder={placeholder}
       readOnly
       onClick={() => {
