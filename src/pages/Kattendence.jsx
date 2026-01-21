@@ -6,6 +6,8 @@ import { getStudentDataThunk } from "../redux/slices/STUDENTS/getStudentDataThun
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 import HebrewDateSelector from "../components/HebrewDateSelector.jsx";
 import { HebrewDateShow } from "../components/HebrewDateShow.jsx";
+import { getAttendanceByLessonThunk } from "../redux/slices/ATTENDANCE/getAttendanceByLessonThunk";
+import { updateAttendanceThunk } from "../redux/slices/ATTENDANCE/updateAttendanceThunk";
 
 const Cell = ({ children, className = "" }) => (
   <td className={`border border-black px-4 py-2 text-center align-middle ${className}`}>
@@ -15,15 +17,18 @@ const Cell = ({ children, className = "" }) => (
 
 export const Screen = () => {
   const dispatch = useDispatch();
-  const [selectedClassId, setSelectedClassId] = useState("");
-  // Flexcal provides Hebrew date; we keep ISO + formatted Hebrew
-  const [selectedDateISO, setSelectedDateISO] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState("ה'1");
+  const [selectedDateISO, setSelectedDateISO] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  });
 
 
   // Selectors to fetch data from Redux Store
   const classes = useSelector((state) => state.classes?.data || []);
   const students = useSelector((state) => state.student.studentsData || []);
   const lessons = useSelector((state) => state.lessons?.data || []);
+  const attendanceByLesson = useSelector((state) => state.attendance?.byLesson || {});
 
   // Initial data load
   useEffect(() => {
@@ -43,12 +48,16 @@ console.log("cleaned",cleaned);
     return cleaned;
   }, [classes, selectedClassId]);
   
-  // שמות תלמידות לפי כיתה (התאמה לפי שם כיתה, לא לפי ID)
-  const allStudentNames = useMemo(() => {
+  // שמות תלמידות לפי כיתה 
+  const studentsByClass = useMemo(() => {
     if (!Array.isArray(students) || !selectedClassName) return [];
     return students
       .filter((s) => String(s.class_kodesh) === String(selectedClassName))
-      .map((s) => s.name ?? [s.first_name, s.last_name].filter(Boolean).join(" "))
+      .map((s) => {
+        const id = s.id_number ?? s.id ?? null;
+        const name = s.name ?? [s.first_name, s.last_name].filter(Boolean).join(" ");
+        return id && name ? { id, name } : null;
+      })
       .filter(Boolean);
   }, [students, selectedClassName]);
 
@@ -58,6 +67,20 @@ console.log("cleaned",cleaned);
     const byDate = selectedDateISO ? l.date === selectedDateISO : true;
     return byClass && byDate;
   });
+
+  // Load attendance for each visible lesson
+  useEffect(() => {
+    for (const lesson of filteredLessons) {
+      if (lesson?.id != null) {
+        dispatch(getAttendanceByLessonThunk(lesson.id));
+      }
+    }
+  }, [dispatch, filteredLessons]);
+
+  function getStatusFor(lessonId, studentId) {
+    const map = attendanceByLesson[String(lessonId)] || {};
+    return map[String(studentId)] || "";
+  }
 
  
   // Map numeric Hebrew month index (1-12) to Hebcal API month names
@@ -171,14 +194,35 @@ console.log("cleaned",cleaned);
           </tr>
         </thead>
         <tbody>
-          {allStudentNames.map((studentName, rowIndex) => (
-            <tr key={rowIndex}>
-              <Cell>{studentName}</Cell>
-              {/* {filteredLessons.map((lesson, colIndex) => {
-                const studentList = Array.isArray(lesson?.students) ? lesson.students : [];
-                const student = studentList.find((s) => s.name === studentName);
-                return <Cell key={colIndex}>{student?.attendance || ""}</Cell>;
-              })} */}
+          {studentsByClass.map((student, rowIndex) => (
+            <tr key={student.id ?? rowIndex}>
+              <Cell>{student.name}</Cell>
+              {filteredLessons.map((lesson) => {
+                const current = getStatusFor(lesson.id, student.id);
+                return (
+                  <Cell key={`${lesson.id}-${student.id}`}>
+                    <select
+                      className="border border-black rounded px-2 py-1"
+                      value={current}
+                      onChange={(e) =>
+                        dispatch(
+                          updateAttendanceThunk({
+                            student_id: student.id,
+                            lesson_id: lesson.id,
+                            status: e.target.value,
+                          })
+                        )
+                      }
+                    >
+                      <option value="">—</option>
+                      <option value="present">נוכחת</option>
+                      <option value="late">מאחרת</option>
+                      <option value="absent">חסרה</option>
+                      <option value="approved absent">חסרה מאושרת</option>
+                    </select>
+                  </Cell>
+                );
+              })}
             </tr>
           ))}
         </tbody>
