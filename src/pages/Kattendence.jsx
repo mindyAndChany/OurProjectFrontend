@@ -30,12 +30,27 @@ export const Screen = () => {
     dispatch(getClassesThunk());
     dispatch(getStudentDataThunk("id_number,first_name,last_name,class_kodesh"));
     dispatch(getLessonsThunk());
+    
   }, [dispatch]);
 
-  // Student names for selected class
-  const allStudentNames = students
-    .filter((s) => String(s.class_kodesh) === String(selectedClassId))
-    .map((s) => s.name);
+  // שם הכיתה הנבחרת (נגזר מה-ID לביצוע התאמות מול תלמידות)
+  const selectedClassName = useMemo(() => {
+    if (!selectedClassId) return "";
+    const cls = classes.find((c) => String(c.id) === String(selectedClassId));
+    const className=cls?.name || "";
+    const cleaned = className.replace(/'/g, "");
+console.log("cleaned",cleaned);
+    return cleaned;
+  }, [classes, selectedClassId]);
+  
+  // שמות תלמידות לפי כיתה (התאמה לפי שם כיתה, לא לפי ID)
+  const allStudentNames = useMemo(() => {
+    if (!Array.isArray(students) || !selectedClassName) return [];
+    return students
+      .filter((s) => String(s.class_kodesh) === String(selectedClassName))
+      .map((s) => s.name ?? [s.first_name, s.last_name].filter(Boolean).join(" "))
+      .filter(Boolean);
+  }, [students, selectedClassName]);
 
   // Lessons filtered by selected class and selected date (ISO)
   const filteredLessons = lessons.filter((l) => {
@@ -159,10 +174,11 @@ export const Screen = () => {
           {allStudentNames.map((studentName, rowIndex) => (
             <tr key={rowIndex}>
               <Cell>{studentName}</Cell>
-              {filteredLessons.map((lesson, colIndex) => {
-                const student = lesson.students.find((s) => s.name === studentName);
-                return <Cell key={colIndex}>{student?.attendance}</Cell>;
-              })}
+              {/* {filteredLessons.map((lesson, colIndex) => {
+                const studentList = Array.isArray(lesson?.students) ? lesson.students : [];
+                const student = studentList.find((s) => s.name === studentName);
+                return <Cell key={colIndex}>{student?.attendance || ""}</Cell>;
+              })} */}
             </tr>
           ))}
         </tbody>
