@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
 import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
@@ -7,7 +7,9 @@ import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria
 import HebrewDateSelector from "../components/HebrewDateSelector.jsx";
 import { HebrewDateShow } from "../components/HebrewDateShow.jsx";
 import { getAttendanceByLessonThunk } from "../redux/slices/ATTENDANCE/getAttendanceByLessonThunk";
-import { updateAttendanceThunk } from "../redux/slices/ATTENDANCE/updateAttendanceThunk";
+import { addAttendanceThunk } from "../redux/slices/ATTENDANCE/addAttendanceThunk";
+import { setAttendanceForLesson } from "../redux/slices/ATTENDANCE/attendanceSlice";
+import { updateAttendanceThunk } from "../redux/slices/ATTENDANCE/updateAttendanceThunk.js";
 
 const Cell = ({ children, className = "" }) => (
   <td className={`border border-black px-4 py-2 text-center align-middle ${className}`}>
@@ -29,25 +31,26 @@ export const Screen = () => {
   const students = useSelector((state) => state.student.studentsData || []);
   const lessons = useSelector((state) => state.lessons?.data || []);
   const attendanceByLesson = useSelector((state) => state.attendance?.byLesson || {});
+  const attendanceIdsByLesson = useSelector((state) => state.attendance?.idsByLesson || {});
 
   // Initial data load
   useEffect(() => {
     dispatch(getClassesThunk());
     dispatch(getStudentDataThunk("id_number,first_name,last_name,class_kodesh"));
     dispatch(getLessonsThunk());
-    
+
   }, [dispatch]);
 
   // שם הכיתה הנבחרת (נגזר מה-ID לביצוע התאמות מול תלמידות)
   const selectedClassName = useMemo(() => {
     if (!selectedClassId) return "";
     const cls = classes.find((c) => String(c.id) === String(selectedClassId));
-    const className=cls?.name || "";
+    const className = cls?.name || "";
     const cleaned = className.replace(/'/g, "");
-console.log("cleaned",cleaned);
+    console.log("cleaned", cleaned);
     return cleaned;
   }, [classes, selectedClassId]);
-  
+
   // שמות תלמידות לפי כיתה 
   const studentsByClass = useMemo(() => {
     if (!Array.isArray(students) || !selectedClassName) return [];
@@ -61,28 +64,56 @@ console.log("cleaned",cleaned);
       .filter(Boolean);
   }, [students, selectedClassName]);
 
-  // Lessons filtered by selected class and selected date (ISO)
-  const filteredLessons = lessons.filter((l) => {
-    const byClass = selectedClassId ? String(l.class_id) === String(selectedClassId) : true;
-    const byDate = selectedDateISO ? l.date === selectedDateISO : true;
-    return byClass && byDate;
-  });
+  // Lessons filtered by selected class and selected date (ISO) — memoized to avoid changing identity on each render
+  const filteredLessons = useMemo(() => {
+    return lessons.filter((l) => {
+      const byClass = selectedClassId ? String(l.class_id) === String(selectedClassId) : true;
+      const byDate = selectedDateISO ? l.date === selectedDateISO : true;
+      return byClass && byDate;
+    });
+  }, [lessons, selectedClassId, selectedDateISO]);
 
-  // Load attendance for each visible lesson
+  // Track which lesson IDs we've fetched to avoid repeated requests
+  const fetchedLessonIdsRef = useRef(new Set());
+
+  // Reset fetched set when class/date changes
+  useEffect(() => {
+    fetchedLessonIdsRef.current = new Set();
+  }, [selectedClassId, selectedDateISO]);
+
+  // Load attendance for each visible lesson once (so we also have record IDs)
   useEffect(() => {
     for (const lesson of filteredLessons) {
-      if (lesson?.id != null) {
+      if (lesson?.id != null && !fetchedLessonIdsRef.current.has(lesson.id)) {
+        fetchedLessonIdsRef.current.add(lesson.id);
         dispatch(getAttendanceByLessonThunk(lesson.id));
       }
     }
   }, [dispatch, filteredLessons]);
+
+  // When attendance for a lesson returns empty, prefill all students as "present"
+  useEffect(() => {
+    for (const lesson of filteredLessons) {
+      const key = String(lesson.id);
+      const map = attendanceByLesson[key];
+      if (map && Object.keys(map).length === 0) {
+        const records = (studentsByClass || []).map((s) => ({ student_id: s.id, status: "present" }));
+        dispatch(setAttendanceForLesson({ lesson_id: lesson.id, records }));
+      }
+    }
+  }, [dispatch, filteredLessons, attendanceByLesson, studentsByClass]);
 
   function getStatusFor(lessonId, studentId) {
     const map = attendanceByLesson[String(lessonId)] || {};
     return map[String(studentId)] || "";
   }
 
- 
+  function getRecordIdFor(lessonId, studentId) {
+    const map = attendanceIdsByLesson[String(lessonId)] || {};
+    return map[String(studentId)] || undefined;
+  }
+
+
   // Map numeric Hebrew month index (1-12) to Hebcal API month names
   const HEB_MONTH_NAME_BY_INDEX = {
     1: "Tishrei",
@@ -165,6 +196,28 @@ console.log("cleaned",cleaned);
           </select>
         </div>
 
+        {/* Save all statuses for visible lessons */}
+        <button
+          className="ml-auto bg-[#584041] text-white px-4 py-2 rounded shadow hover:opacity-90"
+          onClick={async () => {
+            for (const lesson of filteredLessons) {
+              const key = String(lesson.id);
+              for (const s of studentsByClass) {
+                const current = (attendanceByLesson[key] && attendanceByLesson[key][String(s.id)]) || "present";
+                await dispatch(
+                  addAttendanceThunk({
+                    student_id: s.id,
+                    lesson_id: lesson.id,
+                    status: current || "present",
+                  })
+                );
+              }
+            }
+          }}
+        >
+          שמרי ושלחי נוכחות
+        </button>
+
         {/* <div className="flex items-center gap-2">
           <label htmlFor="teacher">מורה:</label>
           <select
@@ -199,26 +252,51 @@ console.log("cleaned",cleaned);
               <Cell>{student.name}</Cell>
               {filteredLessons.map((lesson) => {
                 const current = getStatusFor(lesson.id, student.id);
+                const recordId = getRecordIdFor(lesson.id, student.id);
                 return (
                   <Cell key={`${lesson.id}-${student.id}`}>
                     <select
                       className="border border-black rounded px-2 py-1"
                       value={current}
-                      onChange={(e) =>
-                        dispatch(
-                          updateAttendanceThunk({
-                            student_id: student.id,
-                            lesson_id: lesson.id,
-                            status: e.target.value,
-                          })
-                        )
-                      }
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === "") return; // ignore blank option
+                        if (!current) {
+                          // No status yet → create
+                          dispatch(
+                            addAttendanceThunk({
+                              student_id: student.id,
+                              lesson_id: lesson.id,
+                              status: next,
+                            })
+                          );
+                        } else if (recordId) {
+                          // Status exists and we have an ID → update
+                          dispatch(
+                            updateAttendanceThunk({
+                              id: recordId,
+                              status: next,
+                              lesson_id: lesson.id,
+                              student_id: student.id,
+                            })
+                          );
+                        } else {
+                          // Status exists but no ID in cache (prefilled, not saved) → create
+                          dispatch(
+                            addAttendanceThunk({
+                              student_id: student.id,
+                              lesson_id: lesson.id,
+                              status: next,
+                            })
+                          );
+                        }
+                      }}
                     >
                       <option value="">—</option>
                       <option value="present">נוכחת</option>
                       <option value="late">מאחרת</option>
                       <option value="absent">חסרה</option>
-                      <option value="approved absent">חסרה מאושרת</option>
+                      <option value="approved absent">חסרה באישור</option>
                     </select>
                   </Cell>
                 );
@@ -227,7 +305,7 @@ console.log("cleaned",cleaned);
           ))}
         </tbody>
       </table>
-    </div>
+    </div >
   );
 };
 
