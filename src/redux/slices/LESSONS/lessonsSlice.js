@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { addRealyLessonThunk } from './addRealyLessonThunk.js';
+import { getLessonsThunk } from './getLessonsThunk.js';
 
 const lessonsSlice = createSlice({
   name: 'lessons',
@@ -14,7 +15,7 @@ const lessonsSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(addRealyLessonThunk.pending, (state) => {
-        console.log('addRealyLesson start');
+        console.log('addRealyLesson start',state.data);
       })
       .addCase(addRealyLessonThunk.fulfilled, (state, action) => {
         const newLesson = action.payload;
@@ -34,7 +35,16 @@ const lessonsSlice = createSlice({
       })
       .addCase(addRealyLessonThunk.rejected, (state, action) => {
         console.log('addRealyLesson error:', action.error);
-      });
+      }) .addCase(getLessonsThunk.pending, (state) => {
+              console.log("getLessons start");
+            })
+            .addCase(getLessonsThunk.fulfilled, (state, action) => {
+              state.data = action.payload;
+              console.log("Lessons loaded:", state.data.length);
+            })
+            .addCase(getLessonsThunk.rejected, (state, action) => {
+              console.log("getLessons error:", action.error);
+            });
   },
 });
 
