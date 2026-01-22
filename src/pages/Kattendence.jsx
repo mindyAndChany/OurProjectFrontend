@@ -19,7 +19,7 @@ const Cell = ({ children, className = "" }) => (
 
 export const Screen = () => {
   const dispatch = useDispatch();
-  const [selectedClassId, setSelectedClassId] = useState("ה'1");
+  const [selectedClassId, setSelectedClassId] = useState("ה'ת");
   const [selectedDateISO, setSelectedDateISO] = useState(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -105,12 +105,14 @@ export const Screen = () => {
 
   function getStatusFor(lessonId, studentId) {
     const map = attendanceByLesson[String(lessonId)] || {};
-    return map[String(studentId)] || "";
+    const sid = String(studentId ?? "").replace(/\D/g, "").padStart(9, "0").slice(-9);
+    return map[sid] || "";
   }
 
   function getRecordIdFor(lessonId, studentId) {
     const map = attendanceIdsByLesson[String(lessonId)] || {};
-    return map[String(studentId)] || undefined;
+    const sid = String(studentId ?? "").replace(/\D/g, "").padStart(9, "0").slice(-9);
+    return map[sid] || undefined;
   }
 
 

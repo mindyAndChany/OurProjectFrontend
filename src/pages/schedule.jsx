@@ -14,7 +14,6 @@ import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
  * - כיתה ספציפית: טבלה שבועית מפורטת עם כל השיעורים
  */
 export default function ScheduleViewer() {
-  // State: תאריך נבחר ומזהה כיתה נבחרת
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedClassId, setSelectedClassId] = useState("kodesh"); // "kodesh" = לימודי קודש
   const [modalOpen, setModalOpen] = useState(false);
@@ -76,6 +75,18 @@ export default function ScheduleViewer() {
 
   const confirmLessonModal = () => {
     if (!modalLesson) return;
+    // הימנעות מכפילות: בדיקה אם כבר קיים שיעור זהה (כיתה+תאריך+שעת התחלה)
+    const exists = lessons.find(
+      (l) =>
+        String(l.class_id) === String(modalLesson.class_id) &&
+        l.date === modalLesson.date &&
+        l.start_time === modalLesson.start_time
+    );
+    if (exists) {
+      alert("שיעור זה כבר קיים ב-LESSONS עבור תאריך ושעה אלו.");
+      closeLessonModal();
+      return;
+    }
     const finalPayload = {
       ...modalLesson,
       is_cancelled: modalCancelled,
@@ -163,6 +174,17 @@ export default function ScheduleViewer() {
       alert("יש למלא כיתה, תאריך, שעת התחלה ושעת סיום.");
       return;
     }
+    // הימנעות מכפילות בעת הוספה ידנית
+    const exists = lessons.find(
+      (l) =>
+        String(l.class_id) === String(newLessonData.class_id) &&
+        l.date === newLessonData.date &&
+        l.start_time === newLessonData.start_time
+    );
+    if (exists) {
+      alert("שיעור זה כבר קיים ב-LESSONS עבור תאריך ושעה אלו.");
+      return;
+    }
     dispatch(addRealyLessonThunk(newLessonData));
     setAddModalOpen(false);
   };
@@ -204,7 +226,7 @@ const getDailyLessons = (date) => {
     ? weeklyByDay.filter((s) => String(s.class_id) === String(selectedClassId))
     : weeklyByDay;
 
-  // Combine lessons, marking their status
+  // Combine lessons, marking their status for weekly-defined slots
   const combinedLessons = filteredWeekly.map((lesson) => {
     const realLesson = filteredByClass.find(
       (l) =>
@@ -223,7 +245,19 @@ const getDailyLessons = (date) => {
     return { ...lesson, status: "tentative" };
   });
 
-  return combinedLessons;
+  // Add real lessons that do not exist in weekly schedule slots (standalone additions)
+  const weeklyKeys = new Set(
+    filteredWeekly.map((w) => `${w.class_id}|${w.start_time}|${w.end_time}`)
+  );
+  const extraReal = filteredByClass.filter(
+    (l) => !weeklyKeys.has(`${l.class_id}|${l.start_time}|${l.end_time}`)
+  );
+  const extraRealMapped = extraReal.map((l) => ({
+    ...l,
+    status: l.is_cancelled ? "canceled" : "held",
+  }));
+
+  return [...combinedLessons, ...extraRealMapped];
 };
 
   /**
@@ -355,8 +389,18 @@ const getDailyLessons = (date) => {
               const daySchedule = schedule.filter(
                 (s) => s.day_of_week === dayOfWeek && s.class_id >= 14 && s.class_id <= 22
               );
+              // שיעורים אמיתיים מתוך LESSONS עבור תאריך זה ולכיתות לימודי קודש
+              const dateStr = format(day, "yyyy-MM-dd");
+              const realForDay = lessons.filter(
+                (l) => l.date === dateStr && l.class_id >= 14 && l.class_id <= 22
+              );
               // איסוף כל השעות ביום זה (ללא כפילויות)
-              const times = [...new Set(daySchedule.map((s) => s.start_time))].sort();
+              const times = [
+                ...new Set([
+                  ...daySchedule.map((s) => s.start_time),
+                  ...realForDay.map((l) => l.start_time),
+                ]),
+              ].sort();
 
               // אם אין שיעורים ביום זה - דלג עליו
               if (times.length === 0) return null;
@@ -403,12 +447,27 @@ const getDailyLessons = (date) => {
                             {/* תא לכל כיתת לימודי קודש בשעה זו */}
                             {kodeshClasses.map((cls) => {
                               const lesson = getLessonForClassAndTime(cls.id, dayOfWeek, time);
+                              const realLesson = realForDay.find(
+                                (l) => String(l.class_id) === String(cls.id) && l.start_time === time
+                              );
                               return (
                                 <td
                                   key={cls.id}
                                   className="border border-gray-300 p-2 text-center align-middle"
                                 >
-                                  {lesson ? (
+                                  {realLesson ? (
+                                    <div
+                                      className={`font-medium cursor-pointer hover:opacity-90 px-2 py-1 rounded inline-block ${
+                                        realLesson.is_cancelled
+                                          ? "bg-red-50 text-red-700 border border-red-200"
+                                          : "bg-green-50 text-green-700 border border-green-200"
+                                      }`}
+                                      onClick={() => openLessonModal(realLesson, day, cls.id)}
+                                      title="שיעור מתוך LESSONS — לחץ לעדכון/ביטול"
+                                    >
+                                      {realLesson.topic || "ללא נושא"}
+                                    </div>
+                                  ) : lesson ? (
                                     <div
                                       className="text-gray-800 font-medium cursor-pointer hover:text-indigo-700"
                                       onClick={() => openLessonModal(lesson, day, cls.id)}

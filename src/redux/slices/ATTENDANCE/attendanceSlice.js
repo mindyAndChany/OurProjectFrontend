@@ -15,6 +15,14 @@ const initialState = {
   idsByLesson: {},
 };
 
+// Normalize student identifier to a consistent 9-digit string.
+// This helps match numeric IDs from the server with zero-padded ID numbers in the UI.
+function normalizeStudentId(value) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (!digits) return String(value ?? "");
+  return digits.padStart(9, "0").slice(-9);
+}
+
 const attendanceSlice = createSlice({
   name: "attendance",
   initialState,
@@ -24,7 +32,7 @@ const attendanceSlice = createSlice({
       const map = {};
       for (const r of records || []) {
         if (r && r.student_id != null) {
-          map[String(r.student_id)] = r.status;
+          map[normalizeStudentId(r.student_id)] = r.status;
         }
       }
       state.byLesson[String(lesson_id)] = map;
@@ -42,8 +50,9 @@ const attendanceSlice = createSlice({
         const ids = {};
         for (const r of records || []) {
           if (r && r.student_id != null) {
-            map[String(r.student_id)] = r.status;
-            if (r.id != null) ids[String(r.student_id)] = r.id;
+            const key = normalizeStudentId(r.student_id);
+            map[key] = r.status;
+            if (r.id != null) ids[key] = r.id;
           }
         }
         state.byLesson[String(lesson_id)] = map;
@@ -58,7 +67,7 @@ const attendanceSlice = createSlice({
         if (lesson_id != null && student_id != null && status) {
           const key = String(lesson_id);
           state.byLesson[key] = state.byLesson[key] || {};
-          state.byLesson[key][String(student_id)] = status; // optimistic
+          state.byLesson[key][normalizeStudentId(student_id)] = status; // optimistic
         }
       })
       .addCase(updateAttendanceThunk.fulfilled, (state, action) => {
@@ -66,10 +75,11 @@ const attendanceSlice = createSlice({
         if (lesson_id != null && student_id != null && status) {
           const key = String(lesson_id);
           state.byLesson[key] = state.byLesson[key] || {};
-          state.byLesson[key][String(student_id)] = status;
+          const sid = normalizeStudentId(student_id);
+          state.byLesson[key][sid] = status;
           if (id != null) {
             state.idsByLesson[key] = state.idsByLesson[key] || {};
-            state.idsByLesson[key][String(student_id)] = id;
+            state.idsByLesson[key][sid] = id;
           }
         }
       })
@@ -81,7 +91,7 @@ const attendanceSlice = createSlice({
         if (lesson_id != null && student_id != null && status) {
           const key = String(lesson_id);
           state.byLesson[key] = state.byLesson[key] || {};
-          state.byLesson[key][String(student_id)] = status; // optimistic
+          state.byLesson[key][normalizeStudentId(student_id)] = status; // optimistic
         }
       })
       .addCase(addAttendanceThunk.fulfilled, (state, action) => {
@@ -89,10 +99,11 @@ const attendanceSlice = createSlice({
         if (lesson_id != null && student_id != null && status) {
           const key = String(lesson_id);
           state.byLesson[key] = state.byLesson[key] || {};
-          state.byLesson[key][String(student_id)] = status;
+          const sid = normalizeStudentId(student_id);
+          state.byLesson[key][sid] = status;
           if (id != null) {
             state.idsByLesson[key] = state.idsByLesson[key] || {};
-            state.idsByLesson[key][String(student_id)] = id;
+            state.idsByLesson[key][sid] = id;
           }
         }
       })
