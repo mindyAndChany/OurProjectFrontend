@@ -1131,7 +1131,7 @@ function DayTimeline({ events, onEdit }) {
   return (
     <div className="overflow-x-auto">
       {/* סרגל שעות */}
-      <div className="flex" ref={hourRowRef} dir="ltr">
+      <div className="flex" ref={hourRowRef} dir="rtl">
         {Array.from({ length: 17 }, (_, i) => {
           const hour = 8 + i;
           return (

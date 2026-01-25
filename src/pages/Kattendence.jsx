@@ -32,6 +32,7 @@ export const Screen = () => {
   const lessons = useSelector((state) => state.lessons?.data || []);
   const attendanceByLesson = useSelector((state) => state.attendance?.byLesson || {});
   const attendanceIdsByLesson = useSelector((state) => state.attendance?.idsByLesson || {});
+const prefilledLessonsRef = useRef(new Set());
 
   // Initial data load
   useEffect(() => {
@@ -99,6 +100,8 @@ export const Screen = () => {
       if (map && Object.keys(map).length === 0) {
         const records = (studentsByClass || []).map((s) => ({ student_id: s.id, status: "present" }));
         dispatch(setAttendanceForLesson({ lesson_id: lesson.id, records }));
+              prefilledLessonsRef.current.add(key); // לא להריץ שוב
+
       }
     }
   }, [dispatch, filteredLessons, attendanceByLesson, studentsByClass]);
