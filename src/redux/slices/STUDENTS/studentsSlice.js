@@ -2,9 +2,13 @@ import { createSlice } from "@reduxjs/toolkit";
 import { getStudentDataThunk } from "./getStudentDataThunk.js";
 import { addStudentsThunk } from "./addStudentsThunk.js";
 import { updateStudentThunk } from "./updateStudentThunk.js";
+import { getStudentByIdThunk } from "./getStudentByIdThunk.js";
 
 export const INITIAL_STATE_STUDENTS = {
-  studentsData: []
+  studentsData: [],
+  selectedStudent: null,
+  loading: false,
+  error: null,
 };
 
 export const studentSlice = createSlice({
@@ -23,7 +27,19 @@ export const studentSlice = createSlice({
       .addCase(getStudentDataThunk.rejected, (state, action) => {
         console.log("getStudentData error:", action.error);
       })
-
+ // קריאה לפי ת"ז
+      .addCase(getStudentByIdThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getStudentByIdThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedStudent = action.payload;
+      })
+      .addCase(getStudentByIdThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Error fetching student';
+      })
       .addCase(addStudentsThunk.pending, (state) => {
         console.log("addStudents start");
       })
