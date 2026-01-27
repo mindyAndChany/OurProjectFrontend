@@ -3,13 +3,14 @@ import { useSelector, useDispatch } from "react-redux";
 import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
 import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
 import { getStudentDataThunk } from "../redux/slices/STUDENTS/getStudentDataThunk";
-import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 import HebrewDateSelector from "../components/HebrewDateSelector.jsx";
 import { HebrewDateShow } from "../components/HebrewDateShow.jsx";
 import { getAttendanceByLessonThunk } from "../redux/slices/ATTENDANCE/getAttendanceByLessonThunk";
 import { addAttendanceThunk } from "../redux/slices/ATTENDANCE/addAttendanceThunk";
 import { setAttendanceForLesson } from "../redux/slices/ATTENDANCE/attendanceSlice";
 import { updateAttendanceThunk } from "../redux/slices/ATTENDANCE/updateAttendanceThunk.js";
+import { getTeachersThunk } from "../redux/slices/TEACHERS/getTeachersThunk.js";
+import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 
 const Cell = ({ children, className = "" }) => (
   <td className={`border border-black px-4 py-2 text-center align-middle ${className}`}>
@@ -29,13 +30,37 @@ export const Screen = () => {
   const classes = useSelector((state) => state.classes?.data || []);
   const students = useSelector((state) => state.student.studentsData || []);
   const lessons = useSelector((state) => state.lessons?.data || []);
-  const teachers = useSelector((state) => state.teachers?.data || []);
+  const teachers = useSelector((state) => state.teacher?.data || []);
   const attendanceByLesson = useSelector((state) => state.attendance?.byLesson || {});
   const attendanceIdsByLesson = useSelector((state) => state.attendance?.idsByLesson || {});
   const prefilledLessonsRef = useRef(new Set());
   const [viewMode, setViewMode] = useState("class"); // options: 'class' | 'teacher' | 'student'
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [isLoadingLessons, setIsLoadingLessons] = useState(false);
+  const [lessonsError, setLessonsError] = useState("");
+  const [isLoadingTeachers, setIsLoadingTeachers] = useState(false);
+  const [teachersError, setTeachersError] = useState("");
+  const [pendingAttendanceIds, setPendingAttendanceIds] = useState(new Set());
+  const [attendanceErrorByLesson, setAttendanceErrorByLesson] = useState({});
+  const selectedTeacherName = useMemo(() => {
+    const t = (teachers || []).find((x) => String(x.id) === String(selectedTeacher));
+    return t?.name || "";
+  }, [teachers, selectedTeacher]);
+  const selectedStudent = useMemo(() => {
+    const s = (students || []).find((x) => String(x.id) === String(selectedStudentId));
+    if (!s) return null;
+    const id = s.id_number ?? s.id ?? null;
+    const name = s.name ?? [s.first_name, s.last_name].filter(Boolean).join(" ");
+    return id && name ? { id, name, class_kodesh: s.class_kodesh } : null;
+  }, [students, selectedStudentId]);
+
+  function getLessonTopicId(lesson) {
+    return lesson?.topic_id ?? lesson?.topicId ?? undefined;
+  }
+  function getLessonTopicName(lesson) {
+    return lesson?.topic_name ?? lesson?.topic ?? lesson?.topicName ?? "";
+  }
 
 
   //בכותרת בוחרים לפי מה להציג את הנוכחות:
@@ -48,7 +73,18 @@ export const Screen = () => {
   useEffect(() => {
     dispatch(getClassesThunk());
     dispatch(getStudentDataThunk("id_number,first_name,last_name,class_kodesh"));
-    dispatch(getLessonsThunk());
+    setIsLoadingLessons(true);
+    setLessonsError("");
+    dispatch(getLessonsThunk())
+      .unwrap()
+      .catch((e) => setLessonsError(e?.message || "שגיאה בטעינת שיעורים"))
+      .finally(() => setIsLoadingLessons(false));
+    setIsLoadingTeachers(true);
+    setTeachersError("");
+    dispatch(getTeachersThunk())
+      .unwrap()
+      .catch((e) => setTeachersError(e?.message || "שגיאה בטעינת מורים"))
+      .finally(() => setIsLoadingTeachers(false));
 
   }, [dispatch]);
 
@@ -75,26 +111,48 @@ export const Screen = () => {
       .filter(Boolean);
   }, [students, selectedClassName]);
 
-  // Lessons filtered by selected class and selected date (ISO) — memoized to avoid changing identity on each render
-  // const filteredLessons = useMemo(() => {
-  //   return lessons.filter((l) => {
-  //     const byClass = selectedClassId ? String(l.class_id) === String(selectedClassId) : true;
-  //     const byDate = selectedDateISO ? l.date === selectedDateISO : true;
-  //     return byClass && byDate;
-  //   });
-  // }, [lessons, selectedClassId, selectedDateISO]);
   const filteredLessons = useMemo(() => {
-    return lessons.filter((l) => {
+    const base = lessons.filter((l) => {
       if (viewMode === "class") {
         return selectedClassId && String(l.class_id) === String(selectedClassId) && l.date === selectedDateISO;
-      } else if (viewMode === "teacher") {
-        return selectedClassId && String(l.class_id) === String(selectedClassId) && l.topic_name === selectedTeacher;
-        // } else if (viewMode === "student") {
-        //   return String(l.class_id) === String(selectedStudentId.class_kodesh||); // או כל התנאי שיתאים
+      } 
+      else if (viewMode === "teacher") {
+        const matchesClass = selectedClassId && String(l.class_id) === String(selectedClassId);
+        const lessonTopicId = getLessonTopicId(l);
+        const lessonTopicName = getLessonTopicName(l);
+        if (!selectedTeacher) return matchesClass; // no teacher filter yet
+        // Prefer ID match when available; otherwise fall back to name match
+        const byId = lessonTopicId != null && String(lessonTopicId) === String(selectedTeacher);
+        const byName = !!selectedTeacherName && String(lessonTopicName) === String(selectedTeacherName);
+        return matchesClass && (byId || byName);
+      } else if (viewMode === "student") {
+        // Show lessons for the student's class on selected date
+        const studentClass = selectedStudent?.class_kodesh;
+        // Map class name to class id via classes list
+        const classObj = (classes || []).find((c) => String(c.name).replace(/'/g, "") === String(studentClass));
+        const classIdForStudent = classObj?.id;
+        return (
+          selectedStudent &&
+          classIdForStudent != null &&
+          String(l.class_id) === String(classIdForStudent) &&
+          l.date === selectedDateISO
+        );
       }
       return false;
     });
-  }, [lessons, selectedClassId, selectedTeacher, selectedDateISO, viewMode]);
+    // Sort by date and time when relevant (teacher view spans multiple dates)
+    return [...base].sort((a, b) => {
+      const ad = String(a.date || "");
+      const bd = String(b.date || "");
+      if (ad < bd) return -1;
+      if (ad > bd) return 1;
+      const at = String(a.start_time || "");
+      const bt = String(b.start_time || "");
+      if (at < bt) return -1;
+      if (at > bt) return 1;
+      return 0;
+    });
+  }, [lessons, selectedClassId, selectedTeacherName, selectedDateISO, viewMode, selectedStudent, classes]);
 
 
   // Track which lesson IDs we've fetched to avoid repeated requests
@@ -110,7 +168,19 @@ export const Screen = () => {
     for (const lesson of filteredLessons) {
       if (lesson?.id != null && !fetchedLessonIdsRef.current.has(lesson.id)) {
         fetchedLessonIdsRef.current.add(lesson.id);
-        dispatch(getAttendanceByLessonThunk(lesson.id));
+        setPendingAttendanceIds((prev) => new Set(prev).add(lesson.id));
+        dispatch(getAttendanceByLessonThunk(lesson.id))
+          .unwrap()
+          .catch((e) =>
+            setAttendanceErrorByLesson((prev) => ({ ...prev, [lesson.id]: e?.message || "שגיאת נוכחות" }))
+          )
+          .finally(() =>
+            setPendingAttendanceIds((prev) => {
+              const n = new Set(prev);
+              n.delete(lesson.id);
+              return n;
+            })
+          );
       }
     }
   }, [dispatch, filteredLessons]);
@@ -161,6 +231,26 @@ export const Screen = () => {
   // Zero-pad helper used by commit handler
   function pad2(n) {
     return String(n).padStart(2, "0");
+  }
+
+  // Hebrew date formatter (same logic as HebrewDateShow, scoped for simple text output)
+  const hebFullFormatter = new Intl.DateTimeFormat("he-u-ca-hebrew", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  function getHebrewDateText(iso) {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const parts = hebFullFormatter.formatToParts(dateObj);
+    const dayNum = Number(parts.find((p) => p.type === "day")?.value);
+    const monthName = parts.find((p) => p.type === "month")?.value || "";
+    const yearNum = Number(parts.find((p) => p.type === "year")?.value);
+    const dayHeb = numberToHebrewLetters(dayNum);
+    const yearHeb = formatHebrewYear(yearNum);
+    return `${dayHeb} ${monthName} ${yearHeb}`;
   }
 
   // Handle Flexcal commit: formatted Hebrew yyyy-mm-dd -> convert to Gregorian ISO then format Hebrew text
@@ -220,6 +310,8 @@ export const Screen = () => {
           <HebrewDateSelector id="flexcal-input" onCommit={handleHebCommit} />
 
           <HebrewDateShow isoDate={selectedDateISO} />
+          {isLoadingLessons && <span className="text-sm font-normal text-gray-600">טוען שיעורים…</span>}
+          {lessonsError && <span className="text-sm font-normal text-red-700">{lessonsError}</span>}
         </div>
 
 
@@ -252,6 +344,8 @@ export const Screen = () => {
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
+            {isLoadingTeachers && <span className="text-sm font-normal text-gray-600">טוען מורים…</span>}
+            {teachersError && <span className="text-sm font-normal text-red-700">{teachersError}</span>}
           </div>
         )}
 
@@ -278,15 +372,51 @@ export const Screen = () => {
           onClick={async () => {
             for (const lesson of filteredLessons) {
               const key = String(lesson.id);
-              for (const s of studentsByClass) {
+              if (viewMode === "student" && selectedStudent) {
+                const s = selectedStudent;
                 const current = (attendanceByLesson[key] && attendanceByLesson[key][String(s.id)]) || "present";
-                await dispatch(
-                  addAttendanceThunk({
-                    student_id: s.id,
-                    lesson_id: lesson.id,
-                    status: current || "present",
-                  })
-                );
+                const recId = getRecordIdFor(lesson.id, s.id);
+                if (recId) {
+                  dispatch(
+                    updateAttendanceThunk({
+                      id: recId,
+                      status: current || "present",
+                      lesson_id: lesson.id,
+                      student_id: s.id,
+                    })
+                  );
+                } else {
+                  dispatch(
+                    addAttendanceThunk({
+                      student_id: s.id,
+                      lesson_id: lesson.id,
+                      status: current || "present",
+                    })
+                  );
+                }
+              } else {
+                for (const s of studentsByClass) {
+                  const current = (attendanceByLesson[key] && attendanceByLesson[key][String(s.id)]) || "present";
+                  const recId = getRecordIdFor(lesson.id, s.id);
+                  if (recId) {
+                    dispatch(
+                      updateAttendanceThunk({
+                        id: recId,
+                        status: current || "present",
+                        lesson_id: lesson.id,
+                        student_id: s.id,
+                      })
+                    );
+                  } else {
+                    dispatch(
+                      addAttendanceThunk({
+                        student_id: s.id,
+                        lesson_id: lesson.id,
+                        status: current || "present",
+                      })
+                    );
+                  }
+                }
               }
             }
           }}
@@ -310,14 +440,15 @@ export const Screen = () => {
 
       </div>
 
-      {/* TABLE */}
-      <table className="w-full border-collapse border border-black text-right">
+      {/*יומן כיתה  TABLE */}
+    {viewMode==="class"&&
+    <table className="w-full border-collapse border border-black text-right">
         <thead>
           <tr className="bg-[#584041] text-white">
             <th className="border border-black px-4 py-2">שם התלמידה</th>
             {filteredLessons.map((lesson, index) => (
               <th key={index} className="border border-black px-4 py-2">
-                {lesson.topic}
+                {getLessonTopicName(lesson)}
               </th>
             ))}
           </tr>
@@ -380,7 +511,163 @@ export const Screen = () => {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table>}
+
+      {/* יומן מורה/מקצוע TABLE */}
+      {viewMode === "teacher" && (
+        <table className="w-full border-collapse border border-black text-right">
+          <thead>
+            <tr className="bg-[#584041] text-white">
+              <th className="border border-black px-4 py-2">שם התלמידה</th>
+              {filteredLessons.map((lesson, index) => (
+                <th key={index} className="border border-black px-4 py-2">
+                  {getHebrewDateText(lesson.date)}
+                </th>
+              ))}
+              <th className="border border-black px-4 py-2">אחוז נוכחות</th>
+            </tr>
+          </thead>
+          <tbody>
+            {studentsByClass.map((student, rowIndex) => (
+              <tr key={student.id ?? rowIndex}>
+                <Cell>{student.name}</Cell>
+                {filteredLessons.map((lesson) => {
+                  const current = getStatusFor(lesson.id, student.id);
+                  const recordId = getRecordIdFor(lesson.id, student.id);
+                  return (
+                    <Cell key={`${lesson.id}-${student.id}`}>
+                      <select
+                        className="border border-black rounded px-2 py-1"
+                        value={current}
+                        disabled={pendingAttendanceIds.has(lesson.id)}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          if (next === "") return;
+                          if (!current) {
+                            dispatch(
+                              addAttendanceThunk({
+                                student_id: student.id,
+                                lesson_id: lesson.id,
+                                status: next,
+                              })
+                            );
+                          } else if (recordId) {
+                            dispatch(
+                              updateAttendanceThunk({
+                                id: recordId,
+                                status: next,
+                                lesson_id: lesson.id,
+                                student_id: student.id,
+                              })
+                            );
+                          } else {
+                            dispatch(
+                              addAttendanceThunk({
+                                student_id: student.id,
+                                lesson_id: lesson.id,
+                                status: next,
+                              })
+                            );
+                          }
+                        }}
+                      >
+                        <option value="">—</option>
+                        <option value="present">נוכחת</option>
+                        <option value="late">מאחרת</option>
+                        <option value="absent">חסרה</option>
+                        <option value="approved absent">חסרה באישור</option>
+                      </select>
+                    </Cell>
+                  );
+                })}
+                {/* Summary percent per student */}
+                <Cell>
+                  {(() => {
+                    const total = filteredLessons.length;
+                    if (!total) return "—";
+                    let presentCount = 0;
+                    for (const les of filteredLessons) {
+                      const st = getStatusFor(les.id, student.id);
+                      if (st === "present" || st === "late") presentCount += 1;
+                    }
+                    const pct = Math.round((presentCount / total) * 100);
+                    return pct + "%";
+                  })()}
+                </Cell>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* יומן תלמידה TABLE */}
+      {viewMode === "student" && selectedStudent && (
+        <table className="w-full border-collapse border border-black text-right">
+          <thead>
+            <tr className="bg-[#584041] text-white">
+              <th className="border border-black px-4 py-2">מקצוע</th>
+              {filteredLessons.map((lesson, index) => (
+                <th key={index} className="border border-black px-4 py-2">
+                  {getLessonTopicName(lesson)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <Cell>{selectedStudent.name}</Cell>
+              {filteredLessons.map((lesson) => {
+                const current = getStatusFor(lesson.id, selectedStudent.id);
+                const recordId = getRecordIdFor(lesson.id, selectedStudent.id);
+                return (
+                  <Cell key={`${lesson.id}-${selectedStudent.id}`}>
+                    <select
+                      className="border border-black rounded px-2 py-1"
+                      value={current}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === "") return;
+                        if (!current) {
+                          dispatch(
+                            addAttendanceThunk({
+                              student_id: selectedStudent.id,
+                              lesson_id: lesson.id,
+                              status: next,
+                            })
+                          );
+                        } else if (recordId) {
+                          dispatch(
+                            updateAttendanceThunk({
+                              id: recordId,
+                              status: next,
+                              lesson_id: lesson.id,
+                              student_id: selectedStudent.id,
+                            })
+                          );
+                        } else {
+                          dispatch(
+                            addAttendanceThunk({
+                              student_id: selectedStudent.id,
+                              lesson_id: lesson.id,
+                              status: next,
+                            })
+                          );
+                        }
+                      }}
+                    >
+                      <option value="">—</option>
+                      <option value="present">נוכחת</option>
+                      <option value="late">מאחרת</option>
+                      <option value="absent">חסרה</option>
+                      <option value="approved absent">חסרה באישור</option>
+                    </select>
+                  </Cell>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+      )}
     </div >
   );
 };

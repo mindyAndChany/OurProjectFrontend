@@ -5,8 +5,8 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 export const getAttendanceByLessonThunk = createAsyncThunk(
   "attendance/getByLesson",
   async (lesson_id) => {
-    const url = `http://localhost:4000/api/attendance/getByLesson/${encodeURIComponent(lesson_id)}`;
-    const res = await fetch(url);
+    const url = `http://localhost:4000/api/attendance/getByLesson/${lesson_id}`;
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error("failed to fetch attendance");
     const records = await res.json();
     return { lesson_id, records };
