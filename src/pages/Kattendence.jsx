@@ -84,7 +84,7 @@ export const Screen = () => {
   const selectedStudent = useMemo(() => {
     const s = (students || []).find((x) => String(x.id) === String(selectedStudentId));
     if (!s) return null;
-    const id = s.id_number ?? s.id ?? null;
+    const id = s.id ?? s.id_number ?? null; // העדפה ל-ID הסדרתי כדי להתאים לרישומי נוכחות
     const name = s.name ?? [s.first_name, s.last_name].filter(Boolean).join(" ");
     return id && name ? { id, name, class_kodesh: s.class_kodesh } : null;
   }, [students, selectedStudentId]);
@@ -106,7 +106,7 @@ export const Screen = () => {
   // Initial data load
   useEffect(() => {
     dispatch(getClassesThunk());
-    dispatch(getStudentDataThunk("id_number,first_name,last_name,class_kodesh"));
+    dispatch(getStudentDataThunk("id,id_number,first_name,last_name,class_kodesh"));
     setIsLoadingLessons(true);
     setLessonsError("");
     dispatch(getLessonsThunk())
@@ -138,7 +138,7 @@ export const Screen = () => {
     return students
       .filter((s) => String(s.class_kodesh) === String(selectedClassName))
       .map((s) => {
-        const id = s.id_number ?? s.id ?? null;
+        const id = s.id ?? s.id_number ?? null; // העדפה ל-ID הסדרתי כדי להתאים לרישומי נוכחות
         const name = s.name ?? [s.first_name, s.last_name].filter(Boolean).join(" ");
         return id && name ? { id, name } : null;
       })
