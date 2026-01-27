@@ -19,20 +19,30 @@ const Cell = ({ children, className = "" }) => (
 
 export const Screen = () => {
   const dispatch = useDispatch();
-  const [selectedClassId, setSelectedClassId] = useState("ה'ת");
+  const [selectedClassId, setSelectedClassId] = useState("ה'1");
   const [selectedDateISO, setSelectedDateISO] = useState(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   });
 
-
   // Selectors to fetch data from Redux Store
   const classes = useSelector((state) => state.classes?.data || []);
   const students = useSelector((state) => state.student.studentsData || []);
   const lessons = useSelector((state) => state.lessons?.data || []);
+  const teachers = useSelector((state) => state.teachers?.data || []);
   const attendanceByLesson = useSelector((state) => state.attendance?.byLesson || {});
   const attendanceIdsByLesson = useSelector((state) => state.attendance?.idsByLesson || {});
-const prefilledLessonsRef = useRef(new Set());
+  const prefilledLessonsRef = useRef(new Set());
+  const [viewMode, setViewMode] = useState("class"); // options: 'class' | 'teacher' | 'student'
+  const [selectedTeacher, setSelectedTeacher] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+
+
+  //בכותרת בוחרים לפי מה להציג את הנוכחות:
+  //  יומן כיתה-כשניגשים למסך בוחרים תאריך (יום או שבוע) וכיתה ולפי זה מופיעה טבלה שכותרותיה הם השיעורים והמטלות/ מבחנים שעודכנו והשורות הם התלמידות ובפנים מזינים נוכחות. 
+  // ואם עוד לא עודכן מה השיעורים שהתבצעו בפועל. וצריך קודם כל לעדכן האם התקיים השיעור ואם כן האם הפרטים כפי המתוכנן.
+  // יומן מורה-בוחרים מורה וכיתה ומקבלים נוכחות של הכיתה בשיעורי המורה כולל סיכום אחוזים לכל תלמידה.בכל המחצית.
+  // יומן תלמידה -רואים לבת מסוימת אחוזי נוכחות בכל המחצית בכל המקצועות.
 
   // Initial data load
   useEffect(() => {
@@ -66,13 +76,26 @@ const prefilledLessonsRef = useRef(new Set());
   }, [students, selectedClassName]);
 
   // Lessons filtered by selected class and selected date (ISO) — memoized to avoid changing identity on each render
+  // const filteredLessons = useMemo(() => {
+  //   return lessons.filter((l) => {
+  //     const byClass = selectedClassId ? String(l.class_id) === String(selectedClassId) : true;
+  //     const byDate = selectedDateISO ? l.date === selectedDateISO : true;
+  //     return byClass && byDate;
+  //   });
+  // }, [lessons, selectedClassId, selectedDateISO]);
   const filteredLessons = useMemo(() => {
     return lessons.filter((l) => {
-      const byClass = selectedClassId ? String(l.class_id) === String(selectedClassId) : true;
-      const byDate = selectedDateISO ? l.date === selectedDateISO : true;
-      return byClass && byDate;
+      if (viewMode === "class") {
+        return selectedClassId && String(l.class_id) === String(selectedClassId) && l.date === selectedDateISO;
+      } else if (viewMode === "teacher") {
+        return selectedClassId && String(l.class_id) === String(selectedClassId) && l.topic_name === selectedTeacher;
+        // } else if (viewMode === "student") {
+        //   return String(l.class_id) === String(selectedStudentId.class_kodesh||); // או כל התנאי שיתאים
+      }
+      return false;
     });
-  }, [lessons, selectedClassId, selectedDateISO]);
+  }, [lessons, selectedClassId, selectedTeacher, selectedDateISO, viewMode]);
+
 
   // Track which lesson IDs we've fetched to avoid repeated requests
   const fetchedLessonIdsRef = useRef(new Set());
@@ -100,7 +123,7 @@ const prefilledLessonsRef = useRef(new Set());
       if (map && Object.keys(map).length === 0) {
         const records = (studentsByClass || []).map((s) => ({ student_id: s.id, status: "present" }));
         dispatch(setAttendanceForLesson({ lesson_id: lesson.id, records }));
-              prefilledLessonsRef.current.add(key); // לא להריץ שוב
+        prefilledLessonsRef.current.add(key); // לא להריץ שוב
 
       }
     }
@@ -178,6 +201,19 @@ const prefilledLessonsRef = useRef(new Set());
     <div className="min-h-screen bg-[#f4f0ec] px-10 py-6 pt-[88px] [direction:rtl] font-sans">
       {/* HEADER */}
       <div className="flex flex-wrap gap-6 mb-10 text-lg font-bold items-center">
+        <div className="flex items-center gap-2">
+          <label>סוג יומן:</label>
+          <select
+            value={viewMode}
+            onChange={(e) => setViewMode(e.target.value)}
+            className="border border-black rounded px-2 py-1"
+          >
+            <option value="class">יומן כיתה</option>
+            <option value="teacher">יומן מורה</option>
+            <option value="student">יומן תלמידה</option>
+          </select>
+        </div>
+
         {/* Hebrew date picker (jQuery Flexcal) */}
         <div className="flex items-center gap-2">
           {/* בחירת תאריך עברי  */}
@@ -187,19 +223,54 @@ const prefilledLessonsRef = useRef(new Set());
         </div>
 
 
-        <div className="flex items-center gap-2">
-          <select
-            id="class"
-            className="border border-black rounded px-2 py-1 z-10 relative"
-            value={selectedClassId}
-            onChange={(e) => setSelectedClassId(e.target.value)}
-          >
-            <option value="" disabled>בחרי כיתה</option>
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.id}>{cls.name}</option>
-            ))}
-          </select>
-        </div>
+        {viewMode !== "student" && (
+          <div className="flex items-center gap-2">
+            <select
+              id="class"
+              className="border border-black rounded px-2 py-1 z-10 relative"
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+            >
+              <option value="" disabled>בחרי כיתה</option>
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {viewMode === "teacher" && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="teacher">בחרי מורה:</label>
+            <select
+              id="teacher"
+              className="border border-black rounded px-2 py-1"
+              value={selectedTeacher}
+              onChange={(e) => setSelectedTeacher(e.target.value)}
+            >
+              {teachers.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {viewMode === "student" && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="student">בחרי תלמידה:</label>
+            <select
+              id="student"
+              className="border border-black rounded px-2 py-1"
+              value={selectedStudentId}
+              onChange={(e) => setSelectedStudentId(e.target.value)}
+            >
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
 
         {/* Save all statuses for visible lessons */}
         <button
