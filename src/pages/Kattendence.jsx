@@ -12,11 +12,45 @@ import { updateAttendanceThunk } from "../redux/slices/ATTENDANCE/updateAttendan
 import { getTeachersThunk } from "../redux/slices/TEACHERS/getTeachersThunk.js";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 
-const Cell = ({ children, className = "" }) => (
-  <td className={`border border-black px-4 py-2 text-center align-middle ${className}`}>
+const Cell = ({ children, className = "", stickyRight = false }) => (
+  <td
+    className={
+      `border border-black px-3 py-2 text-center align-middle text-sm ` +
+      (stickyRight ? "sticky right-0 bg-white z-20" : "") +
+      (className ? ` ${className}` : "")
+    }
+  >
     {children || ""}
   </td>
 );
+
+function StatusSelect({ value, onChange, disabled }) {
+  const tone =
+    value === "present"
+      ? "bg-emerald-50 text-emerald-900 ring-emerald-200"
+      : value === "late"
+      ? "bg-amber-50 text-amber-900 ring-amber-200"
+      : value === "approved absent"
+      ? "bg-sky-50 text-sky-900 ring-sky-200"
+      : value === "absent"
+      ? "bg-rose-50 text-rose-900 ring-rose-200"
+      : "bg-white text-gray-900 ring-gray-200";
+
+  return (
+    <select
+      className={`w-full min-w-[120px] rounded-md border-0 px-2 py-1 text-sm shadow-sm ring-1 ${tone} disabled:opacity-60`}
+      value={value}
+      disabled={disabled}
+      onChange={onChange}
+    >
+      <option value="">—</option>
+      <option value="present">נוכחת</option>
+      <option value="late">מאחרת</option>
+      <option value="absent">חסרה</option>
+      <option value="approved absent">חסרה באישור</option>
+    </select>
+  );
+}
 
 export const Screen = () => {
   const dispatch = useDispatch();
@@ -288,15 +322,16 @@ export const Screen = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f0ec] px-10 py-6 pt-[88px] [direction:rtl] font-sans">
+    <div className="min-h-screen bg-[#f4f0ec] px-4 sm:px-8 lg:px-10 py-6 pt-[88px] [direction:rtl] font-sans">
       {/* HEADER */}
-      <div className="flex flex-wrap gap-6 mb-10 text-lg font-bold items-center">
+      <div className="sticky top-[72px] z-30 mb-6">
+        <div className="flex flex-wrap gap-4 items-end text-base bg-white/90 backdrop-blur rounded-xl p-4 shadow-sm ring-1 ring-black/5">
         <div className="flex items-center gap-2">
           <label>סוג יומן:</label>
           <select
             value={viewMode}
             onChange={(e) => setViewMode(e.target.value)}
-            className="border border-black rounded px-2 py-1"
+            className="h-10 min-w-[140px] rounded-md border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-gray-200"
           >
             <option value="class">יומן כיתה</option>
             <option value="teacher">יומן מורה</option>
@@ -319,7 +354,7 @@ export const Screen = () => {
           <div className="flex items-center gap-2">
             <select
               id="class"
-              className="border border-black rounded px-2 py-1 z-10 relative"
+              className="h-10 min-w-[120px] rounded-md border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-gray-200 z-10 relative"
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
             >
@@ -336,7 +371,7 @@ export const Screen = () => {
             <label htmlFor="teacher">בחרי מורה:</label>
             <select
               id="teacher"
-              className="border border-black rounded px-2 py-1"
+              className="h-10 min-w-[140px] rounded-md border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-gray-200"
               value={selectedTeacher}
               onChange={(e) => setSelectedTeacher(e.target.value)}
             >
@@ -354,7 +389,7 @@ export const Screen = () => {
             <label htmlFor="student">בחרי תלמידה:</label>
             <select
               id="student"
-              className="border border-black rounded px-2 py-1"
+              className="h-10 min-w-[160px] rounded-md border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-gray-200"
               value={selectedStudentId}
               onChange={(e) => setSelectedStudentId(e.target.value)}
             >
@@ -368,7 +403,7 @@ export const Screen = () => {
 
         {/* Save all statuses for visible lessons */}
         <button
-          className="ml-auto bg-[#584041] text-white px-4 py-2 rounded shadow hover:opacity-90"
+          className="ml-auto bg-[#584041] text-white h-10 px-5 rounded-lg shadow-md hover:opacity-90"
           onClick={async () => {
             for (const lesson of filteredLessons) {
               const key = String(lesson.id);
@@ -424,30 +459,18 @@ export const Screen = () => {
           שמרי ושלחי נוכחות
         </button>
 
-        {/* <div className="flex items-center gap-2">
-          <label htmlFor="teacher">מורה:</label>
-          <select
-            id="teacher"
-            className="border border-black rounded px-2 py-1 z-10 relative"
-            value={selectedTeacher}
-            onChange={(e) => dispatch({ type: "filters/setTeacher", payload: e.target.value })}
-          >
-            {teachers.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div> */}
-
+        </div>
       </div>
 
       {/*יומן כיתה  TABLE */}
     {viewMode==="class"&&
-    <table className="w-full border-collapse border border-black text-right">
+    <div className="overflow-x-auto rounded-xl bg-white shadow ring-1 ring-black/5">
+    <table className="w-full min-w-max border-collapse text-right">
         <thead>
-          <tr className="bg-[#584041] text-white">
-            <th className="border border-black px-4 py-2">שם התלמידה</th>
+          <tr className="text-white">
+            <th className="sticky right-0 z-30 bg-[#584041] border border-black px-4 py-3 text-sm">שם התלמידה</th>
             {filteredLessons.map((lesson, index) => (
-              <th key={index} className="border border-black px-4 py-2">
+              <th key={index} className="bg-[#584041] border border-black px-4 py-3 text-sm">
                 {getLessonTopicName(lesson)}
               </th>
             ))}
@@ -455,15 +478,14 @@ export const Screen = () => {
         </thead>
         <tbody>
           {studentsByClass.map((student, rowIndex) => (
-            <tr key={student.id ?? rowIndex}>
-              <Cell>{student.name}</Cell>
+            <tr key={student.id ?? rowIndex} className="odd:bg-white even:bg-gray-50">
+              <Cell stickyRight className="font-medium">{student.name}</Cell>
               {filteredLessons.map((lesson) => {
                 const current = getStatusFor(lesson.id, student.id);
                 const recordId = getRecordIdFor(lesson.id, student.id);
                 return (
                   <Cell key={`${lesson.id}-${student.id}`}>
-                    <select
-                      className="border border-black rounded px-2 py-1"
+                    <StatusSelect
                       value={current}
                       onChange={(e) => {
                         const next = e.target.value;
@@ -498,46 +520,41 @@ export const Screen = () => {
                           );
                         }
                       }}
-                    >
-                      <option value="">—</option>
-                      <option value="present">נוכחת</option>
-                      <option value="late">מאחרת</option>
-                      <option value="absent">חסרה</option>
-                      <option value="approved absent">חסרה באישור</option>
-                    </select>
+                    />
                   </Cell>
                 );
               })}
             </tr>
           ))}
         </tbody>
-      </table>}
+      </table>
+      </div>}
 
       {/* יומן מורה/מקצוע TABLE */}
       {viewMode === "teacher" && (
-        <table className="w-full border-collapse border border-black text-right">
+        <div className="overflow-x-auto rounded-xl bg-white shadow ring-1 ring-black/5">
+        <table className="w-full min-w-max border-collapse text-right">
           <thead>
-            <tr className="bg-[#584041] text-white">
-              <th className="border border-black px-4 py-2">שם התלמידה</th>
+            <tr className="text-white">
+              <th className="sticky right-0 z-30 bg-[#584041] border border-black px-4 py-3 text-sm">שם התלמידה</th>
               {filteredLessons.map((lesson, index) => (
-                <th key={index} className="border border-black px-4 py-2">
+                <th key={index} className="bg-[#584041] border border-black px-4 py-3 text-sm">
                   {getHebrewDateText(lesson.date)}
                 </th>
               ))}
-              <th className="border border-black px-4 py-2">אחוז נוכחות</th>
+              <th className="bg-[#584041] border border-black px-4 py-3 text-sm">אחוז נוכחות</th>
             </tr>
           </thead>
           <tbody>
             {studentsByClass.map((student, rowIndex) => (
-              <tr key={student.id ?? rowIndex}>
-                <Cell>{student.name}</Cell>
+              <tr key={student.id ?? rowIndex} className="odd:bg-white even:bg-gray-50">
+                <Cell stickyRight className="font-medium">{student.name}</Cell>
                 {filteredLessons.map((lesson) => {
                   const current = getStatusFor(lesson.id, student.id);
                   const recordId = getRecordIdFor(lesson.id, student.id);
                   return (
                     <Cell key={`${lesson.id}-${student.id}`}>
-                      <select
-                        className="border border-black rounded px-2 py-1"
+                      <StatusSelect
                         value={current}
                         disabled={pendingAttendanceIds.has(lesson.id)}
                         onChange={(e) => {
@@ -570,18 +587,12 @@ export const Screen = () => {
                             );
                           }
                         }}
-                      >
-                        <option value="">—</option>
-                        <option value="present">נוכחת</option>
-                        <option value="late">מאחרת</option>
-                        <option value="absent">חסרה</option>
-                        <option value="approved absent">חסרה באישור</option>
-                      </select>
+                      />
                     </Cell>
                   );
                 })}
                 {/* Summary percent per student */}
-                <Cell>
+                <Cell className="font-semibold">
                   {(() => {
                     const total = filteredLessons.length;
                     if (!total) return "—";
@@ -598,31 +609,32 @@ export const Screen = () => {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {/* יומן תלמידה TABLE */}
       {viewMode === "student" && selectedStudent && (
-        <table className="w-full border-collapse border border-black text-right">
+        <div className="overflow-x-auto rounded-xl bg-white shadow ring-1 ring-black/5">
+        <table className="w-full min-w-max border-collapse text-right">
           <thead>
-            <tr className="bg-[#584041] text-white">
-              <th className="border border-black px-4 py-2">מקצוע</th>
+            <tr className="text-white">
+              <th className="sticky right-0 z-30 bg-[#584041] border border-black px-4 py-3 text-sm">מקצוע</th>
               {filteredLessons.map((lesson, index) => (
-                <th key={index} className="border border-black px-4 py-2">
+                <th key={index} className="bg-[#584041] border border-black px-4 py-3 text-sm">
                   {getLessonTopicName(lesson)}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <Cell>{selectedStudent.name}</Cell>
+            <tr className="odd:bg-white even:bg-gray-50">
+              <Cell stickyRight className="font-medium">{selectedStudent.name}</Cell>
               {filteredLessons.map((lesson) => {
                 const current = getStatusFor(lesson.id, selectedStudent.id);
                 const recordId = getRecordIdFor(lesson.id, selectedStudent.id);
                 return (
                   <Cell key={`${lesson.id}-${selectedStudent.id}`}>
-                    <select
-                      className="border border-black rounded px-2 py-1"
+                    <StatusSelect
                       value={current}
                       onChange={(e) => {
                         const next = e.target.value;
@@ -654,19 +666,14 @@ export const Screen = () => {
                           );
                         }
                       }}
-                    >
-                      <option value="">—</option>
-                      <option value="present">נוכחת</option>
-                      <option value="late">מאחרת</option>
-                      <option value="absent">חסרה</option>
-                      <option value="approved absent">חסרה באישור</option>
-                    </select>
+                    />
                   </Cell>
                 );
               })}
             </tr>
           </tbody>
         </table>
+        </div>
       )}
     </div >
   );
