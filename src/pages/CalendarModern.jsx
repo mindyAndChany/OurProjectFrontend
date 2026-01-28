@@ -1,20 +1,25 @@
-import React, { useEffect, useMemo, useState,useRef} from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 // import { updateEvent, removeEvent } from "../redux/slices/calendar/calendarSlice.js";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 import { addEvent } from "../redux/slices/calendar/calendarThunk.js";
 import { getEvents } from "../redux/slices/calendar/getEventThunk.js";
 import { updateEvent } from "../redux/slices/calendar/calendarThunk.js";
-import {removeEvent} from "../redux/slices/calendar/calendarThunk.js";
+import { removeEvent } from "../redux/slices/calendar/calendarThunk.js";
+import { addRealyLessonThunk } from "../redux/slices/LESSONS/addRealyLessonThunk.js";
+import { useNavigate } from "react-router-dom";
 /** =========================
  *  הגדרות סוגי אירועים (עברית + צבעים בסגנון האתר)
  *  ========================= */
+
 const TYPE_META = {
   exam: { label: "מבחנים", color: "#295f8b" },
   trip: { label: "טיולים", color: "#10B981" },
   wedding: { label: "חתונות", color: "#EC4899" },
   holiday: { label: "חופשות", color: "#F59E0B" },
   other: { label: "אחר", color: "#64748B" },
+  attendance: { label: "אירוע עם נוכחות", color: "#8B5CF6" },
+
 };
 
 const WEEK_DAYS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
@@ -100,7 +105,9 @@ function getTypeColor(type) {
 /** =========================
  *  מודאל אירוע (הוספה/עריכה)
  *  ========================= */
-function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete , onBack}) {
+function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete, onBack }) {
+  const classes = useSelector((state) => state.classes?.data ?? []); // רשימת כיתות
+
   if (!open || !editing) return null;
 
   const typeColor = getTypeColor(editing.type);
@@ -122,7 +129,7 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete ,
           >
             סגור
           </button>
-            <button
+          <button
             onClick={onBack}
             className="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 transition font-bold"
           >
@@ -158,9 +165,10 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete ,
             </div>
 
             <div className="md:col-span-1">
-              <label   type="time"
-             className="block text-sm font-bold text-gray-800 mb-2">שעת התחלה</label>
+              <label
+                className="block text-sm font-bold text-gray-800 mb-2">שעת התחלה</label>
               <input
+                type="time"
                 value={editing.time_start}
                 onChange={(e) => onChange({ ...editing, time_start: e.target.value })}
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
@@ -169,9 +177,10 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete ,
             </div>
 
             <div className="md:col-span-1">
-              <label   type="time"
-                     className="block text-sm font-bold text-gray-800 mb-2">שעת סיום</label>
+              <label
+                className="block text-sm font-bold text-gray-800 mb-2">שעת סיום</label>
               <input
+                type="time"
                 value={editing.time_end}
                 onChange={(e) => onChange({ ...editing, time_end: e.target.value })}
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
@@ -190,6 +199,24 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete ,
             />
           </div>
         </div>
+        {editing.type === "attendance" && (
+          <div>
+            <label className="block text-sm font-bold text-gray-800 mb-2">כיתות</label>
+            <select
+              multiple
+              value={editing.class_ids || []}
+              onChange={(e) => {
+                const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value);
+                onChange({ ...editing, class_ids: selected });
+              }}
+              className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none"
+            >
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="mt-6 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -253,13 +280,13 @@ function DayEventsModal({ open, dateISO, dateHeb, events, onClose, onAdd, onEdit
             </button>
           </div>
         </div>
-<div className="mt-6">
-  {events.length === 0 ? (
-    <div className="text-gray-600 font-semibold">אין אירועים בתאריך זה</div>
-  ) : (
-    <DayTimeline events={events} onEdit={onEdit} />
-  )}
-</div>
+        <div className="mt-6">
+          {events.length === 0 ? (
+            <div className="text-gray-600 font-semibold">אין אירועים בתאריך זה</div>
+          ) : (
+            <DayTimeline events={events} onEdit={onEdit} />
+          )}
+        </div>
 
       </div>
     </div>
@@ -435,28 +462,28 @@ export default function CalendarModern() {
     setSelectedDateISO(iso);
     setHoveredISO(null);
   }
-function prev() {
-if (viewMode === "month") {
-  prevMonth();
-}
-else if (viewMode === "week") {
-  prevWeek();
-}
-else if (viewMode === "day") {
-  prevDay();
-}
-}
-function next() {
-  if (viewMode === "month") {
-    nextMonth();
+  function prev() {
+    if (viewMode === "month") {
+      prevMonth();
+    }
+    else if (viewMode === "week") {
+      prevWeek();
+    }
+    else if (viewMode === "day") {
+      prevDay();
+    }
   }
-  else if (viewMode === "week") {
-    nextWeek();
+  function next() {
+    if (viewMode === "month") {
+      nextMonth();
+    }
+    else if (viewMode === "week") {
+      nextWeek();
+    }
+    else if (viewMode === "day") {
+      nextDay();
+    }
   }
-  else if (viewMode === "day") {
-    nextDay();
-  }
-}
   function prevMonth() {
     const m = viewMonth - 1;
     if (m < 0) {
@@ -472,48 +499,48 @@ function next() {
       setViewYear((y) => y + 1);
     } else setViewMonth(m);
   }
-function shiftDay(deltaDays) {
-  const [y, m, d] = selectedDateISO.split("-").map(Number);
-  const base = new Date(y, m - 1, d);
-  base.setDate(base.getDate() + deltaDays);
+  function shiftDay(deltaDays) {
+    const [y, m, d] = selectedDateISO.split("-").map(Number);
+    const base = new Date(y, m - 1, d);
+    base.setDate(base.getDate() + deltaDays);
 
-  const iso = toISODate(base);
-  setSelectedDateISO(iso);
-  setHoveredISO(null);
+    const iso = toISODate(base);
+    setSelectedDateISO(iso);
+    setHoveredISO(null);
 
-  setViewYear(base.getFullYear());
-  setViewMonth(base.getMonth());
-}
+    setViewYear(base.getFullYear());
+    setViewMonth(base.getMonth());
+  }
 
-function prevDay() {
-  shiftDay(-1);
-}
+  function prevDay() {
+    shiftDay(-1);
+  }
 
-function nextDay() {
-  shiftDay(1);
-}
+  function nextDay() {
+    shiftDay(1);
+  }
 
-function shiftWeek(deltaDays) {
-  const [y, m, d] = selectedDateISO.split("-").map(Number);
-  const base = new Date(y, m - 1, d);
-  base.setDate(base.getDate() + deltaDays);
+  function shiftWeek(deltaDays) {
+    const [y, m, d] = selectedDateISO.split("-").map(Number);
+    const base = new Date(y, m - 1, d);
+    base.setDate(base.getDate() + deltaDays);
 
-  const iso = toISODate(base);
-  setSelectedDateISO(iso);
-  setHoveredISO(null);
+    const iso = toISODate(base);
+    setSelectedDateISO(iso);
+    setHoveredISO(null);
 
-  // כדי שהכותרות (חודש עברי/תאריך למעלה) יישארו מסונכרנות
-  setViewYear(base.getFullYear());
-  setViewMonth(base.getMonth());
-}
+    // כדי שהכותרות (חודש עברי/תאריך למעלה) יישארו מסונכרנות
+    setViewYear(base.getFullYear());
+    setViewMonth(base.getMonth());
+  }
 
-function prevWeek() {
-  shiftWeek(-7);
-}
+  function prevWeek() {
+    shiftWeek(-7);
+  }
 
-function nextWeek() {
-  shiftWeek(7);
-}
+  function nextWeek() {
+    shiftWeek(7);
+  }
 
   function openAdd(dateISO) {
     setEditing({
@@ -572,13 +599,28 @@ function nextWeek() {
         })
       );
     } else {
-       const { id, ...data } = payload;
-       dispatch(updateEvent({ id, data }));
+      const { id, ...data } = payload;
+      dispatch(updateEvent({ id, data }));
       // dispatch(updateEvent(payload));
     }
 
     setSelectedDateISO(payload.date);
     closeEditor();
+    if (payload.type === "attendance" && Array.isArray(editing.class_ids)) {
+      editing.class_ids.forEach((class_id) => {
+        dispatch(addRealyLessonThunk({
+          class_id,
+          date: payload.date,
+          start_time: payload.time_start,
+          end_time: payload.time_end,
+          topic: payload.title,
+          topic_id: null,
+          is_cancelled: false,
+          cancellation_reason: "",
+        }));
+      });
+    }
+
   }
 
   function deleteEvent() {
@@ -654,13 +696,13 @@ function nextWeek() {
         </div>
 
         {/* Layout */}
-           <div
-               className={[
-              "mt-10 grid gap-10",
-          viewMode === "week" ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-[1fr_360px]",
-         ].join(" ")}
-        >     
-             {/* Calendar */}
+        <div
+          className={[
+            "mt-10 grid gap-10",
+            viewMode === "week" ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-[1fr_360px]",
+          ].join(" ")}
+        >
+          {/* Calendar */}
 
           <section className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 min-h-[300px]">
             {viewMode === "month" && (
@@ -804,113 +846,113 @@ function nextWeek() {
                 onOpenEdit={openEdit}
               />
             )} */}
-{viewMode === "week" && (
-  <WeekGridView
-  weekDates={daysInWeek(selectedDateISO)}
-    eventsByDate={eventsByDate}
-    onEdit={openEdit}
-    onOpenAdd={openAdd}
-    selectedDateISO={selectedDateISO}
-    onSelectDate={setSelectedDateISO}
-    onHoverDate={setHoveredISO}
-  />
-)}
+            {viewMode === "week" && (
+              <WeekGridView
+                weekDates={daysInWeek(selectedDateISO)}
+                eventsByDate={eventsByDate}
+                onEdit={openEdit}
+                onOpenAdd={openAdd}
+                selectedDateISO={selectedDateISO}
+                onSelectDate={setSelectedDateISO}
+                onHoverDate={setHoveredISO}
+              />
+            )}
 
-         {viewMode === "day" && (
-  <DayGridView
-    selectedDateISO={selectedDateISO}
-    eventsByDate={eventsByDate}
-    onEdit={openEdit}
-    onOpenAdd={openAdd}
-    onHoverDate={setHoveredISO}
-  />
-)}
+            {viewMode === "day" && (
+              <DayGridView
+                selectedDateISO={selectedDateISO}
+                eventsByDate={eventsByDate}
+                onEdit={openEdit}
+                onOpenAdd={openAdd}
+                onHoverDate={setHoveredISO}
+              />
+            )}
 
           </section>
           {/* Sidebar */}
           {viewMode !== "week" && (
-<aside className="space-y-6">
-            {/* Legend קטן בצד */}
-            <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">מקרא</h2>
-                <span className="text-xs font-bold text-gray-500">סוגי אירועים</span>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                {legendItems.map((x) => (
-                  <div key={x.type} className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: x.color }} />
-                    <span className="text-sm font-bold text-gray-800">{x.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Selected day events (נשאר בצד כמו שביקשת) */}
-            <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">אירועים בתאריך</h2>
-                  <p className="mt-1 text-gray-600 font-semibold">
-                    {hebrewDateTextFromISO(selectedDateISO, numberToHebrewLetters, formatHebrewYear, hebFullFormatter)}
-                  </p>
-
-                  {/* <p className="mt-1 text-gray-600 font-semibold">{selectedDateISO}</p> */}
+            <aside className="space-y-6">
+              {/* Legend קטן בצד */}
+              <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-5">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-900">מקרא</h2>
+                  <span className="text-xs font-bold text-gray-500">סוגי אירועים</span>
                 </div>
 
-                <button
-                  onClick={() => openAdd(selectedDateISO)}
-                  className="px-5 py-3 rounded-full bg-[#295f8b] text-white font-bold shadow-md hover:bg-[#1e4a6b] transition"
-                >
-                  הוסף
-                </button>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {legendItems.map((x) => (
+                    <div key={x.type} className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: x.color }} />
+                      <span className="text-sm font-bold text-gray-800">{x.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="mt-5 space-y-3">
-                {selectedEvents.length === 0 ? (
-                  <div className="text-gray-600 font-semibold">אין אירועים בתאריך זה</div>
-                ) : (
-                  selectedEvents.map((ev) => (
-                    <button
-                      key={ev.id}
-                      onClick={() => openEdit(ev)}
-                      className="w-full text-right rounded-2xl border border-gray-200 p-4 hover:shadow-md transition"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: getTypeColor(ev.type) }} />
-                            <span className="text-lg font-bold text-gray-900 truncate">{ev.title}</span>
+              {/* Selected day events (נשאר בצד כמו שביקשת) */}
+              <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">אירועים בתאריך</h2>
+                    <p className="mt-1 text-gray-600 font-semibold">
+                      {hebrewDateTextFromISO(selectedDateISO, numberToHebrewLetters, formatHebrewYear, hebFullFormatter)}
+                    </p>
+
+                    {/* <p className="mt-1 text-gray-600 font-semibold">{selectedDateISO}</p> */}
+                  </div>
+
+                  <button
+                    onClick={() => openAdd(selectedDateISO)}
+                    className="px-5 py-3 rounded-full bg-[#295f8b] text-white font-bold shadow-md hover:bg-[#1e4a6b] transition"
+                  >
+                    הוסף
+                  </button>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  {selectedEvents.length === 0 ? (
+                    <div className="text-gray-600 font-semibold">אין אירועים בתאריך זה</div>
+                  ) : (
+                    selectedEvents.map((ev) => (
+                      <button
+                        key={ev.id}
+                        onClick={() => openEdit(ev)}
+                        className="w-full text-right rounded-2xl border border-gray-200 p-4 hover:shadow-md transition"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: getTypeColor(ev.type) }} />
+                              <span className="text-lg font-bold text-gray-900 truncate">{ev.title}</span>
+                            </div>
+
+
+                            <div className="mt-1 text-sm font-semibold text-gray-600">
+                              <span className="font-bold text-[#295f8b]">{getTypeLabel(ev.type)}</span>
+                              {ev.time_start || ev.time_end ? (
+                                <span className="mr-2">
+                                  • {ev.time_start || "??:??"} - {ev.time_end || "??:??"}
+                                </span>
+                              ) : (
+                                <span className="mr-2">• ללא שעה</span>
+                              )}
+                            </div>
+
+                            {ev.notes ? (
+                              <div className="mt-2 text-sm text-gray-700 whitespace-pre-line">{ev.notes}</div>
+                            ) : null}
                           </div>
 
-
-                          <div className="mt-1 text-sm font-semibold text-gray-600">
-                            <span className="font-bold text-[#295f8b]">{getTypeLabel(ev.type)}</span>
-                            {ev.time_start || ev.time_end ? (
-                              <span className="mr-2">
-                                • {ev.time_start || "??:??"} - {ev.time_end || "??:??"}
-                              </span>
-                            ) : (
-                              <span className="mr-2">• ללא שעה</span>
-                            )}
-                          </div>
-
-                          {ev.notes ? (
-                            <div className="mt-2 text-sm text-gray-700 whitespace-pre-line">{ev.notes}</div>
-                          ) : null}
+                          <span className="text-sm font-bold text-[#295f8b]">עריכה</span>
                         </div>
-
-                        <span className="text-sm font-bold text-[#295f8b]">עריכה</span>
-                      </div>
-                    </button>
-                  ))
-                )}
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          </aside>
-)}
-          
+            </aside>
+          )}
+
         </div>
       </div>
 
@@ -941,9 +983,9 @@ function nextWeek() {
         onSave={saveEvent}
         onDelete={deleteEvent}
         onBack={() => {
-    closeEditor();           // סוגר את עורך האירועים
-    setDayModalOpen(true);   // פותח את מודאל האירועים של היום
-  }}
+          closeEditor();           // סוגר את עורך האירועים
+          setDayModalOpen(true);   // פותח את מודאל האירועים של היום
+        }}
       />
     </main>
   );
@@ -1063,46 +1105,46 @@ function WeeklyTimeline({ eventsByDate, weekDates, onEdit }) {
 * תצוגה שבועית חדשה
 * ========================= */
 function WeeklyView({ selectedDateISO, eventsByDate, onSelectDate, onOpenAdd, onOpenEdit }) {
-const [y, m, d] = selectedDateISO.split("-").map(Number);
-const baseDate = new Date(y, m - 1, d);
-const weekStart = new Date(baseDate);
-weekStart.setDate(baseDate.getDate() - baseDate.getDay());
+  const [y, m, d] = selectedDateISO.split("-").map(Number);
+  const baseDate = new Date(y, m - 1, d);
+  const weekStart = new Date(baseDate);
+  weekStart.setDate(baseDate.getDate() - baseDate.getDay());
 
 
-const days = [...Array(7)].map((_, i) => {
-const d = new Date(weekStart);
-d.setDate(weekStart.getDate() + i);
-return d;
-});
+  const days = [...Array(7)].map((_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    return d;
+  });
 
 
-return (
-<div className="grid grid-cols-7 gap-3">
-{days.map((d) => {
-const iso = toISODate(d);
-const dayEvents = eventsByDate.get(iso) || [];
-return (
-<div key={iso} className="border rounded-2xl p-3 bg-gray-50 text-right">
-<div className="text-sm font-bold text-gray-800">
-{numberToHebrewLetters(Number(hebDayFormatter.format(d)))} ({d.getDate()})
-</div>
-<div className="text-xs text-gray-500">{iso}</div>
-<button
-onClick={() => onOpenAdd(iso)}
-className="text-sm text-blue-600 underline mt-2"
->
-הוסף אירוע
-</button>
+  return (
+    <div className="grid grid-cols-7 gap-3">
+      {days.map((d) => {
+        const iso = toISODate(d);
+        const dayEvents = eventsByDate.get(iso) || [];
+        return (
+          <div key={iso} className="border rounded-2xl p-3 bg-gray-50 text-right">
+            <div className="text-sm font-bold text-gray-800">
+              {numberToHebrewLetters(Number(hebDayFormatter.format(d)))} ({d.getDate()})
+            </div>
+            <div className="text-xs text-gray-500">{iso}</div>
+            <button
+              onClick={() => onOpenAdd(iso)}
+              className="text-sm text-blue-600 underline mt-2"
+            >
+              הוסף אירוע
+            </button>
 
 
-<div className="mt-3">
-<DayTimeline events={dayEvents} onEdit={onOpenEdit} />
-</div>
-</div>
-);
-})}
-</div>
-);
+            <div className="mt-3">
+              <DayTimeline events={dayEvents} onEdit={onOpenEdit} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 //DayTimeline
 
@@ -1111,6 +1153,7 @@ className="text-sm text-blue-600 underline mt-2"
 // import { useEffect, useRef, useState } from "react";
 
 function DayTimeline({ events, onEdit }) {
+
   const hourRowRef = useRef(null);
   const [hourWidth, setHourWidth] = useState(60); // ברירת מחדל
 
@@ -1120,6 +1163,15 @@ function DayTimeline({ events, onEdit }) {
       setHourWidth(totalWidth / 16); // מ-08:00 עד 24:00 = 16 שעות
     }
   }, []);
+
+  useEffect(() => {
+    const close = () => setMenuPos(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, []);
+
+  const navigate = useNavigate();
+  const [menuPos, setMenuPos] = useState(null); // { x, y, event }
 
   const parseTime = (timeStr) => {
     const [h, m] = timeStr.split(":").map(Number);
@@ -1159,6 +1211,12 @@ function DayTimeline({ events, onEdit }) {
             <button
               key={ev.id}
               onClick={() => onEdit(ev)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                if (ev.type === "attendance") {
+                  setMenuPos({ x: e.clientX, y: e.clientY, event: ev });
+                }
+              }}
               className="absolute text-white text-sm font-bold px-2 py-1 rounded-xl shadow-md hover:brightness-110"
               style={{
                 backgroundColor: getTypeColor(ev.type),
@@ -1179,8 +1237,29 @@ function DayTimeline({ events, onEdit }) {
           );
         })}
       </div>
+      {menuPos && (
+        <div
+          className="absolute z-50 bg-white border rounded shadow-lg text-sm"
+          style={{ top: menuPos.y, left: menuPos.x }}
+          onClick={() => {
+            const ev = menuPos.event;
+            const class_id = ev.class_ids?.[0]; // או ev.class_id
+            const date = ev.date; // לוודא שזה קיים
+            // navigate(`/attendance?date=${date}&class_id=${class_id}&journal_type=class`);
+          navigate(`/Kattendence`);
+            setMenuPos(null);
+          }}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+            עבור לרשימת נוכחות
+          </div>
+        </div>
+      )}
     </div>
+
   );
+
 }
 
 /** =========================
