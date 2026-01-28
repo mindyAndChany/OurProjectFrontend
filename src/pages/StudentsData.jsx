@@ -198,12 +198,8 @@ const StudentsTable = () => {
                         onClick={() => handleGroupChange('phonebook')}
                         className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'phonebook' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                     >אלפון</button>
-
                     <ExportToExcel data={students} />
-
                     <ExcelImport onData={handleImport} columns={fieldsDict} />
-
-
                     <button
                         onClick={printTable}
                         className="p-2 rounded-full hover:bg-gray-200 transition"
