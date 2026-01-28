@@ -219,19 +219,9 @@ export const Screen = () => {
     }
   }, [dispatch, filteredLessons]);
 
-  // When attendance for a lesson returns empty, prefill all students as "present"
-  useEffect(() => {
-    for (const lesson of filteredLessons) {
-      const key = String(lesson.id);
-      const map = attendanceByLesson[key];
-      if (map && Object.keys(map).length === 0) {
-        const records = (studentsByClass || []).map((s) => ({ student_id: s.id, status: "present" }));
-        dispatch(setAttendanceForLesson({ lesson_id: lesson.id, records }));
-        prefilledLessonsRef.current.add(key); // לא להריץ שוב
-
-      }
-    }
-  }, [dispatch, filteredLessons, attendanceByLesson, studentsByClass]);
+  // הסרת מילוי אוטומטי של "נוכחת" בשיעורים ללא רישומי נוכחות
+  // בתחילה אין סטטוס עבור אף תלמידה; בלחיצה על "שמרי ושלחי נוכחות" ייקבע סטטוס "נוכחת"
+  // לכל מי שלא סומנה לה חריגה (חסרה / חסרה באישור / מאחרת) בתאריך הנבחר.
 
   function getStatusFor(lessonId, studentId) {
     const map = attendanceByLesson[String(lessonId)] || {};
@@ -324,7 +314,7 @@ export const Screen = () => {
   return (
     <div className="min-h-screen bg-[#f4f0ec] px-4 sm:px-8 lg:px-10 py-6 pt-[88px] [direction:rtl] font-sans">
       {/* HEADER */}
-      <div className="sticky top-[72px] z-30 mb-6">
+      <div className="sticky top-[72px] z-10 mb-6">
         <div className="flex flex-wrap gap-4 items-end text-base bg-white/90 backdrop-blur rounded-xl p-4 shadow-sm ring-1 ring-black/5">
         <div className="flex items-center gap-2">
           <label>סוג יומן:</label>
@@ -409,7 +399,7 @@ export const Screen = () => {
               const key = String(lesson.id);
               if (viewMode === "student" && selectedStudent) {
                 const s = selectedStudent;
-                const current = (attendanceByLesson[key] && attendanceByLesson[key][String(s.id)]) || "present";
+                const current = getStatusFor(lesson.id, s.id) || "present";
                 const recId = getRecordIdFor(lesson.id, s.id);
                 if (recId) {
                   dispatch(
@@ -431,7 +421,7 @@ export const Screen = () => {
                 }
               } else {
                 for (const s of studentsByClass) {
-                  const current = (attendanceByLesson[key] && attendanceByLesson[key][String(s.id)]) || "present";
+                  const current = getStatusFor(lesson.id, s.id) || "present";
                   const recId = getRecordIdFor(lesson.id, s.id);
                   if (recId) {
                     dispatch(
@@ -459,8 +449,19 @@ export const Screen = () => {
           שמרי ושלחי נוכחות
         </button>
 
+    {/* הסבר למשתמש על אופן העבודה בנוכחות – מתחת לכותרת */}
+      <div className="mb-4 text-sm text-gray-700 leading-snug">
+        <p>
+          בתחילת היום לא מסומן סטטוס נוכחות לאף תלמידה. כדי לקצר את העבודה, סמני רק <strong>חריגות</strong> (חסרה, חסרה באישור או מאחרת).
+        </p>
+        <p>
+          בלחיצה על "שמרי ושלחי נוכחות" תסומן נוכחות לכל מי שלא סומנה לה חריגה בתאריך הנבחר.
+        </p>
+      </div>
         </div>
       </div>
+
+  
 
       {/*יומן כיתה  TABLE */}
     {viewMode==="class"&&
@@ -468,7 +469,7 @@ export const Screen = () => {
     <table className="w-full min-w-max border-collapse text-right">
         <thead>
           <tr className="text-white">
-            <th className="sticky right-0 z-30 bg-[#584041] border border-black px-4 py-3 text-sm">שם התלמידה</th>
+            <th className="sticky right-0 z-10 bg-[#584041] border border-black px-4 py-3 text-sm">שם התלמידה</th>
             {filteredLessons.map((lesson, index) => (
               <th key={index} className="bg-[#584041] border border-black px-4 py-3 text-sm">
                 {getLessonTopicName(lesson)}
@@ -536,7 +537,7 @@ export const Screen = () => {
         <table className="w-full min-w-max border-collapse text-right">
           <thead>
             <tr className="text-white">
-              <th className="sticky right-0 z-30 bg-[#584041] border border-black px-4 py-3 text-sm">שם התלמידה</th>
+              <th className="sticky right-0 z-10 bg-[#584041] border border-black px-4 py-3 text-sm">שם התלמידה</th>
               {filteredLessons.map((lesson, index) => (
                 <th key={index} className="bg-[#584041] border border-black px-4 py-3 text-sm">
                   {getHebrewDateText(lesson.date)}
@@ -618,7 +619,7 @@ export const Screen = () => {
         <table className="w-full min-w-max border-collapse text-right">
           <thead>
             <tr className="text-white">
-              <th className="sticky right-0 z-30 bg-[#584041] border border-black px-4 py-3 text-sm">מקצוע</th>
+              <th className="sticky right-0 z-10 bg-[#584041] border border-black px-4 py-3 text-sm">מקצוע</th>
               {filteredLessons.map((lesson, index) => (
                 <th key={index} className="bg-[#584041] border border-black px-4 py-3 text-sm">
                   {getLessonTopicName(lesson)}
