@@ -102,11 +102,4 @@ export const ExcelImport = ({ onData, columns }) => {
 
     </div>
 
-
-
-
-
-
-
-
 }
