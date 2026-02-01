@@ -12,7 +12,7 @@ export default function Frame() {
 
   // פונקציה לעורר את השרת
   async function wakeUpServer() {
-    const serverUrl = 'https://ourprojectbackend-1.onrender.com';
+    const serverUrl = 'http://localhost:4000';
 
     try {
       console.log('מעיר את השרת...');

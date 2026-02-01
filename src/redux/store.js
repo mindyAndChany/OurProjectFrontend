@@ -1,11 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import { userSlice } from "./slices/USER/userSlice.js";
-import calendarReducer from "./slices/calendar/calendarSlice.js";
+import calendarReducer from "./slices/CALENDAR/calendarSlice.js";
 import { studentSlice } from "./slices/STUDENTS/studentsSlice.js";
 import classesReducer from "./slices/CLASSES/classesSlice.js";
 import lessonsReducer from "./slices/LESSONS/lessonsSlice.js";
 import scheduleReducer from "./slices/SCHEDULE/scheduleSlice.js";
+import teacherReducer from "./slices/TEACHERS/teachersSlice.js";
 import attendanceReducer from "./slices/ATTENDANCE/attendanceSlice.js";
 
 export const store = configureStore({
@@ -18,5 +19,6 @@ export const store = configureStore({
     lessons: lessonsReducer,
     weekly_schedule: scheduleReducer,
     attendance: attendanceReducer,
+    teacher:teacherReducer
   },
 });

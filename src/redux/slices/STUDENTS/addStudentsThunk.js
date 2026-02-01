@@ -6,7 +6,7 @@ export const addStudentsThunk = createAsyncThunk(
     try {
       console.log("thunk trying");
       
-      const res = await fetch(`https://ourprojectbackend-1.onrender.com/api/studentsData/addStudents`, {
+      const res = await fetch(`http://localhost:4000/api/studentsData/addStudents`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

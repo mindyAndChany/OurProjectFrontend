@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Flexcal popup above sticky headers */
+.ui-textpopup-box,
+.ui-flexcal,
+.ui-flexcal-container {
+  z-index: 9999 !important;
+}
+
 @layer base {
   button,
   input,

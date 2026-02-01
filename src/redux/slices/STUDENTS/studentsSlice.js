@@ -2,9 +2,14 @@ import { createSlice } from "@reduxjs/toolkit";
 import { getStudentDataThunk } from "./getStudentDataThunk.js";
 import { addStudentsThunk } from "./addStudentsThunk.js";
 import { updateStudentThunk } from "./updateStudentThunk.js";
+import { getStudentByIdThunk } from "./getStudentByIdThunk.js";
+import { uploadStudentFilesThunk } from "./uploadStudentFilesThunk.js";
 
 export const INITIAL_STATE_STUDENTS = {
-  studentsData: []
+  studentsData: [],
+  selectedStudent: null,
+  loading: false,
+  error: null,
 };
 
 export const studentSlice = createSlice({
@@ -23,7 +28,19 @@ export const studentSlice = createSlice({
       .addCase(getStudentDataThunk.rejected, (state, action) => {
         console.log("getStudentData error:", action.error);
       })
-
+ // קריאה לפי ת"ז
+      .addCase(getStudentByIdThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getStudentByIdThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedStudent = action.payload;
+      })
+      .addCase(getStudentByIdThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Error fetching student';
+      })
       .addCase(addStudentsThunk.pending, (state) => {
         console.log("addStudents start");
       })
@@ -50,6 +67,33 @@ export const studentSlice = createSlice({
 
       .addCase(updateStudentThunk.rejected, (state, action) => {
         console.log("updateStudents error:", action.error);
+      });
+    // File upload handling
+    builder
+      .addCase(uploadStudentFilesThunk.pending, (state) => {
+        console.log("uploadStudentFiles start");
+      })
+      .addCase(uploadStudentFilesThunk.fulfilled, (state, action) => {
+        const { id_number, photoUrl, documents } = action.payload || {};
+        const index = state.studentsData.findIndex(s => (s.id_number || s.id) === id_number);
+        if (index !== -1) {
+          state.studentsData[index] = {
+            ...state.studentsData[index],
+            photoUrl,
+            documents,
+          };
+        }
+        if (state.selectedStudent && (state.selectedStudent.id_number === id_number)) {
+          state.selectedStudent = {
+            ...state.selectedStudent,
+            photoUrl,
+            documents,
+          };
+        }
+        console.log("uploadStudentFiles success:", action.payload);
+      })
+      .addCase(uploadStudentFilesThunk.rejected, (state, action) => {
+        console.log("uploadStudentFiles error:", action.payload || action.error);
       });
   }
 });
