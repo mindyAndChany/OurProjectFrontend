@@ -3,7 +3,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 export const getTeachersThunk = createAsyncThunk(
   'Teachers/getTeachers',
   async () => {
-    const res = await fetch('https://ourprojectbackend-1.onrender.com/api/Topics');
+    const res = await fetch('http://localhost:4000/api/Topics');
 
     if (res.ok) {
       const data = await res.json();

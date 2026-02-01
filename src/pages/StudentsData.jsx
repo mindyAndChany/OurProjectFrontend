@@ -10,6 +10,7 @@ import { addStudentsThunk } from "../redux/slices/STUDENTS/addStudentsThunk";
 import { updateStudentThunk } from "../redux/slices/STUDENTS/updateStudentThunk";
 import { ExportToExcel } from "../components/ExportToExcel"
 import { ExcelImport } from "../components/ExcelImport";
+import StudentFilesManager from "../components/StudentFilesManager";
 
 // רשימת כל השדות
 const fieldsDict = {
@@ -46,6 +47,8 @@ const fieldsDict = {
     "חץ": "chetz",
     "טלפון": "phone",
     "א. תשלום": "Payment method"
+    ,
+    "תמונה": "photoUrl"
 }
 
 // const fieldOptions = [...new Set(Object.values(fieldsDict))];
@@ -62,7 +65,8 @@ const fieldGroups = {
         "father_name_he", "father_mobile_he", "mother_name_he", "mother_mobile_he", "class_kodesh"
     ],
     payments: ["id_number", "first_name", "last_name", "payment_status", "paid_amount", "class_kodesh"],
-    phonebook: ["id_number", "first_name", "last_name", "phone", "class_kodesh"]
+    phonebook: ["id_number", "first_name", "last_name", "phone", "class_kodesh"],
+    photos: ["id_number", "first_name", "last_name", "photoUrl"]
 };
 
 const filterFields = ["id_number", "class_kodesh", "first_name", "last_name"];
@@ -80,7 +84,8 @@ const fieldLabels = {
     mother_mobile_he: "נייד אמא",
     payment_status: "סטטוס תשלום",
     paid_amount: "סכום שולם",
-    class_kodesh: "כיתה"
+    class_kodesh: "כיתה",
+    photoUrl: "תמונה"
 };
 
 const Cell = ({ children }) => (
@@ -91,7 +96,13 @@ const initialNewStudent = Object.fromEntries(
     Object.values(fieldsDict).map((key) => [key, ""])
 );
 
+//ניתוב נכון לתמונה
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:4000';
 
+const resolveFileUrl = (url) => {
+  if (!url) return '';
+  return /^https?:\/\//i.test(url) ? url : `${API_BASE}${url.startsWith('/') ? url : '/' + url}`;
+};
 
 
 const StudentsTable = () => {
@@ -108,14 +119,18 @@ const StudentsTable = () => {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [studentToEdit, setStudentToEdit] = useState(null);
     const [group, setGroup] = useState("רשימת הבנות");
+    const [filesDialogOpen, setFilesDialogOpen] = useState(false);
+    const [studentForFiles, setStudentForFiles] = useState(null);
 
 
 
 
 
+
+    const toApiField = (f) => (f === 'photoUrl' ? 'photo_url' : f);
 
     useEffect(() => {
-        const categories = selectedFields.join(',');
+        const categories = selectedFields.map(toApiField).join(',');
         dispatch(getStudentDataThunk(categories));
     }, [selectedFields]);
 
@@ -130,7 +145,10 @@ const StudentsTable = () => {
                 })
                 .map((student) => {
                     const result = {};
-                    selectedFields.forEach((f) => result[f] = student[f]);
+                    selectedFields.forEach((f) => {
+                        const apiF = toApiField(f);
+                        result[f] = student[f] ?? student[apiF];
+                    });
                     return result;
                 });
             setStudents(filtered);
@@ -198,6 +216,10 @@ const StudentsTable = () => {
                         onClick={() => handleGroupChange('phonebook')}
                         className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'phonebook' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                     >אלפון</button>
+                    <button
+                        onClick={() => handleGroupChange('photos')}
+                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'photos' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    >תצוגת תמונות</button>
                     <ExportToExcel data={students} />
                     <ExcelImport onData={handleImport} columns={fieldsDict} />
                     <button
@@ -207,7 +229,7 @@ const StudentsTable = () => {
                     >
                         <Printer className="w-5 h-5" />
                     </button>
-                    
+
                     <button
                         onClick={() => setOpen(true)}
                         className="p-2 rounded-full hover:bg-gray-200 transition"
@@ -219,7 +241,7 @@ const StudentsTable = () => {
                     <Dialog open={open} onClose={() => setOpen(false)}>
                         <DialogContent className="space-y-4 rtl text-right">
                             <h2 className="text-lg font-semibold mb-2">פרטי תלמידה חדשה</h2>
-                            {Object.keys(fieldsDictHeb).map((key) => (
+                            {Object.keys(fieldsDictHeb).filter(k => k !== 'photoUrl').map((key) => (
                                 <TextField
                                     key={key}
                                     label={fieldsDictHeb[key] || key}
@@ -255,13 +277,32 @@ const StudentsTable = () => {
                 </motion.div>
             </div>
 
-            {students.length > 0 && (
+            {selectedGroup === 'photos' && students.length > 0 && (
+                <motion.div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+                    {students.map((s, idx) => (
+                        <div key={idx} className="bg-white shadow rounded-xl p-3 flex flex-col items-center gap-2">
+                            {s.photoUrl ? (
+                                <img src={resolveFileUrl(s.photoUrl)}
+                                    alt={`${s.first_name} ${s.last_name}`} className="w-24 h-24 object-cover rounded-full" />
+                            ) : (
+                                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">אין תמונה</div>
+                            )}
+                            <div className="text-sm font-medium">{s.first_name} {s.last_name}</div>
+                        </div>
+                    ))}
+                </motion.div>
+            )}
+            {selectedGroup !== 'photos' && students.length > 0 && (
                 <motion.div className="overflow-auto max-w-full"
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
                     <table id="students-table" className="min-w-full mt-6 border-collapse border border-gray-400 text-sm text-right bg-white shadow rounded-xl overflow-hidden">
                         <thead>
                             <tr className="bg-[#0A3960] text-white">
                                 <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>עריכה</th>
+                                {selectedGroup === 'personal' && (
+                                    <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>קבצים</th>
+                                )}
                                 {selectedFields.map((field) => (
                                     <th key={field} className="border border-gray-300 px-4 py-2">
                                         {fieldLabels[field] || field}
@@ -280,6 +321,16 @@ const StudentsTable = () => {
                                             <UserPen />
                                         </IconButton>
                                     </Cell>
+                                    {selectedGroup === 'personal' && (
+                                        <Cell style={{ width: "80px", minWidth: "80px" }}>
+                                            <IconButton onClick={() => {
+                                                setStudentForFiles({ ...initialNewStudent, ...student });
+                                                setFilesDialogOpen(true);
+                                            }}>
+                                                <FileUp />
+                                            </IconButton>
+                                        </Cell>
+                                    )}
 
                                     {selectedFields.map((field) => (
                                         <Cell key={field}>{student[field]}</Cell>
@@ -294,7 +345,7 @@ const StudentsTable = () => {
                 <DialogTitle>עריכת תלמידה</DialogTitle>
                 <DialogContent className="space-y-4 rtl text-right">
                     {studentToEdit &&
-                        Object.keys(initialNewStudent).map((key) => (
+                        Object.keys(initialNewStudent).filter(k => k !== 'photoUrl').map((key) => (
                             <TextField
                                 key={key}
                                 label={fieldLabels[key] || key}
@@ -311,6 +362,17 @@ const StudentsTable = () => {
                                 disabled={key === "id_number"} // שדה ת"ז לא ניתן לעריכה
                             />
                         ))}
+                    {studentToEdit && (
+                        <StudentFilesManager
+                            student={studentToEdit}
+                            onUpdated={(payload) => {
+                                setStudentToEdit((prev) => ({
+                                    ...prev,
+                                    photoUrl: payload.photoUrl,
+                                }));
+                            }}
+                        />
+                    )}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setEditDialogOpen(false)}>ביטול</Button>
@@ -322,6 +384,27 @@ const StudentsTable = () => {
                     >
                         שמירה
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={filesDialogOpen} onClose={() => setFilesDialogOpen(false)}>
+                <DialogTitle>מסמכים ותמונות</DialogTitle>
+                <DialogContent className="space-y-4 rtl text-right">
+                    {studentForFiles && (
+                        <StudentFilesManager
+                            student={studentForFiles}
+                            onUpdated={(payload) => {
+                                setStudentForFiles((prev) => ({
+                                    ...prev,
+                                    photoUrl: payload.photoUrl,
+                                    documents: payload.documents,
+                                }));
+                            }}
+                        />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setFilesDialogOpen(false)}>סגור</Button>
                 </DialogActions>
             </Dialog>
 
