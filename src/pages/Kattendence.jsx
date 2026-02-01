@@ -732,6 +732,7 @@ function StatusSelect({ value, onChange, disabled }) {
 
   const handleKeyDown = (e) => {
     if (disabled) return;
+console.log("raw:", raw, "| translated:", translated);
 
     // קיצור דרך: אם נכתב מספר ואז אנטר
     if (e.key === "Enter" && e.target.value.length === 1) {
@@ -811,9 +812,9 @@ function StatusInput({ value, onChange, disabled }) {
 
   const statusByShortcut = {
     "0": "present",
-  "1": "absent",
-  "2": "late",
-  "3": "approved absent",
+    "1": "absent",
+    "2": "late",
+    "3": "approved absent",
   "נוכחת": "present",
   "חסרה": "absent",
   "מאחרת": "late",
@@ -846,9 +847,12 @@ function StatusInput({ value, onChange, disabled }) {
     if (disabled) return;
 
     if (e.key === "Enter") {
+
       const raw = e.target.value.trim();
-      const translated = statusByShortcut[raw] || raw;
-  onChange({ target: { value: translated } });
+      const translated = statusByShortcut[raw];
+            console.log("raw:", raw, "| translated:", translated);
+debugger
+      onChange({ target: { value: translated } });
     
   moveFocus(e, "down");
     }
