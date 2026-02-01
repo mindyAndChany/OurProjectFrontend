@@ -29,7 +29,7 @@ const fieldsDict = {
     "שם האב": "father_name_he",
     "נייד אבא": "father_mobile_he",
     "שם האם": "mother_name_he",
-    "נייד אמא": "mother_name_he",
+    "נייד אמא": "mother_m_he",
     "התמחות": "track",
     "התמתחות נוספת": "track2",
     "אופציה ב": "track3",
@@ -46,9 +46,9 @@ const fieldsDict = {
     "מגמה": "trend",
     "חץ": "chetz",
     "טלפון": "phone",
-    "א. תשלום": "Payment method"
-    ,
-    "תמונה": "photoUrl"
+    "א. תשלום": "Payment method",
+    "תמונה": "photoUrl",
+    "שנת הרישום":"registration_year"
 }
 
 // const fieldOptions = [...new Set(Object.values(fieldsDict))];
@@ -65,8 +65,8 @@ const fieldGroups = {
         "father_name_he", "father_mobile_he", "mother_name_he", "mother_mobile_he", "class_kodesh"
     ],
     payments: ["id_number", "first_name", "last_name", "payment_status", "paid_amount", "class_kodesh"],
-    phonebook: ["id_number", "first_name", "last_name", "phone", "class_kodesh"],
-    photos: ["id_number", "first_name", "last_name", "photoUrl"]
+    phonebook: ["id_number", "first_name", "last_name", "phone", "class_kodesh","track"],
+    photos: ["id_number", "first_name", "last_name", "photoUrl", "class_kodesh"]
 };
 
 const filterFields = ["id_number", "class_kodesh", "first_name", "last_name"];
@@ -121,6 +121,7 @@ const StudentsTable = () => {
     const [group, setGroup] = useState("רשימת הבנות");
     const [filesDialogOpen, setFilesDialogOpen] = useState(false);
     const [studentForFiles, setStudentForFiles] = useState(null);
+    const [selectedRegistrationYear, setSelectedRegistrationYear] = useState(null);
 
 
 
@@ -130,7 +131,12 @@ const StudentsTable = () => {
     const toApiField = (f) => (f === 'photoUrl' ? 'photo_url' : f);
 
     useEffect(() => {
-        const categories = selectedFields.map(toApiField).join(',');
+        const categoriesArr = selectedFields.map(toApiField);
+        // Ensure registration year is available for filtering, even if not displayed
+        if (!categoriesArr.includes('registration_year')) {
+            categoriesArr.push('registration_year');
+        }
+        const categories = [...new Set(categoriesArr)].join(',');
         dispatch(getStudentDataThunk(categories));
     }, [selectedFields]);
 
@@ -138,10 +144,15 @@ const StudentsTable = () => {
         if (Array.isArray(allStudentData)) {
             const filtered = allStudentData
                 .filter((student) => {
-                    return Object.entries(filters).every(([field, value]) => {
+                    const baseMatch = Object.entries(filters).every(([field, value]) => {
                         if (!value) return true;
                         return student[field]?.toString().includes(value);
                     });
+                    if (!baseMatch) return false;
+                    if (selectedRegistrationYear) {
+                        return student['registration_year']?.toString() === selectedRegistrationYear.toString();
+                    }
+                    return true;
                 })
                 .map((student) => {
                     const result = {};
@@ -153,7 +164,7 @@ const StudentsTable = () => {
                 });
             setStudents(filtered);
         }
-    }, [allStudentData, selectedFields, filters]);
+    }, [allStudentData, selectedFields, filters, selectedRegistrationYear]);
 
     const handleGroupChange = (group) => {
         setSelectedGroup(group);
@@ -167,18 +178,87 @@ const StudentsTable = () => {
 
 
 
-    const printTable = () => {
-        const printWindow = window.open("", "_blank");
-        const tableHTML = document.getElementById("students-table").outerHTML;
-        printWindow.document.write(`
-      <html>
-      <head><title>${group}</title></head>
-      <body dir="rtl" style="font-family:sans-serif;">${tableHTML}</body>
-      </html>
-    `);
-        printWindow.document.close();
-        printWindow.print();
-    };
+        const printTable = () => {
+                const titleText = group || (selectedGroup === 'photos' ? 'תצוגת תמונות' : 'רשימת הבנות');
+                const printWindow = window.open("", "_blank");
+
+                // Minimal print CSS to ensure reasonable formatting without app styles
+                const baseStyles = `
+                    body { font-family: sans-serif; direction: rtl; margin: 16px; }
+                    h2 { margin: 0 0 12px; font-size: 18px; }
+                    table { border-collapse: collapse; width: 100%; }
+                    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: center; font-size: 12px; }
+                    thead th { background: #0A3960; color: #fff; }
+                    /* Photos grid */
+                    .photos-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+                    .photo-card { border: 1px solid #ddd; border-radius: 8px; padding: 8px; text-align: center; }
+                    .photo-img { width: 100px; height: 100px; object-fit: cover; border-radius: 50%; display: block; margin: 0 auto 6px; }
+                    .no-photo { width: 100px; height: 100px; border-radius: 50%; background: #eee; color: #666; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 12px; }
+                    @media print {
+                        .photos-grid { grid-template-columns: repeat(6, 1fr); }
+                        .photo-card, img { break-inside: avoid; page-break-inside: avoid; }
+                    }
+                `;
+
+                if (selectedGroup === 'photos') {
+                        // Build a simple printable grid of photos
+                        const photosHTML = `
+                            <html>
+                                <head>
+                                    <title>${titleText}</title>
+                                    <meta charset="utf-8" />
+                                    <style>${baseStyles}</style>
+                                </head>
+                                <body>
+                                    <h2>${titleText}</h2>
+                                    <div class="photos-grid">
+                                        ${students.map((s) => {
+                                                const hasPhoto = !!s.photoUrl;
+                                                const img = hasPhoto
+                                                        ? `<img class=\"photo-img\" src=\"${resolveFileUrl(s.photoUrl)}\" alt=\"${s.first_name || ''} ${s.last_name || ''}\" />`
+                                                        : `<div class=\"no-photo\">אין תמונה</div>`;
+                                                const name = `${s.first_name || ''} ${s.last_name || ''}`.trim();
+                                                return `
+                                                    <div class=\"photo-card\">
+                                                        ${img}
+                                                        <div style=\"font-size:12px;\">${name}</div>
+                                                    </div>
+                                                `;
+                                        }).join('')}
+                                    </div>
+                                </body>
+                            </html>
+                        `;
+                        printWindow.document.open();
+                        printWindow.document.write(photosHTML);
+                        printWindow.document.close();
+                        // Give images a brief moment to load before printing
+                        const onReady = () => printWindow.print();
+                        // Fallback: print after a short delay
+                        setTimeout(onReady, 300);
+                } else {
+                        // Print the existing table markup with minimal styling
+                        const tableEl = document.getElementById("students-table");
+                        const tableHTML = tableEl ? tableEl.outerHTML : '<div>אין נתונים להדפסה</div>';
+                        const docHTML = `
+                            <html>
+                                <head>
+                                    <title>${titleText}</title>
+                                    <meta charset="utf-8" />
+                                    <style>${baseStyles}</style>
+                                </head>
+                                <body>
+                                    <h2>${titleText}</h2>
+                                    ${tableHTML}
+                                </body>
+                            </html>
+                        `;
+                        printWindow.document.open();
+                        printWindow.document.write(docHTML);
+                        printWindow.document.close();
+                        printWindow.print();
+                }
+        };
 
     const handleAddStudent = () => {
         console.log("try adding student", newStudent);
@@ -197,6 +277,49 @@ const StudentsTable = () => {
         <div className="pt-28 p-6 [direction:rtl] font-sans bg-gray-100 min-h-screen">
             <div className="mb-6 space-y-6 max-w-6xl mx-auto">
                 <h1>{group}</h1>
+
+                {/* כותרת + בחירת שנתון לפי שנת רישום */}
+                <motion.div
+                    className="rounded-xl border border-[#0A3960]/20 bg-blue-50 px-6 py-4 text-right"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                >
+                                     <div className="mt-2 flex flex-wrap items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setSelectedRegistrationYear(2025)}
+                            className={`rounded-full px-3 py-1 text-sm font-semibold shadow transition ${selectedRegistrationYear === 2025 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
+                            title="סנן לפי שנת רישום 2025"
+                        >
+                            כיתות ו
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedRegistrationYear(2026)}
+                            className={`rounded-full px-3 py-1 text-sm font-semibold shadow transition ${selectedRegistrationYear === 2026 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
+                            title="סנן לפי שנת רישום 2026"
+                        >
+                           כיתות ה
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedRegistrationYear(2027)}
+                            className={`rounded-full px-3 py-1 text-sm font-semibold shadow transition ${selectedRegistrationYear === 2027 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
+                            title="סנן לפי שנת רישום 2027"
+                        >
+                             נרשמות
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedRegistrationYear(null)}
+                            className={`rounded-full px-3 py-1 text-sm font-semibold shadow transition ${selectedRegistrationYear === null ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
+                            title="הצג הכל"
+                        >
+                            הכל
+                        </button>
+                    </div>
+                </motion.div>
 
                 <motion.div className="flex gap-4 flex-wrap justify-start items-center"
                     initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
