@@ -315,6 +315,8 @@ const StudentsTable = () => {
                     @media print {
                         .photos-grid { grid-template-columns: repeat(6, 1fr); }
                         .photo-card, img { break-inside: avoid; page-break-inside: avoid; }
+                        /* Hide the Edit column (first column) in print */
+                        th:first-child, td:first-child { display: none; }
                     }
                 `;
 
