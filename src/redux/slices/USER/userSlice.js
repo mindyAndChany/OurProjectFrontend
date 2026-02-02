@@ -17,6 +17,9 @@ export const userSlice = createSlice({
     name: 'user',
     initialState: INITAIL_STATE_CUSTOMER,
     reducers: {
+        logout: (state) => {
+            state.userDetails = null;
+        },
 
         // editUserDetails: (state, action) => {
         //     state.userDetails = action.payload;
@@ -63,4 +66,4 @@ export const userSlice = createSlice({
     }
 });
 
-// export const { editUserDetails, editPassword, editCID, editcustomername } = userSlice.actions;
+export const { logout } = userSlice.actions;

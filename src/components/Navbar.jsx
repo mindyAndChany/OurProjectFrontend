@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
 import { Edulink } from "../components/Edulink";
+import Profil from "../components/profil";
 
 const navItems = [
   { to: "/home", label: "דף הבית" },
@@ -14,6 +16,8 @@ const navItems = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const user = useSelector((state) => state.user);
+  const isLoggedIn = !!user?.userDetails;
 
   const linkClass = ({ isActive }) =>
     `
@@ -50,15 +54,16 @@ export default function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            <NavLink
-              to="/login"
-              className="px-6 py-3 rounded-full
-                         bg-[#295f8b] text-white text-lg font-bold
-                         hover:bg-[#1e4a6b]
-                         transition-all"
-            >
-              התחברות
-            </NavLink>
+            {isLoggedIn ? (
+              <Profil />
+            ) : (
+              <NavLink
+                to="/login"
+                className="px-6 py-3 rounded-full bg-[#295f8b] text-white text-lg font-bold hover:bg-[#1e4a6b] transition-all"
+              >
+                התחברות
+              </NavLink>
+            )}
 
             {/* Mobile Toggle */}
             <button
