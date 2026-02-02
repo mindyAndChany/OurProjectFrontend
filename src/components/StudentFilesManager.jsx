@@ -107,6 +107,23 @@ const resolveFileUrl = (url) => {
   return /^https?:\/\//i.test(url) ? url : `${API_BASE}${url.startsWith('/') ? url : '/' + url}`;
 };
 
+// No client-side filename mangling is needed; server returns proper display names
+
+const displayNameForDoc = (doc) => {
+  if (!doc) return '';
+  if (doc.name) return doc.name;
+  if (doc.originalName) return doc.originalName;
+  const url = doc.url || '';
+  try {
+    const full = resolveFileUrl(url);
+    const u = new URL(full);
+    const last = u.pathname.split('/').filter(Boolean).pop() || '';
+    return decodeURIComponent(last) || full;
+  } catch {
+    return url;
+  }
+};
+
   return (
     <div className="space-y-3">
       <h3 className="text-md font-semibold">תמונה ומסמכים</h3>
@@ -158,7 +175,7 @@ const resolveFileUrl = (url) => {
         <ul className="list-disc pr-4 text-sm">
           {currentDocuments.map((d, i) => (
             <li key={i}>
-              <a href={d.url} target="_blank" rel="noreferrer" className="text-blue-600 underline">{d.name || d.url}</a>
+              <a href={resolveFileUrl(d.url)} target="_blank" rel="noreferrer" className="text-blue-600 underline">{displayNameForDoc(d)}</a>
             </li>
           ))}
         </ul>
