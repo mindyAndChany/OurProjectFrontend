@@ -57,6 +57,88 @@ const fieldsDictHeb = Object.fromEntries(
     Object.entries(fieldsDict).map(([he, en]) => [en, he])
 );
 
+// כותרות לקבוצות והגדרת קבוצות לשדות בטופס
+const formGroupTitles = {
+    basic: "פרטים בסיסיים",
+    contact: "פרטי קשר",
+    parents: "הורי התלמידה",
+    personal: "פרטים אישיים",
+    study: "לימודים ומגמות",
+    payments: "תשלומים",
+    other: "פרטים נוספים",
+};
+
+// קבוצות לשדות בטופס (סדר הופעה)
+const formGroups = {
+    basic: [
+        "id_number",
+        "first_name",
+        "last_name",
+        "nickname",
+        "class_kodesh",
+        "registration_year",// ברירת מחדל-שנת הלימודים הבאה
+        "serial_number"//שיתמלא אוטומטית
+    ],
+    contact: ["phone", "address", "zipcode", "personal_mobile"],
+    parents: [
+        "father_name_he",
+        "father_mobile_he",
+        "mother_name_he",
+        "mother_m_he",
+        "external_mother",
+        "external_father",
+    ],
+    personal: [
+        "birthdate_hebrew",
+        "birthdate_gregorian",
+        "birth_country",
+        "marital_status",
+        "married_date",
+        "married_name"
+    ],
+    study: ["track", "track2", "track3", "trend", "is_graduate", "chetz", "bookshelf"],
+    payments: ["paid_amount", "Payment method"],
+    other: ["notes", "perach"],
+};
+
+// מצייני מקום (placeholder) לשדות בטופס
+const placeholdersMap = {
+    id_number: "הקלד/י ת.ז. (9 ספרות)",
+    first_name: "הקלד/י שם פרטי",
+    last_name: "הקלד/י שם משפחה",
+    nickname: "שם חיבה (לא חובה)",
+    class_kodesh: "כיתה (לדוגמה: ז׳1)",
+    registration_year: "שנת רישום (לדוגמה: 2026)",
+    serial_number: "מס׳ סידורי",
+    phone: "טלפון תלמידה (לדוגמה: 050-1234567)",
+    personal_mobile: "נייד אישי",
+    address: "רחוב, מספר, עיר",
+    zipcode: "מיקוד",
+    father_name_he: "שם האב",
+    father_mobile_he: "נייד אבא (050-...)",
+    mother_name_he: "שם האם",
+    mother_m_he: "נייד אמא (050-...)",
+    external_mother: "האם מחוץ לעיר? כן/לא",
+    external_father: "האב מחוץ לעיר? כן/לא",
+    birthdate_hebrew: "תאריך עברי (לדוגמה: י״ד ניסן תשס״ז)",
+    birthdate_gregorian: "תאריך לועזי (YYYY-MM-DD)",
+    birth_country: "ארץ לידה",
+    marital_status: "מצב אישי (רווקה/נשואה)",
+    married_date: "תאריך חתונה (אם רלוונטי)",
+    married_name: "שם אחרי החתונה",
+    track: "התמחות",
+    track2: "התמחות נוספת",
+    track3: "אופציה ב",
+    trend: "מגמה",
+    chetz: "חץ",
+    bookshelf: "מס׳ מדפית",
+    paid_amount: "סכום ששולם (מספר)",
+    "Payment method": "אופן תשלום (מזומן/העברה/צ׳ק)",
+    notes: "הערות נוספות",
+    perach: "פרח",
+    is_graduate: "הוראה (כן/לא)",
+};
+
 
 const fieldGroups = {
     basic: ["id_number", "first_name", "last_name", "class_kodesh"],
@@ -92,9 +174,15 @@ const Cell = ({ children }) => (
     <td className="border border-gray-300 px-4 py-2 text-center text-sm">{children || "-"}</td>
 );
 
-const initialNewStudent = Object.fromEntries(
-    Object.values(fieldsDict).map((key) => [key, ""])
-);
+// ברירת מחדל: שנת הרישום היא השנה הבאה
+const CURRENT_YEAR = new Date().getFullYear();
+const DEFAULT_REG_YEAR = CURRENT_YEAR + 1;
+
+const initialNewStudent = (() => {
+    const obj = Object.fromEntries(Object.values(fieldsDict).map((key) => [key, ""]));
+    obj.registration_year = DEFAULT_REG_YEAR; // שנה הבאה כברירת מחדל
+    return obj;
+})();
 
 //ניתוב נכון לתמונה
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:4000';
@@ -132,10 +220,9 @@ const StudentsTable = () => {
 
     useEffect(() => {
         const categoriesArr = selectedFields.map(toApiField);
-        // Ensure registration year is available for filtering, even if not displayed
-        if (!categoriesArr.includes('registration_year')) {
-            categoriesArr.push('registration_year');
-        }
+        // Always include fields needed for defaults and auto-numbering
+        if (!categoriesArr.includes('registration_year')) categoriesArr.push('registration_year');
+        if (!categoriesArr.includes('serial_number')) categoriesArr.push('serial_number');
         const categories = [...new Set(categoriesArr)].join(',');
         dispatch(getStudentDataThunk(categories));
     }, [selectedFields]);
@@ -176,6 +263,37 @@ const StudentsTable = () => {
         setGroup(value);
     };
 
+    // חשב מס׳ סידורי הבא לפי שנת רישום מהנתונים הקיימים
+    const computeNextSerialNumber = (year) => {
+        const yearStr = year?.toString();
+        const list = Array.isArray(allStudentData) ? allStudentData : [];
+        const maxSerial = list.reduce((max, s) => {
+            const sYear = (s['registration_year'] ?? s.registration_year)?.toString();
+            if (sYear !== yearStr) return max;
+            const sn = parseInt(s['serial_number'] ?? s.serial_number, 10);
+            return isNaN(sn) ? max : Math.max(max, sn);
+        }, 0);
+        return (maxSerial + 1).toString();
+    };
+
+    // פתיחת דיאלוג הוספה עם ערכי ברירת מחדל
+    const openAddDialog = () => {
+        const year = DEFAULT_REG_YEAR;
+        const nextSerial = computeNextSerialNumber(year);
+        setNewStudent({ ...initialNewStudent, registration_year: year, serial_number: nextSerial });
+        setOpen(true);
+    };
+
+    // עדכון מס׳ סידורי אוטומטי כששנת רישום משתנה (בדיאלוג הוספה)
+    useEffect(() => {
+        if (!open) return;
+        const year = newStudent.registration_year;
+        if (!year) return;
+        const nextSerial = computeNextSerialNumber(year);
+        if (newStudent.serial_number?.toString() !== nextSerial.toString()) {
+            setNewStudent((prev) => ({ ...prev, serial_number: nextSerial }));
+        }
+    }, [open, newStudent.registration_year, allStudentData]);
 
 
         const printTable = () => {
@@ -354,7 +472,7 @@ const StudentsTable = () => {
                     </button>
 
                     <button
-                        onClick={() => setOpen(true)}
+                        onClick={openAddDialog}
                         className="p-2 rounded-full hover:bg-gray-200 transition"
                         title="הוספת תלמידה"
                     >
@@ -362,25 +480,37 @@ const StudentsTable = () => {
                     </button>
 
                     <Dialog open={open} onClose={() => setOpen(false)}>
-                        <DialogContent className="space-y-4 rtl text-right">
-                            <h2 className="text-lg font-semibold mb-2">פרטי תלמידה חדשה</h2>
-                            {Object.keys(fieldsDictHeb).filter(k => k !== 'photoUrl').map((key) => (
-                                <TextField
-                                    key={key}
-                                    label={fieldsDictHeb[key] || key}
-                                    value={newStudent[key]}
-                                    onChange={(e) =>
-                                        setNewStudent((prev) => ({ ...prev, [key]: e.target.value }))
-                                    }
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                />
+                        <DialogTitle>פרטי תלמידה חדשה</DialogTitle>
+                        <DialogContent className="space-y-6 rtl text-right">
+                            {Object.entries(formGroups).map(([groupKey, groupFields]) => (
+                                <div key={groupKey} className="space-y-3">
+                                    <h3 className="text-base font-semibold text-gray-800">{formGroupTitles[groupKey]}</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {groupFields
+                                            .filter((key) => key !== 'photoUrl')
+                                            .map((key) => (
+                                                <TextField
+                                                    key={key}
+                                                    label={fieldsDictHeb[key] || fieldLabels[key] || key}
+                                                    placeholder={placeholdersMap[key] || `הקלד/י ${fieldsDictHeb[key] || key}`}
+                                                    value={newStudent[key] || ""}
+                                                    onChange={(e) =>
+                                                        setNewStudent((prev) => ({ ...prev, [key]: e.target.value }))
+                                                    }
+                                                    fullWidth
+                                                    variant="outlined"
+                                                    size="small"
+                                                    margin="dense"
+                                                />
+                                            ))}
+                                    </div>
+                                </div>
                             ))}
-
-
-                            <Button onClick={handleAddStudent}>שמור</Button>
                         </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setOpen(false)}>ביטול</Button>
+                            <Button onClick={handleAddStudent}>שמור</Button>
+                        </DialogActions>
                     </Dialog>
 
                 </motion.div>
@@ -467,24 +597,38 @@ const StudentsTable = () => {
             <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
                 <DialogTitle>עריכת תלמידה</DialogTitle>
                 <DialogContent className="space-y-4 rtl text-right">
-                    {studentToEdit &&
-                        Object.keys(initialNewStudent).filter(k => k !== 'photoUrl').map((key) => (
-                            <TextField
-                                key={key}
-                                label={fieldLabels[key] || key}
-                                value={studentToEdit[key] || ""}
-                                onChange={(e) =>
-                                    setStudentToEdit((prev) => ({
-                                        ...prev,
-                                        [key]: e.target.value,
-                                    }))
-                                }
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                                disabled={key === "id_number"} // שדה ת"ז לא ניתן לעריכה
-                            />
-                        ))}
+                    {studentToEdit && (
+                        <div className="space-y-6">
+                            {Object.entries(formGroups).map(([groupKey, groupFields]) => (
+                                <div key={groupKey} className="space-y-3">
+                                    <h3 className="text-base font-semibold text-gray-800">{formGroupTitles[groupKey]}</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {groupFields
+                                            .filter((key) => key !== 'photoUrl')
+                                            .map((key) => (
+                                                <TextField
+                                                    key={key}
+                                                    label={fieldsDictHeb[key] || fieldLabels[key] || key}
+                                                    placeholder={placeholdersMap[key] || `הקלד/י ${fieldsDictHeb[key] || key}`}
+                                                    value={studentToEdit[key] || ""}
+                                                    onChange={(e) =>
+                                                        setStudentToEdit((prev) => ({
+                                                            ...prev,
+                                                            [key]: e.target.value,
+                                                        }))
+                                                    }
+                                                    fullWidth
+                                                    variant="outlined"
+                                                    size="small"
+                                                    margin="dense"
+                                                    disabled={key === "id_number"}
+                                                />
+                                            ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     {studentToEdit && (
                         <StudentFilesManager
                             student={studentToEdit}
