@@ -29,7 +29,7 @@ const fieldsDict = {
     "שם האב": "father_name_he",
     "נייד אבא": "father_mobile_he",
     "שם האם": "mother_name_he",
-    "נייד אמא": "mother_name_he",
+    "נייד אמא": "mother_m_he",
     "התמחות": "track",
     "התמתחות נוספת": "track2",
     "אופציה ב": "track3",
@@ -46,9 +46,9 @@ const fieldsDict = {
     "מגמה": "trend",
     "חץ": "chetz",
     "טלפון": "phone",
-    "א. תשלום": "Payment method"
-    ,
-    "תמונה": "photoUrl"
+    "א. תשלום": "Payment method",
+    "תמונה": "photoUrl",
+    "שנת הרישום":"registration_year"
 }
 
 // const fieldOptions = [...new Set(Object.values(fieldsDict))];
@@ -56,6 +56,88 @@ const fieldsDict = {
 const fieldsDictHeb = Object.fromEntries(
     Object.entries(fieldsDict).map(([he, en]) => [en, he])
 );
+
+// כותרות לקבוצות והגדרת קבוצות לשדות בטופס
+const formGroupTitles = {
+    basic: "פרטים בסיסיים",
+    contact: "פרטי קשר",
+    parents: "הורי התלמידה",
+    personal: "פרטים אישיים",
+    study: "לימודים ומגמות",
+    payments: "תשלומים",
+    other: "פרטים נוספים",
+};
+
+// קבוצות לשדות בטופס (סדר הופעה)
+const formGroups = {
+    basic: [
+        "id_number",
+        "first_name",
+        "last_name",
+        "nickname",
+        "class_kodesh",
+        "registration_year",// ברירת מחדל-שנת הלימודים הבאה
+        "serial_number"//שיתמלא אוטומטית
+    ],
+    contact: ["phone", "address", "zipcode", "personal_mobile"],
+    parents: [
+        "father_name_he",
+        "father_mobile_he",
+        "mother_name_he",
+        "mother_m_he",
+        "external_mother",
+        "external_father",
+    ],
+    personal: [
+        "birthdate_hebrew",
+        "birthdate_gregorian",
+        "birth_country",
+        "marital_status",
+        "married_date",
+        "married_name"
+    ],
+    study: ["track", "track2", "track3", "trend", "is_graduate", "chetz", "bookshelf"],
+    payments: ["paid_amount", "Payment method"],
+    other: ["notes", "perach"],
+};
+
+// מצייני מקום (placeholder) לשדות בטופס
+const placeholdersMap = {
+    id_number: "הקלד/י ת.ז. (9 ספרות)",
+    first_name: "הקלד/י שם פרטי",
+    last_name: "הקלד/י שם משפחה",
+    nickname: "שם חיבה (לא חובה)",
+    class_kodesh: "כיתה (לדוגמה: ז׳1)",
+    registration_year: "שנת רישום (לדוגמה: 2026)",
+    serial_number: "מס׳ סידורי",
+    phone: "טלפון תלמידה (לדוגמה: 050-1234567)",
+    personal_mobile: "נייד אישי",
+    address: "רחוב, מספר, עיר",
+    zipcode: "מיקוד",
+    father_name_he: "שם האב",
+    father_mobile_he: "נייד אבא (050-...)",
+    mother_name_he: "שם האם",
+    mother_m_he: "נייד אמא (050-...)",
+    external_mother: "האם מחוץ לעיר? כן/לא",
+    external_father: "האב מחוץ לעיר? כן/לא",
+    birthdate_hebrew: "תאריך עברי (לדוגמה: י״ד ניסן תשס״ז)",
+    birthdate_gregorian: "תאריך לועזי (YYYY-MM-DD)",
+    birth_country: "ארץ לידה",
+    marital_status: "מצב אישי (רווקה/נשואה)",
+    married_date: "תאריך חתונה (אם רלוונטי)",
+    married_name: "שם אחרי החתונה",
+    track: "התמחות",
+    track2: "התמחות נוספת",
+    track3: "אופציה ב",
+    trend: "מגמה",
+    chetz: "חץ",
+    bookshelf: "מס׳ מדפית",
+    paid_amount: "סכום ששולם (מספר)",
+    "Payment method": "אופן תשלום (מזומן/העברה/צ׳ק)",
+    notes: "הערות נוספות",
+    perach: "פרח",
+    is_graduate: "הוראה (כן/לא)",
+};
 
 
 const fieldGroups = {
@@ -65,8 +147,8 @@ const fieldGroups = {
         "father_name_he", "father_mobile_he", "mother_name_he", "mother_mobile_he", "class_kodesh"
     ],
     payments: ["id_number", "first_name", "last_name", "payment_status", "paid_amount", "class_kodesh"],
-    phonebook: ["id_number", "first_name", "last_name", "phone", "class_kodesh"],
-    photos: ["id_number", "first_name", "last_name", "photoUrl"]
+    phonebook: ["id_number", "first_name", "last_name", "phone", "class_kodesh","track"],
+    photos: ["id_number", "first_name", "last_name", "photoUrl", "class_kodesh"]
 };
 
 const filterFields = ["id_number", "class_kodesh", "first_name", "last_name"];
@@ -92,9 +174,15 @@ const Cell = ({ children }) => (
     <td className="border border-gray-300 px-4 py-2 text-center text-sm">{children || "-"}</td>
 );
 
-const initialNewStudent = Object.fromEntries(
-    Object.values(fieldsDict).map((key) => [key, ""])
-);
+// ברירת מחדל: שנת הרישום היא השנה הבאה
+const CURRENT_YEAR = new Date().getFullYear();
+const DEFAULT_REG_YEAR = CURRENT_YEAR + 1;
+
+const initialNewStudent = (() => {
+    const obj = Object.fromEntries(Object.values(fieldsDict).map((key) => [key, ""]));
+    obj.registration_year = DEFAULT_REG_YEAR; // שנה הבאה כברירת מחדל
+    return obj;
+})();
 
 //ניתוב נכון לתמונה
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:4000';
@@ -121,6 +209,7 @@ const StudentsTable = () => {
     const [group, setGroup] = useState("רשימת הבנות");
     const [filesDialogOpen, setFilesDialogOpen] = useState(false);
     const [studentForFiles, setStudentForFiles] = useState(null);
+    const [selectedRegistrationYear, setSelectedRegistrationYear] = useState(null);
 
 
 
@@ -130,7 +219,11 @@ const StudentsTable = () => {
     const toApiField = (f) => (f === 'photoUrl' ? 'photo_url' : f);
 
     useEffect(() => {
-        const categories = selectedFields.map(toApiField).join(',');
+        const categoriesArr = selectedFields.map(toApiField);
+        // Always include fields needed for defaults and auto-numbering
+        if (!categoriesArr.includes('registration_year')) categoriesArr.push('registration_year');
+        if (!categoriesArr.includes('serial_number')) categoriesArr.push('serial_number');
+        const categories = [...new Set(categoriesArr)].join(',');
         dispatch(getStudentDataThunk(categories));
     }, [selectedFields]);
 
@@ -138,10 +231,15 @@ const StudentsTable = () => {
         if (Array.isArray(allStudentData)) {
             const filtered = allStudentData
                 .filter((student) => {
-                    return Object.entries(filters).every(([field, value]) => {
+                    const baseMatch = Object.entries(filters).every(([field, value]) => {
                         if (!value) return true;
                         return student[field]?.toString().includes(value);
                     });
+                    if (!baseMatch) return false;
+                    if (selectedRegistrationYear) {
+                        return student['registration_year']?.toString() === selectedRegistrationYear.toString();
+                    }
+                    return true;
                 })
                 .map((student) => {
                     const result = {};
@@ -153,7 +251,7 @@ const StudentsTable = () => {
                 });
             setStudents(filtered);
         }
-    }, [allStudentData, selectedFields, filters]);
+    }, [allStudentData, selectedFields, filters, selectedRegistrationYear]);
 
     const handleGroupChange = (group) => {
         setSelectedGroup(group);
@@ -165,20 +263,122 @@ const StudentsTable = () => {
         setGroup(value);
     };
 
-
-
-    const printTable = () => {
-        const printWindow = window.open("", "_blank");
-        const tableHTML = document.getElementById("students-table").outerHTML;
-        printWindow.document.write(`
-      <html>
-      <head><title>${group}</title></head>
-      <body dir="rtl" style="font-family:sans-serif;">${tableHTML}</body>
-      </html>
-    `);
-        printWindow.document.close();
-        printWindow.print();
+    // חשב מס׳ סידורי הבא לפי שנת רישום מהנתונים הקיימים
+    const computeNextSerialNumber = (year) => {
+        const yearStr = year?.toString();
+        const list = Array.isArray(allStudentData) ? allStudentData : [];
+        const maxSerial = list.reduce((max, s) => {
+            const sYear = (s['registration_year'] ?? s.registration_year)?.toString();
+            if (sYear !== yearStr) return max;
+            const sn = parseInt(s['serial_number'] ?? s.serial_number, 10);
+            return isNaN(sn) ? max : Math.max(max, sn);
+        }, 0);
+        return (maxSerial + 1).toString();
     };
+
+    // פתיחת דיאלוג הוספה עם ערכי ברירת מחדל
+    const openAddDialog = () => {
+        const year = DEFAULT_REG_YEAR;
+        const nextSerial = computeNextSerialNumber(year);
+        setNewStudent({ ...initialNewStudent, registration_year: year, serial_number: nextSerial });
+        setOpen(true);
+    };
+
+    // עדכון מס׳ סידורי אוטומטי כששנת רישום משתנה (בדיאלוג הוספה)
+    useEffect(() => {
+        if (!open) return;
+        const year = newStudent.registration_year;
+        if (!year) return;
+        const nextSerial = computeNextSerialNumber(year);
+        if (newStudent.serial_number?.toString() !== nextSerial.toString()) {
+            setNewStudent((prev) => ({ ...prev, serial_number: nextSerial }));
+        }
+    }, [open, newStudent.registration_year, allStudentData]);
+
+
+        const printTable = () => {
+                const titleText = group || (selectedGroup === 'photos' ? 'תצוגת תמונות' : 'רשימת הבנות');
+                const printWindow = window.open("", "_blank");
+
+                // Minimal print CSS to ensure reasonable formatting without app styles
+                const baseStyles = `
+                    body { font-family: sans-serif; direction: rtl; margin: 16px; }
+                    h2 { margin: 0 0 12px; font-size: 18px; }
+                    table { border-collapse: collapse; width: 100%; }
+                    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: center; font-size: 12px; }
+                    thead th { background: #0A3960; color: #fff; }
+                    /* Photos grid */
+                    .photos-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+                    .photo-card { border: 1px solid #ddd; border-radius: 8px; padding: 8px; text-align: center; }
+                    .photo-img { width: 100px; height: 100px; object-fit: cover; border-radius: 50%; display: block; margin: 0 auto 6px; }
+                    .no-photo { width: 100px; height: 100px; border-radius: 50%; background: #eee; color: #666; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 12px; }
+                    @media print {
+                        .photos-grid { grid-template-columns: repeat(6, 1fr); }
+                        .photo-card, img { break-inside: avoid; page-break-inside: avoid; }
+                        /* Hide the Edit column (first column) in print */
+                        th:first-child, td:first-child { display: none; }
+                    }
+                `;
+
+                if (selectedGroup === 'photos') {
+                        // Build a simple printable grid of photos
+                        const photosHTML = `
+                            <html>
+                                <head>
+                                    <title>${titleText}</title>
+                                    <meta charset="utf-8" />
+                                    <style>${baseStyles}</style>
+                                </head>
+                                <body>
+                                    <h2>${titleText}</h2>
+                                    <div class="photos-grid">
+                                        ${students.map((s) => {
+                                                const hasPhoto = !!s.photoUrl;
+                                                const img = hasPhoto
+                                                        ? `<img class=\"photo-img\" src=\"${resolveFileUrl(s.photoUrl)}\" alt=\"${s.first_name || ''} ${s.last_name || ''}\" />`
+                                                        : `<div class=\"no-photo\">אין תמונה</div>`;
+                                                const name = `${s.first_name || ''} ${s.last_name || ''}`.trim();
+                                                return `
+                                                    <div class=\"photo-card\">
+                                                        ${img}
+                                                        <div style=\"font-size:12px;\">${name}</div>
+                                                    </div>
+                                                `;
+                                        }).join('')}
+                                    </div>
+                                </body>
+                            </html>
+                        `;
+                        printWindow.document.open();
+                        printWindow.document.write(photosHTML);
+                        printWindow.document.close();
+                        // Give images a brief moment to load before printing
+                        const onReady = () => printWindow.print();
+                        // Fallback: print after a short delay
+                        setTimeout(onReady, 300);
+                } else {
+                        // Print the existing table markup with minimal styling
+                        const tableEl = document.getElementById("students-table");
+                        const tableHTML = tableEl ? tableEl.outerHTML : '<div>אין נתונים להדפסה</div>';
+                        const docHTML = `
+                            <html>
+                                <head>
+                                    <title>${titleText}</title>
+                                    <meta charset="utf-8" />
+                                    <style>${baseStyles}</style>
+                                </head>
+                                <body>
+                                    <h2>${titleText}</h2>
+                                    ${tableHTML}
+                                </body>
+                            </html>
+                        `;
+                        printWindow.document.open();
+                        printWindow.document.write(docHTML);
+                        printWindow.document.close();
+                        printWindow.print();
+                }
+        };
 
     const handleAddStudent = () => {
         console.log("try adding student", newStudent);
@@ -197,6 +397,49 @@ const StudentsTable = () => {
         <div className="pt-28 p-6 [direction:rtl] font-sans bg-gray-100 min-h-screen">
             <div className="mb-6 space-y-6 max-w-6xl mx-auto">
                 <h1>{group}</h1>
+
+                {/* כותרת + בחירת שנתון לפי שנת רישום */}
+                <motion.div
+                    className="rounded-xl border border-[#0A3960]/20 bg-blue-50 px-6 py-4 text-right"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                >
+                                     <div className="mt-2 flex flex-wrap items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setSelectedRegistrationYear(2025)}
+                            className={`rounded-full px-3 py-1 text-sm font-semibold shadow transition ${selectedRegistrationYear === 2025 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
+                            title="סנן לפי שנת רישום 2025"
+                        >
+                            כיתות ו
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedRegistrationYear(2026)}
+                            className={`rounded-full px-3 py-1 text-sm font-semibold shadow transition ${selectedRegistrationYear === 2026 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
+                            title="סנן לפי שנת רישום 2026"
+                        >
+                           כיתות ה
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedRegistrationYear(2027)}
+                            className={`rounded-full px-3 py-1 text-sm font-semibold shadow transition ${selectedRegistrationYear === 2027 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
+                            title="סנן לפי שנת רישום 2027"
+                        >
+                             נרשמות
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedRegistrationYear(null)}
+                            className={`rounded-full px-3 py-1 text-sm font-semibold shadow transition ${selectedRegistrationYear === null ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
+                            title="הצג הכל"
+                        >
+                            הכל
+                        </button>
+                    </div>
+                </motion.div>
 
                 <motion.div className="flex gap-4 flex-wrap justify-start items-center"
                     initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -231,7 +474,7 @@ const StudentsTable = () => {
                     </button>
 
                     <button
-                        onClick={() => setOpen(true)}
+                        onClick={openAddDialog}
                         className="p-2 rounded-full hover:bg-gray-200 transition"
                         title="הוספת תלמידה"
                     >
@@ -239,25 +482,37 @@ const StudentsTable = () => {
                     </button>
 
                     <Dialog open={open} onClose={() => setOpen(false)}>
-                        <DialogContent className="space-y-4 rtl text-right">
-                            <h2 className="text-lg font-semibold mb-2">פרטי תלמידה חדשה</h2>
-                            {Object.keys(fieldsDictHeb).filter(k => k !== 'photoUrl').map((key) => (
-                                <TextField
-                                    key={key}
-                                    label={fieldsDictHeb[key] || key}
-                                    value={newStudent[key]}
-                                    onChange={(e) =>
-                                        setNewStudent((prev) => ({ ...prev, [key]: e.target.value }))
-                                    }
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                />
+                        <DialogTitle>פרטי תלמידה חדשה</DialogTitle>
+                        <DialogContent className="space-y-6 rtl text-right">
+                            {Object.entries(formGroups).map(([groupKey, groupFields]) => (
+                                <div key={groupKey} className="space-y-3">
+                                    <h3 className="text-base font-semibold text-gray-800">{formGroupTitles[groupKey]}</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {groupFields
+                                            .filter((key) => key !== 'photoUrl')
+                                            .map((key) => (
+                                                <TextField
+                                                    key={key}
+                                                    label={fieldsDictHeb[key] || fieldLabels[key] || key}
+                                                    placeholder={placeholdersMap[key] || `הקלד/י ${fieldsDictHeb[key] || key}`}
+                                                    value={newStudent[key] || ""}
+                                                    onChange={(e) =>
+                                                        setNewStudent((prev) => ({ ...prev, [key]: e.target.value }))
+                                                    }
+                                                    fullWidth
+                                                    variant="outlined"
+                                                    size="small"
+                                                    margin="dense"
+                                                />
+                                            ))}
+                                    </div>
+                                </div>
                             ))}
-
-
-                            <Button onClick={handleAddStudent}>שמור</Button>
                         </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setOpen(false)}>ביטול</Button>
+                            <Button onClick={handleAddStudent}>שמור</Button>
+                        </DialogActions>
                     </Dialog>
 
                 </motion.div>
@@ -344,24 +599,38 @@ const StudentsTable = () => {
             <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
                 <DialogTitle>עריכת תלמידה</DialogTitle>
                 <DialogContent className="space-y-4 rtl text-right">
-                    {studentToEdit &&
-                        Object.keys(initialNewStudent).filter(k => k !== 'photoUrl').map((key) => (
-                            <TextField
-                                key={key}
-                                label={fieldLabels[key] || key}
-                                value={studentToEdit[key] || ""}
-                                onChange={(e) =>
-                                    setStudentToEdit((prev) => ({
-                                        ...prev,
-                                        [key]: e.target.value,
-                                    }))
-                                }
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                                disabled={key === "id_number"} // שדה ת"ז לא ניתן לעריכה
-                            />
-                        ))}
+                    {studentToEdit && (
+                        <div className="space-y-6">
+                            {Object.entries(formGroups).map(([groupKey, groupFields]) => (
+                                <div key={groupKey} className="space-y-3">
+                                    <h3 className="text-base font-semibold text-gray-800">{formGroupTitles[groupKey]}</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {groupFields
+                                            .filter((key) => key !== 'photoUrl')
+                                            .map((key) => (
+                                                <TextField
+                                                    key={key}
+                                                    label={fieldsDictHeb[key] || fieldLabels[key] || key}
+                                                    placeholder={placeholdersMap[key] || `הקלד/י ${fieldsDictHeb[key] || key}`}
+                                                    value={studentToEdit[key] || ""}
+                                                    onChange={(e) =>
+                                                        setStudentToEdit((prev) => ({
+                                                            ...prev,
+                                                            [key]: e.target.value,
+                                                        }))
+                                                    }
+                                                    fullWidth
+                                                    variant="outlined"
+                                                    size="small"
+                                                    margin="dense"
+                                                    disabled={key === "id_number"}
+                                                />
+                                            ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     {studentToEdit && (
                         <StudentFilesManager
                             student={studentToEdit}

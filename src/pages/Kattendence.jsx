@@ -1454,7 +1454,7 @@ export const Screen = () => {
           transition={{ delay: 0.2 }}
           className="overflow-auto bg-white rounded-xl shadow ring-1 ring-black/5 p-4"
         >
-          <table className="w-full min-w-max border-collapse text-right text-sm">
+        {studentsByClass.length>0&&filteredLessons.length>0?<table className="w-full min-w-max border-collapse text-right text-sm">
             <thead>
               <tr className="bg-[#0A3960] text-white">
                 <th className="sticky right-0 bg-[#0A3960] px-4 py-3">שם התלמידה</th>
@@ -1487,6 +1487,7 @@ export const Screen = () => {
               ))}
             </tbody>
           </table>
+          :<motion.div className="bg-white rounded-xl p-4 text-xl text-gray-700 leading-relaxed mt-6" > לא קיים מידע להצגה על בסיס הכיתה והתאריך שנבחרו </motion.div>}
         </motion.div>
       )}
 
