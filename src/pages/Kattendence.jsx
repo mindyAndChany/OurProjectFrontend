@@ -694,7 +694,7 @@ import { addAttendanceThunk } from "../redux/slices/ATTENDANCE/addAttendanceThun
 import { updateAttendanceThunk } from "../redux/slices/ATTENDANCE/updateAttendanceThunk.js";
 import { getTeachersThunk } from "../redux/slices/TEACHERS/getTeachersThunk.js";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CalendarX2 } from "lucide-react";
 
 const Cell = ({ children, className = "", stickyRight = false }) => (
   <td
@@ -1388,7 +1388,13 @@ export const Screen = () => {
               ))}
             </tbody>
           </table>
-          :<motion.div className="bg-white rounded-xl p-4 text-xl text-gray-700 leading-relaxed mt-6" > לא קיים מידע להצגה על בסיס הכיתה והתאריך שנבחרו </motion.div>}
+          :
+          <motion.div className="flex items-center justify-center min-h-[50vh]">
+            <div className="flex items-center gap-3 text-gray-500">
+              <CalendarX2 className="w-5 h-5 text-gray-400" />
+              <span className="text-sm sm:text-base">לא נמצאו שיעורים לכיתה/תאריך שנבחרו</span>
+            </div>
+          </motion.div>}
         </motion.div>
       )}
 
