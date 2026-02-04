@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { getweeklySchedulesThunk } from './getScheduleThunk.js';
+import { addWeeklyLessonThunk } from './addSchedulThunk.js';
 
 const scheduleSlice = createSlice({
   name: 'weekly_schedule',
@@ -22,6 +23,17 @@ const scheduleSlice = createSlice({
           })
           .addCase(getweeklySchedulesThunk.rejected, (state, action) => {
             console.log("getweekly-schedules error:", action.error);
+          });
+          builder
+          .addCase(addWeeklyLessonThunk.pending, (state) => {
+            console.log("addWeeklyLesson start", state.data);
+          })
+          .addCase(addWeeklyLessonThunk.fulfilled, (state, action) => {
+            state.data.push(action.payload);
+            console.log("addWeeklyLesson success:", action.payload);
+          })
+          .addCase(addWeeklyLessonThunk.rejected, (state, action) => {
+            console.log("addWeeklyLesson error:", action.error);
           });
   }
 });

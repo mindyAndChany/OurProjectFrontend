@@ -7,6 +7,7 @@ import { getweeklySchedulesThunk } from "../redux/slices/SCHEDULE/getScheduleThu
 import { addRealyLessonThunk } from "../redux/slices/LESSONS/addRealyLessonThunk";
 import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
 import { getTeachersThunk } from "../redux/slices/TEACHERS/getTeachersThunk";
+import { useNavigate } from "react-router-dom";
 
 /**
  * קומפוננטת מערכת שבועית - מציגה את לוח השעות של כל הכיתות או כיתה ספציפית
@@ -21,6 +22,8 @@ export default function ScheduleViewer() {
   const [modalLesson, setModalLesson] = useState(null);
   const [modalCancelled, setModalCancelled] = useState(false);
   const [modalReason, setModalReason] = useState("");
+    const navigate = useNavigate();
+
   // מודל להוספת שיעור ידני
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [newLessonData, setNewLessonData] = useState({
@@ -174,7 +177,9 @@ export default function ScheduleViewer() {
     // רענון אופציונלי
     setTimeout(() => dispatch(getLessonsThunk()), 0);
   };
-
+const openComponent = () => {
+    navigate("/WeeklyScheduleEditor");
+  };
   // פתיחת מודל הוספת שיעור ידני
   const openAddLessonModal = () => {
     const defaultClassId =
@@ -349,6 +354,7 @@ const getDailyLessons = (date) => {
     );
     return dayLessons[0] || null;
   };
+  
 
   // סינון כיתות לימודי קודש (14-22)
   const kodeshClasses = useMemo(() => {
@@ -395,6 +401,11 @@ const getDailyLessons = (date) => {
                 >
                   הוסף שיעור בתאריך
                 </button>
+                  <button
+                  className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                  onClick={openComponent}
+                >
+עריכת מערכת חדשה                </button>
               </div>
 
               {/* בחירת כיתה */}
