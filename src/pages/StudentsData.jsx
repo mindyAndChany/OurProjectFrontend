@@ -11,6 +11,9 @@ import { updateStudentThunk } from "../redux/slices/STUDENTS/updateStudentThunk"
 import { ExportToExcel } from "../components/ExportToExcel"
 import { ExcelImport } from "../components/ExcelImport";
 import StudentFilesManager from "../components/StudentFilesManager";
+import { getDocumentsByStudentThunk } from "../redux/slices/STUDENTS/getDocumentsByStudentThunk";
+import { getDocumentsByClassThunk } from "../redux/slices/STUDENTS/getDocumentsByClassThunk";
+import { getDocumentsByTrackThunk } from "../redux/slices/STUDENTS/getDocumentsByTrackThunk";
 
 // רשימת כל השדות
 const fieldsDict = {
@@ -148,7 +151,8 @@ const fieldGroups = {
     ],
     payments: ["id_number", "first_name", "last_name", "payment_status", "paid_amount", "class_kodesh"],
     phonebook: ["id_number", "first_name", "last_name", "phone", "class_kodesh","track"],
-    photos: ["id_number", "first_name", "last_name", "photoUrl", "class_kodesh"]
+    photos: ["id_number", "first_name", "last_name", "photoUrl", "class_kodesh"],
+    documents: []
 };
 
 const filterFields = ["id_number", "class_kodesh", "first_name", "last_name"];
@@ -210,6 +214,13 @@ const StudentsTable = () => {
     const [filesDialogOpen, setFilesDialogOpen] = useState(false);
     const [studentForFiles, setStudentForFiles] = useState(null);
     const [selectedRegistrationYear, setSelectedRegistrationYear] = useState(null);
+    // Documents view state
+    const documentsByStudent = useSelector((state) => state.student.documentsByStudent);
+    const documentsByClass = useSelector((state) => state.student.documentsByClass);
+    const documentsByTrack = useSelector((state) => state.student.documentsByTrack);
+    const [activeDocs, setActiveDocs] = useState([]);
+    const [docFilters, setDocFilters] = useState({ id_number: "", class_kodesh: "", track: "" });
+    const [docsSource, setDocsSource] = useState(null); // 'id' | 'class' | 'track'
 
 
 
@@ -255,7 +266,7 @@ const StudentsTable = () => {
 
     const handleGroupChange = (group) => {
         setSelectedGroup(group);
-        setSelectedFields(fieldGroups[group]);
+        setSelectedFields(fieldGroups[group] || []);
     };
 
     const handleFilterChange = (field, value) => {
@@ -380,6 +391,51 @@ const StudentsTable = () => {
                 }
         };
 
+    // Fetch documents based on current docFilters
+    const fetchDocuments = () => {
+        const id = (docFilters.id_number || "").trim();
+        const klass = (docFilters.class_kodesh || "").trim();
+        const trk = (docFilters.track || "").trim();
+        console.log("id",id,"klass",klass,"trk",trk);
+        
+        if (id) {
+            setDocsSource('id');
+            dispatch(getDocumentsByStudentThunk(id));
+            return;
+        }
+        if (klass) {
+            setDocsSource('class');
+            dispatch(getDocumentsByClassThunk(klass));
+            return;
+        }
+        if (trk) {
+            setDocsSource('track');
+            dispatch(getDocumentsByTrackThunk(trk));
+            return;
+        }
+        // No filters → clear
+        setDocsSource(null);
+        setActiveDocs([]);
+    };
+
+    // Update active docs when store updates
+    useEffect(() => {
+        if (docsSource === 'id') {
+            setActiveDocs(Array.isArray(documentsByStudent) ? documentsByStudent : []);
+        } else if (docsSource === 'class') {
+            setActiveDocs(Array.isArray(documentsByClass) ? documentsByClass : []);
+        } else if (docsSource === 'track') {
+            setActiveDocs(Array.isArray(documentsByTrack) ? documentsByTrack : []);
+        }
+    }, [docsSource, documentsByStudent, documentsByClass, documentsByTrack]);
+
+    const getStudentNameById = (idNum) => {
+        const s = (Array.isArray(allStudentData) ? allStudentData : []).find((st) => (st.id_number || st.id) === idNum);
+        const fn = s?.first_name || s?.firstName || "";
+        const ln = s?.last_name || s?.lastName || "";
+        return `${fn} ${ln}`.trim();
+    };
+
     const handleAddStudent = () => {
         console.log("try adding student", newStudent);
 
@@ -463,6 +519,10 @@ const StudentsTable = () => {
                         onClick={() => handleGroupChange('photos')}
                         className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'photos' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                     >תצוגת תמונות</button>
+                    <button
+                        onClick={() => handleGroupChange('documents')}
+                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'documents' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    >מסמכים</button>
                     <ExportToExcel data={students} />
                     <ExcelImport onData={handleImport} columns={fieldsDict} />
                     <button
@@ -546,6 +606,82 @@ const StudentsTable = () => {
                             <div className="text-sm font-medium">{s.first_name} {s.last_name}</div>
                         </div>
                     ))}
+                </motion.div>
+            )}
+            {selectedGroup === 'documents' && (
+                <motion.div className="mt-4 space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input
+                            type="text"
+                            placeholder="מ.ז. תלמידה"
+                            value={docFilters.id_number}
+                            onChange={(e) => setDocFilters((p) => ({ ...p, id_number: e.target.value }))}
+                            className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
+                        />
+                        <input
+                            type="text"
+                            placeholder="כיתה"
+                            value={docFilters.class_kodesh}
+                            onChange={(e) => setDocFilters((p) => ({ ...p, class_kodesh: e.target.value }))}
+                            className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
+                        />
+                        <input
+                            type="text"
+                            placeholder="מסלול"
+                            value={docFilters.track}
+                            onChange={(e) => setDocFilters((p) => ({ ...p, track: e.target.value }))}
+                            className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
+                        />
+                    </div>
+                    <div className="flex gap-3">
+                        <Button variant="outlined" onClick={fetchDocuments}>חפש מסמכים</Button>
+                        <Button variant="text" onClick={() => { setDocFilters({ id_number: "", class_kodesh: "", track: "" }); setActiveDocs([]); setDocsSource(null); }}>נקה</Button>
+                    </div>
+
+                    <div className="overflow-auto max-w-full">
+                        <table className="min-w-full mt-4 border-collapse border border-gray-400 text-sm text-right bg-white shadow rounded-xl overflow-hidden">
+                            <thead>
+                                <tr className="bg-[#0A3960] text-white">
+                                    <th className="border px-2 py-2">תלמידה</th>
+                                    <th className="border px-2 py-2">מ.ז.</th>
+                                    <th className="border px-2 py-2">שם מסמך</th>
+                                    <th className="border px-2 py-2">סוג</th>
+                                    <th className="border px-2 py-2">מסלול</th>
+                                    <th className="border px-2 py-2">תאריך העלאה</th>
+                                    <th className="border px-2 py-2">צפייה/הורדה</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {activeDocs.length === 0 && (
+                                    <tr>
+                                        <td className="px-4 py-3 text-center" colSpan={7}>אין מסמכים להצגה</td>
+                                    </tr>
+                                )}
+                                {activeDocs.map((doc, i) => {
+                                    const id = doc.id_number || doc.id || "";
+                                    const name = getStudentNameById(id);
+                                    const url = resolveFileUrl(doc.url);
+                                    return (
+                                        <tr key={i}>
+                                            <Cell>{name}</Cell>
+                                            <Cell>{id}</Cell>
+                                            <Cell>{doc.name}</Cell>
+                                            <Cell>{doc.type}</Cell>
+                                            <Cell>{doc.track || ""}</Cell>
+                                            <Cell>{doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('he-IL') : ""}</Cell>
+                                            <Cell>
+                                                {doc.url ? (
+                                                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">פתח</a>
+                                                ) : (
+                                                    "—"
+                                                )}
+                                            </Cell>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </motion.div>
             )}
             {selectedGroup !== 'photos' && students.length > 0 && (
