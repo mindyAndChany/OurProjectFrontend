@@ -8,7 +8,7 @@ export const getDocumentsByClassThunk = createAsyncThunk(
   async (className, { rejectWithValue }) => {
     try {
       const encodedClass = encodeURIComponent(className);
-      const res = await fetch(`http://localhost:4000/api/studentsData/getDocumentsByClass/${encodedClass}`);
+      const res = await fetch(`http://localhost:4000/api/studentsData/class/${encodedClass}/documents`);
 
       if (!res.ok) {
         let error;

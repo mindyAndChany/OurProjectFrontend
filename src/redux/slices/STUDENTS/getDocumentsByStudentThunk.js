@@ -8,7 +8,7 @@ export const getDocumentsByStudentThunk = createAsyncThunk(
   async (id_number, { rejectWithValue }) => {
     try {
       const id = encodeURIComponent(id_number);
-      const res = await fetch(`http://localhost:4000/api/studentsData/getDocumentsByStudent/${id}`);
+      const res = await fetch(`http://localhost:4000/api/studentsData/${id}/documents`);
 
       if (!res.ok) {
         let error;

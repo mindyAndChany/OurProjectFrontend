@@ -8,7 +8,7 @@ export const getDocumentsByTrackThunk = createAsyncThunk(
   async (track, { rejectWithValue }) => {
     try {
       const encodedTrack = encodeURIComponent(track);
-      const res = await fetch(`http://localhost:4000/api/studentsData/getDocumentsByTrack/${encodedTrack}`);
+      const res = await fetch(`http://localhost:4000/api/studentsData/track/${encodedTrack}/documents`);
 
       if (!res.ok) {
         let error;
