@@ -15,6 +15,8 @@ export default function WeeklyScheduleEditor() {
   const [weekSchedule, setWeekSchedule] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState({});
+const currentYear = new Date().getFullYear();
+const [selectedYear, setSelectedYear] = useState(currentYear);
 
   useEffect(() => {
     dispatch(getTeachersThunk());
@@ -68,20 +70,21 @@ export default function WeeklyScheduleEditor() {
     start_time: modalData.start_time,
     end_time: modalData.end_time,
     topic_id: topic.id,
-    topicRef: { id: topic.id, name: topic.name },
+    // topicRef: { id: topic.id, name: topic.name },
     teacher_name: topic.name,
     room_id: room.id,
-    roomRef: {
-      id: room.id,
-      name: room.name,
-      number: room.number,
-      is_computer_lab: room.is_computer_lab,
-      has_makren: room.has_makren,
-      floor: room.floor,
-      seat_count: room.seat_count,
-      is_available: room.is_available,
-      primary_use: room.primary_use,
-    },
+    // roomRef: {
+    //   id: room.id,
+    //   name: room.name,
+    //   number: room.number,
+    //   is_computer_lab: room.is_computer_lab,
+    //   has_makren: room.has_makren,
+    //   floor: room.floor,
+    //   seat_count: room.seat_count,
+    //   is_available: room.is_available,
+    //   primary_use: room.primary_use,
+    // },
+     year: selectedYear,
   };
 
   console.log('📦 payload שנשלח:', payload);
@@ -94,6 +97,19 @@ export default function WeeklyScheduleEditor() {
     <div className="p-6">
       <h1 className="text-3xl font-bold text-indigo-800 mb-6">עריכת מערכת שבועית קבועה</h1>
       <div className="mb-4">
+        <div className="mb-4">
+  <label className="font-semibold">בחר שנה:</label>
+  <select
+    className="border p-2 rounded ml-3"
+    value={selectedYear}
+    onChange={(e) => setSelectedYear(Number(e.target.value))}
+  >
+    {[2024, 2025, 2026, 2027].map((year) => (
+      <option key={year} value={year}>{year}</option>
+    ))}
+  </select>
+</div>
+
         <label className="font-semibold">בחר כיתה:</label>
         <select
           className="border p-2 rounded ml-3"

@@ -62,6 +62,9 @@ export default function ScheduleViewer() {
   const schedule = useSelector((state) => state.weekly_schedule?.data ?? []); // מערכת שבועית קבועה
   const classes = useSelector((state) => state.classes?.data ?? []); // רשימת כיתות
   const teachers = useSelector((state) => state.teacher?.data ?? []); // רשימת מקצועות/מורים
+  
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
   const dispatch = useDispatch();
 
   // טעינת נתוני כיתות ומערכת בעת טעינת הקומפוננטה
@@ -132,7 +135,7 @@ export default function ScheduleViewer() {
     const dayOfWeek = date.getDay();
 
     // סינון מתוך המערכת השבועית ליום זה + לפי תצוגה (כיתה או לימודי קודש)
-    const weeklyForDay = schedule.filter((s) => s.day_of_week === dayOfWeek);
+    const weeklyForDay = schedule.filter((s) => s.day_of_week === dayOfWeek && s.year === selectedYear);
     const filteredWeekly =
       selectedClassId === "kodesh"
         ? weeklyForDay.filter((s) => s.class_id >= 14 && s.class_id <= 22)
@@ -191,6 +194,7 @@ const openComponent = () => {
       date: format(selectedDate, "yyyy-MM-dd"),
       start_time: "",
       end_time: "",
+      year: selectedYear ,
       topic: "",
       topic_id: "",
       is_cancelled: false,
@@ -261,7 +265,7 @@ const getDailyLessons = (date) => {
     : realLessons;
 
   // Weekly schedule lessons for the day
-  const weeklyByDay = schedule.filter((s) => s.day_of_week === dayOfWeek);
+  const weeklyByDay = schedule.filter((s) => s.day_of_week === dayOfWeek && s.year === selectedYear);
   const filteredWeekly = selectedClassId
     ? weeklyByDay.filter((s) => String(s.class_id) === String(selectedClassId))
     : weeklyByDay;
@@ -351,6 +355,7 @@ const getDailyLessons = (date) => {
   const getLessonForClassAndTime = (classId, dayOfWeek, time) => {
     const dayLessons = schedule.filter(
       (s) => s.day_of_week === dayOfWeek && s.class_id === classId && s.start_time === time
+      && s.year === selectedYear
     );
     return dayLessons[0] || null;
   };
@@ -407,6 +412,21 @@ const getDailyLessons = (date) => {
                 >
 עריכת מערכת חדשה                </button>
               </div>
+{/* בחירת שנה */}  
+<div className="flex items-center gap-2">
+  <label className="text-lg font-semibold text-gray-700">שנה:</label>
+  <select
+    className="border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition min-w-24"
+    value={selectedYear}
+    onChange={(e) => setSelectedYear(Number(e.target.value))}
+  >
+    {[2024, 2025, 2026, 2027].map((year) => (
+      <option key={year} value={year}>
+        {year}
+      </option>
+    ))}
+  </select>
+</div>
 
               {/* בחירת כיתה */}
               <div className="flex items-center gap-2 ml-auto">
@@ -434,6 +454,7 @@ const getDailyLessons = (date) => {
               // סינון שיעורים רק ליום זה ורק לכיתות לימודי קודש (14-22)
               const daySchedule = schedule.filter(
                 (s) => s.day_of_week === dayOfWeek && s.class_id >= 14 && s.class_id <= 22
+                && s.year === selectedYear
               );
               // שיעורים אמיתיים מתוך LESSONS עבור תאריך זה ולכיתות לימודי קודש
               const dateStr = format(day, "yyyy-MM-dd");
@@ -663,6 +684,22 @@ const getDailyLessons = (date) => {
               >
                 הוסף שיעור בתאריך
               </button>
+              {/* בחירת שנה */}  
+<div className="flex items-center gap-2">
+  <label className="text-lg font-semibold text-gray-700">שנה:</label>
+  <select
+    className="border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition min-w-24"
+    value={selectedYear}
+    onChange={(e) => setSelectedYear(Number(e.target.value))}
+  >
+    {[2024, 2025, 2026, 2027].map((year) => (
+      <option key={year} value={year}>
+        {year}
+      </option>
+    ))}
+  </select>
+</div>
+
             </div>
 
             {/* בחירת כיתה */}

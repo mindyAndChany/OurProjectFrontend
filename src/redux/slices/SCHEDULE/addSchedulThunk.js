@@ -10,5 +10,10 @@ export const addWeeklyLessonThunk = createAsyncThunk(
     });
     if (!res.ok) throw new Error('❌ failed to add weekly lesson');
     return await res.json();
+      // החזר תגובה מפורטת ל־frontend
+    res.status(500).json({
+      error: 'Failed to add weekly schedule',
+      details: error?.message ?? error,
+    });
   }
 );
