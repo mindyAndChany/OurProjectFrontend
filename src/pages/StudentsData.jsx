@@ -141,7 +141,7 @@ const placeholdersMap = {
 
 
 const fieldGroups = {
-    basic: ["id_number", "first_name", "last_name", "class_kodesh"],
+    basic: ["id_number", "first_name", "last_name", "class_kodesh","track","track2"],
     personal: [
         "id_number", "first_name", "last_name", "phone", "marital_status", "address",
         "father_name_he", "father_mobile_he", "mother_name_he", "mother_mobile_he", "class_kodesh"
