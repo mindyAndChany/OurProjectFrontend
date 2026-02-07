@@ -293,9 +293,13 @@ export default function WeeklyScheduleEditor() {
         grouped[day][l.class_id].push(l);
       });
       const filteredClasses = classes.filter(c => c.id >= 14 && c.id <= 22);
-
       const classIds = filteredClasses.map(c => c.id);
-      const classNames = filteredClasses.map(c => c.name);
+      // const classNames = filteredClasses.map(c => c.name);
+      const classNames = classIds.map(cid => {
+  const cls = classes.find(c => c.id === cid);
+  return cls ? cls.name : `כיתה ${cid}`;
+});
+
       // const classIds = [...new Set(filteredSchedule.map(l => l.class_id))];
       // const classNames = classIds.map(cid => classes.find(c => c.id === cid)?.name || cid);
 
@@ -322,8 +326,14 @@ export default function WeeklyScheduleEditor() {
                             <div className="flex items-center gap-2 text-sm">
                               <School size={16} />{lesson.roomRef.number}
                             </div>
+                          )|| (
+                            <div className="flex items-center gap-1 text-sm"><School size={14} />{rooms.find(r => r.id === lesson.room_id)?.number || 'חדר לא ידוע'}</div>
                           )}
-                          <div className="flex items-center gap-1"><User size={14} />{lesson.topicRef.name}</div>
+                           {lesson.topicRef && (
+                              <div className="flex items-center gap-2 text-sm"><User size={16} />{lesson.topicRef.name}</div>
+                           ) || (
+                             <div className="flex items-center gap-1"><User size={14} />{teachers.find(t => t.id === lesson.topic_id)?.name || 'מורה לא ידוע'}</div>
+                           )}
                         </div>
 
 
@@ -358,8 +368,14 @@ export default function WeeklyScheduleEditor() {
                     <div className="flex items-center gap-2 text-sm">
                       <School size={16} />{l.roomRef.number}
                     </div>
+                  )|| (
+                    <div className="flex items-center gap-1 text-sm"><School size={14} />{rooms.find(r => r.id === l.room_id)?.number || 'חדר לא ידוע'}</div>
                   )}
+                {l.topicRef && (
                   <div className="flex items-center gap-2 text-sm"><User size={16} />{l.topicRef.name}</div>
+                )|| (
+                  <div className="flex items-center gap-1 text-sm"><User size={14} />{teachers.find(t => t.id === l.topic_id)?.name || 'מורה לא ידוע'}</div>
+                )}
                 </div>
               ))}
 
