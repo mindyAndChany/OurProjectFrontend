@@ -4,12 +4,18 @@ import { addStudentsThunk } from "./addStudentsThunk.js";
 import { updateStudentThunk } from "./updateStudentThunk.js";
 import { getStudentByIdThunk } from "./getStudentByIdThunk.js";
 import { uploadStudentFilesThunk } from "./uploadStudentFilesThunk.js";
+import { getDocumentsByStudentThunk } from "./getDocumentsByStudentThunk.js";
+import { getDocumentsByTrackThunk } from "./getDocumentsByTrackThunk.js";
+import { getDocumentsByClassThunk } from "./getDocumentsByClassThunk.js";
 
 export const INITIAL_STATE_STUDENTS = {
   studentsData: [],
   selectedStudent: null,
   loading: false,
   error: null,
+  documentsByStudent: [],
+  documentsByTrack: [],
+  documentsByClass: [],
 };
 
 export const studentSlice = createSlice({
@@ -94,6 +100,44 @@ export const studentSlice = createSlice({
       })
       .addCase(uploadStudentFilesThunk.rejected, (state, action) => {
         console.log("uploadStudentFiles error:", action.payload || action.error);
+      });
+    // Documents fetch handling
+    builder
+      .addCase(getDocumentsByStudentThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getDocumentsByStudentThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.documentsByStudent = action.payload || [];
+      })
+      .addCase(getDocumentsByStudentThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error || 'Error fetching documents by student';
+      })
+      .addCase(getDocumentsByTrackThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getDocumentsByTrackThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.documentsByTrack = action.payload || [];
+      })
+      .addCase(getDocumentsByTrackThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error || 'Error fetching documents by track';
+      })
+      .addCase(getDocumentsByClassThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getDocumentsByClassThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.documentsByClass = action.payload || [];
+      })
+      .addCase(getDocumentsByClassThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error || 'Error fetching documents by class';
       });
   }
 });

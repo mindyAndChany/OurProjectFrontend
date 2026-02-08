@@ -694,7 +694,7 @@ import { addAttendanceThunk } from "../redux/slices/ATTENDANCE/addAttendanceThun
 import { updateAttendanceThunk } from "../redux/slices/ATTENDANCE/updateAttendanceThunk.js";
 import { getTeachersThunk } from "../redux/slices/TEACHERS/getTeachersThunk.js";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CalendarX2 } from "lucide-react";
 
 const Cell = ({ children, className = "", stickyRight = false }) => (
   <td
@@ -807,22 +807,117 @@ console.log("raw:", raw, "| translated:", translated);
 }
 // קומפוננטת קלט חכמה במקום SELECT — תומכת בהקלדה + מקשים + צבעים
 
+// function StatusInput({ value, onChange, disabled }) {
+//   const inputRef = useRef();
+
+//   const statusByShortcut = {
+//     "0": "present",
+//     "1": "absent",
+//     "2": "late",
+//     "3": "approved absent",
+//   "נוכחת": "present",
+//   "חסרה": "absent",
+//   "מאחרת": "late",
+//   "חסרה באישור": "approved absent",
+//   "נ": "present",
+//   "ח": "absent",
+//   "מ": "late",
+//   "א": "approved absent"
+//   };
+
+//   const displayValue = {
+//     present: "נוכחת",
+//     absent: "חסרה",
+//     late: "מאחרת",
+//     "approved absent": "חסרה באישור",
+//     "": ""
+//   }[value] ?? value;
+
+//   const baseStyle = "w-full min-w-[120px] rounded-md border px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 disabled:opacity-50";
+
+//   const statusStyles = {
+//     present: "bg-green-50 text-green-800 border-green-300",
+//     late: "bg-yellow-50 text-yellow-800 border-yellow-300",
+//     absent: "bg-red-50 text-red-800 border-red-300",
+//     "approved absent": "bg-blue-50 text-blue-800 border-blue-300",
+//     default: "bg-white text-gray-900 border-gray-300",
+//   };
+
+//   const handleKeyDown = (e) => {
+//     if (disabled) return;
+
+//     if (e.key === "Enter") {
+
+//       const raw = e.target.value.trim();
+//       const translated = statusByShortcut[raw];
+//             console.log("raw:", raw, "| translated:", translated);
+//       onChange({ target: { value: translated } });
+    
+//   moveFocus(e, "down");
+//     }
+
+//     if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+//       e.preventDefault();
+//       moveFocus(e, e.key.replace("Arrow", "").toLowerCase());
+//     }
+//   };
+
+//   const moveFocus = (e, direction) => {
+//     const cell = e.target.closest("td");
+//     if (!cell) return;
+//     let target;
+
+//     if (direction === "right") target = cell.nextElementSibling;
+//     if (direction === "left") target = cell.previousElementSibling;
+//     if (direction === "down" || direction === "up") {
+//       const colIndex = cell.cellIndex;
+//       const row = cell.parentElement;
+//       const targetRow = direction === "down" ? row.nextElementSibling : row.previousElementSibling;
+//       if (targetRow) {
+//         target = targetRow.cells[colIndex];
+//       }
+//     }
+
+//     if (target) {
+//       const input = target.querySelector("input");
+//       if (input) input.focus();
+//     }
+//   };
+
+//   const style = statusStyles[value] || statusStyles.default;
+
+//   return (
+//     <input
+//       ref={inputRef}
+//       type="text"
+//       value={displayValue}
+//       onChange={(e) => onChange({ target: { value: e.target.value } })}
+//       onKeyDown={handleKeyDown}
+//       disabled={disabled}
+//         onFocus={(e) => e.target.select()} // ← כאן!
+
+//       className={`${baseStyle} ${style}`}
+//     />
+//   );
+// }
+
 function StatusInput({ value, onChange, disabled }) {
   const inputRef = useRef();
+  const [inputValue, setInputValue] = useState("");
 
   const statusByShortcut = {
     "0": "present",
     "1": "absent",
     "2": "late",
     "3": "approved absent",
-  "נוכחת": "present",
-  "חסרה": "absent",
-  "מאחרת": "late",
-  "חסרה באישור": "approved absent",
-  "נ": "present",
-  "ח": "absent",
-  "מ": "late",
-  "א": "approved absent"
+    "נוכחת": "present",
+    "חסרה": "absent",
+    "מאחרת": "late",
+    "חסרה באישור": "approved absent",
+    "נ": "present",
+    "ח": "absent",
+    "מ": "late",
+    "א": "approved absent"
   };
 
   const displayValue = {
@@ -830,31 +925,26 @@ function StatusInput({ value, onChange, disabled }) {
     absent: "חסרה",
     late: "מאחרת",
     "approved absent": "חסרה באישור",
-    "": ""
-  }[value] ?? value;
+  }[value] || "";
 
-  const baseStyle = "w-full min-w-[120px] rounded-md border px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 disabled:opacity-50";
-
-  const statusStyles = {
-    present: "bg-green-50 text-green-800 border-green-300",
-    late: "bg-yellow-50 text-yellow-800 border-yellow-300",
-    absent: "bg-red-50 text-red-800 border-red-300",
-    "approved absent": "bg-blue-50 text-blue-800 border-blue-300",
-    default: "bg-white text-gray-900 border-gray-300",
-  };
+  // סנכרון ערך ראשוני מה־props
+  useEffect(() => {
+    setInputValue(displayValue);
+  }, [value]);
 
   const handleKeyDown = (e) => {
     if (disabled) return;
 
     if (e.key === "Enter") {
-
-      const raw = e.target.value.trim();
+      const raw = inputValue.trim();
       const translated = statusByShortcut[raw];
-            console.log("raw:", raw, "| translated:", translated);
-debugger
-      onChange({ target: { value: translated } });
-    
-  moveFocus(e, "down");
+      console.log("raw:", raw, "| translated:", translated);
+      if (translated) {
+        onChange({ target: { value: translated } });
+      } else {
+        setInputValue(""); // איפוס אם לא תקף
+      }
+      moveFocus(e, "down");
     }
 
     if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.key)) {
@@ -885,22 +975,31 @@ debugger
     }
   };
 
+  const baseStyle = "w-full min-w-[120px] rounded-md border px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 disabled:opacity-50";
+  const statusStyles = {
+    present: "bg-green-50 text-green-800 border-green-300",
+    late: "bg-yellow-50 text-yellow-800 border-yellow-300",
+    absent: "bg-red-50 text-red-800 border-red-300",
+    "approved absent": "bg-blue-50 text-blue-800 border-blue-300",
+    default: "bg-white text-gray-900 border-gray-300",
+  };
+
   const style = statusStyles[value] || statusStyles.default;
 
   return (
     <input
       ref={inputRef}
       type="text"
-      value={displayValue}
-      onChange={(e) => onChange({ target: { value: e.target.value } })}
+      value={inputValue}
+      onChange={(e) => setInputValue(e.target.value)}
       onKeyDown={handleKeyDown}
       disabled={disabled}
-        onFocus={(e) => e.target.select()} // ← כאן!
-
+      onFocus={(e) => e.target.select()}
       className={`${baseStyle} ${style}`}
     />
   );
 }
+
 
 export const Screen = () => {
   const dispatch = useDispatch();
@@ -1355,7 +1454,7 @@ export const Screen = () => {
           transition={{ delay: 0.2 }}
           className="overflow-auto bg-white rounded-xl shadow ring-1 ring-black/5 p-4"
         >
-          <table className="w-full min-w-max border-collapse text-right text-sm">
+        {studentsByClass.length>0&&filteredLessons.length>0?<table className="w-full min-w-max border-collapse text-right text-sm">
             <thead>
               <tr className="bg-[#0A3960] text-white">
                 <th className="sticky right-0 bg-[#0A3960] px-4 py-3">שם התלמידה</th>
@@ -1388,6 +1487,13 @@ export const Screen = () => {
               ))}
             </tbody>
           </table>
+          :
+          <motion.div className="flex items-center justify-center min-h-[50vh]">
+            <div className="flex items-center gap-3 text-gray-500">
+              <CalendarX2 className="w-5 h-5 text-gray-400" />
+              <span className="text-sm sm:text-base">לא נמצאו שיעורים לכיתה/תאריך שנבחרו</span>
+            </div>
+          </motion.div>}
         </motion.div>
       )}
 

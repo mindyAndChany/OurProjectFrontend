@@ -10,11 +10,14 @@ export const uploadStudentFilesThunk = createAsyncThunk(
     try {
       const formData = new FormData();
       if (profilePhoto) {
-        // include filename to help backend parsers
-        formData.append('profilePhoto', profilePhoto, profilePhoto.name);
+        // Do not override filename so Cloudinary can preserve original Hebrew name
+        formData.append('profilePhoto', profilePhoto);
       }
       if (Array.isArray(documents)) {
-        documents.forEach((doc) => formData.append('documents', doc, doc.name));
+        documents.forEach((doc) => {
+          // Keep original filename; server now returns display name
+          formData.append('documents', doc);
+        });
       }
       // Helpful debug: show appended keys and filenames
       const debugEntries = [];

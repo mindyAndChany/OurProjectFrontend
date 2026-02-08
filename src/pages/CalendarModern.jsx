@@ -112,9 +112,161 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete, 
 
   const typeColor = getTypeColor(editing.type);
 
+  // return (
+  //   <div className="fixed inset-0 z-[70] bg-black/40 flex items-center justify-center px-4" dir="rtl">
+  //     <div className="w-full max-w-lg bg-white rounded-3xl border border-gray-200 shadow-xl p-6">
+  //       <div className="flex items-start justify-between gap-4">
+  //         <div>
+  //           <h3 className="text-2xl font-bold text-gray-900">
+  //             {editing.id ? "עריכת אירוע" : "הוספת אירוע"}
+  //           </h3>
+  //           <p className="mt-1 text-gray-600 font-semibold">{editing.date}</p>
+  //         </div>
+
+  //         <button
+  //           onClick={onClose}
+  //           className="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 transition font-bold"
+  //         >
+  //           סגור
+  //         </button>
+  //         <button
+  //           onClick={onBack}
+  //           className="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 transition font-bold"
+  //         >
+  //           חזור
+  //         </button>
+  //       </div>
+
+  //       <div className="mt-6 space-y-4">
+  //         <div>
+  //           <label className="block text-sm font-bold text-gray-800 mb-2">כותרת</label>
+  //           <input
+  //             value={editing.title}
+  //             onChange={(e) => onChange({ ...editing, title: e.target.value })}
+  //             className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
+  //             placeholder="שם האירוע"
+  //           />
+  //         </div>
+
+  //         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+  //           <div className="md:col-span-1">
+  //             <label className="block text-sm font-bold text-gray-800 mb-2">סוג</label>
+  //             <select
+  //               value={editing.type}
+  //               onChange={(e) => onChange({ ...editing, type: e.target.value })}
+  //               className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
+  //             >
+  //               {Object.keys(TYPE_META).map((t) => (
+  //                 <option key={t} value={t}>
+  //                   {getTypeLabel(t)}
+  //                 </option>
+  //               ))}
+  //             </select>
+  //           </div>
+
+  //           <div className="md:col-span-1">
+  //             <label
+  //               className="block text-sm font-bold text-gray-800 mb-2">שעת התחלה</label>
+  //             <input
+  //               type="time"
+  //               value={editing.time_start}
+  //               onChange={(e) => onChange({ ...editing, time_start: e.target.value })}
+  //               className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
+  //               placeholder="HH:mm"
+  //             />
+  //           </div>
+
+  //           <div className="md:col-span-1">
+  //             <label
+  //               className="block text-sm font-bold text-gray-800 mb-2">שעת סיום</label>
+  //             <input
+  //               type="time"
+  //               value={editing.time_end}
+  //               onChange={(e) => onChange({ ...editing, time_end: e.target.value })}
+  //               className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
+  //               placeholder="HH:mm"
+  //             />
+  //           </div>
+  //         </div>
+
+  //         <div>
+  //           <label className="block text-sm font-bold text-gray-800 mb-2">הערות</label>
+  //           <textarea
+  //             value={editing.notes}
+  //             onChange={(e) => onChange({ ...editing, notes: e.target.value })}
+  //             className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b] min-h-[110px]"
+  //             placeholder="פרטים נוספים..."
+  //           />
+  //         </div>
+  //       </div>
+  //       {editing.type === "attendance" && (
+  //         <div>
+  //           <label className="block text-sm font-bold text-gray-800 mb-2">בחר כיתות</label>
+  //           <div className="grid grid-cols-2 gap-3 max-h-52 overflow-y-auto border rounded-2xl px-4 py-3">
+  //             {classes.map((cls) => {
+  //               const checked = (editing.class_ids || []).includes(cls.id);
+  //               return (
+  //                 <label
+  //                   key={cls.id}
+  //                   className="flex items-center space-x-2 cursor-pointer"
+  //                   dir="rtl"
+  //                 >
+  //                   <input
+  //                     type="checkbox"
+  //                     className="form-checkbox rounded text-blue-600"
+  //                     style={{ appearance: "auto" }}
+
+  //                     checked={checked}
+  //                     onChange={(e) => {
+  //                       const current = editing.class_ids || [];
+  //                       const updated = e.target.checked
+  //                         ? [...current, cls.id]
+  //                         : current.filter((id) => id !== cls.id);
+  //                       onChange({ ...editing, class_ids: updated });
+  //                     }}
+  //                   />
+  //                   <span className="text-sm font-semibold text-gray-800">{cls.name}</span>
+  //                 </label>
+  //               );
+  //             })}
+  //           </div>
+  //         </div>
+  //       )}
+
+
+  //       <div className="mt-6 flex items-center justify-between gap-3">
+  //         <div className="flex items-center gap-3">
+  //           <button
+  //             onClick={onSave}
+  //             className="px-6 py-3 rounded-full bg-[#295f8b] text-white font-bold shadow-md hover:bg-[#1e4a6b] transition"
+  //           >
+  //             שמירה
+  //           </button>
+
+  //           {editing.id ? (
+  //             <button
+  //               onClick={onDelete}
+  //               className="px-6 py-3 rounded-full border border-red-200 text-red-700 font-bold hover:bg-red-50 transition"
+  //             >
+  //               מחיקה
+  //             </button>
+  //           ) : null}
+  //         </div>
+
+  //         <div className="text-sm font-bold text-gray-600 flex items-center gap-2">
+  //           <span>צבע:</span>
+  //           <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: typeColor }} />
+  //         </div>
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
   return (
     <div className="fixed inset-0 z-[70] bg-black/40 flex items-center justify-center px-4" dir="rtl">
-      <div className="w-full max-w-lg bg-white rounded-3xl border border-gray-200 shadow-xl p-6">
+      <div className="w-full max-w-lg bg-white rounded-3xl border border-gray-200 shadow-xl p-6
+                    max-h-[90vh] overflow-y-auto">
+
+        {/* כותרת וחזרה */}
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">
@@ -137,6 +289,7 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete, 
           </button>
         </div>
 
+        {/* תוכן המודאל */}
         <div className="mt-6 space-y-4">
           <div>
             <label className="block text-sm font-bold text-gray-800 mb-2">כותרת</label>
@@ -165,8 +318,7 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete, 
             </div>
 
             <div className="md:col-span-1">
-              <label
-                className="block text-sm font-bold text-gray-800 mb-2">שעת התחלה</label>
+              <label className="block text-sm font-bold text-gray-800 mb-2">שעת התחלה</label>
               <input
                 type="time"
                 value={editing.time_start}
@@ -177,8 +329,7 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete, 
             </div>
 
             <div className="md:col-span-1">
-              <label
-                className="block text-sm font-bold text-gray-800 mb-2">שעת סיום</label>
+              <label className="block text-sm font-bold text-gray-800 mb-2">שעת סיום</label>
               <input
                 type="time"
                 value={editing.time_end}
@@ -198,53 +349,62 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete, 
               placeholder="פרטים נוספים..."
             />
           </div>
+
+          {editing.type === "attendance" && (
+            <div>
+              <label className="block text-sm font-bold text-gray-800 mb-2">בחר כיתות</label>
+              <div className="grid grid-cols-2 gap-3 max-h-52 overflow-y-auto border rounded-2xl px-4 py-3">
+                {classes.map((cls) => {
+                  const checked = (editing.class_ids || []).includes(cls.id);
+                  return (
+                    <label
+                      key={cls.id}
+                      className="flex items-center space-x-2 space-x-reverse cursor-pointer"
+                      dir="rtl"
+                    >
+                      <input
+                        type="checkbox"
+                        className="form-checkbox rounded text-blue-600"
+                        style={{ appearance: "auto" }}
+                        checked={checked}
+                        onChange={(e) => {
+                          const current = editing.class_ids || [];
+                          const updated = e.target.checked
+                            ? [...current, cls.id]
+                            : current.filter((id) => id !== cls.id);
+                          onChange({ ...editing, class_ids: updated });
+                        }}
+                      />
+                      <span className="text-sm font-semibold text-gray-800">{cls.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-        {editing.type === "attendance" && (
-          <div>
-            <label className="block text-sm font-bold text-gray-800 mb-2">כיתות</label>
-            <select
-              multiple
-              value={editing.class_ids || []}
-              onChange={(e) => {
-                const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value);
-                onChange({ ...editing, class_ids: selected });
-              }}
-              className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none"
-            >
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>{cls.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
 
-        <div className="mt-6 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onSave}
-              className="px-6 py-3 rounded-full bg-[#295f8b] text-white font-bold shadow-md hover:bg-[#1e4a6b] transition"
-            >
-              שמירה
-            </button>
+        {/* כפתורי פעולה - תמיד נגישים */}
+        <div className="mt-6 flex justify-between items-center">
+          <button
+            onClick={onDelete}
+            className="text-red-600 font-bold text-sm hover:underline"
+          >
+            מחק
+          </button>
 
-            {editing.id ? (
-              <button
-                onClick={onDelete}
-                className="px-6 py-3 rounded-full border border-red-200 text-red-700 font-bold hover:bg-red-50 transition"
-              >
-                מחיקה
-              </button>
-            ) : null}
-          </div>
-
-          <div className="text-sm font-bold text-gray-600 flex items-center gap-2">
-            <span>צבע:</span>
-            <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: typeColor }} />
-          </div>
+          <button
+            onClick={onSave}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-2xl font-bold text-lg shadow"
+          >
+            שמור
+          </button>
         </div>
+
       </div>
     </div>
   );
+
 }
 
 /** =========================
@@ -1246,7 +1406,7 @@ function DayTimeline({ events, onEdit }) {
             const class_id = ev.class_ids?.[0]; // או ev.class_id
             const date = ev.date; // לוודא שזה קיים
             // navigate(`/attendance?date=${date}&class_id=${class_id}&journal_type=class`);
-          navigate(`/Kattendence`);
+            navigate(`/Kattendence`);
             setMenuPos(null);
           }}
           onContextMenu={(e) => e.preventDefault()}
