@@ -90,7 +90,7 @@ export const ExcelImport = ({ onData, columns }) => {
             className="p-2 rounded-full hover:bg-gray-200 transition"
             title="ייבוא מאקסל"
         >
-            <FileUp className="w-5 h-5" />
+            <FileUp className="w-8 h-8" />
         </button>
         <input
             type="file"

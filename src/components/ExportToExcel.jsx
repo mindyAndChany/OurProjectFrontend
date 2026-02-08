@@ -24,6 +24,6 @@ import * as XLSX from "xlsx";
                                 className="p-2 rounded-full hover:bg-gray-200 transition"
                                 title="יצוא לאקסל"
                             >
-                                <FileDown className="w-5 h-5" />
+                                <FileDown className="w-8 h-8" />
                             </button>
     };

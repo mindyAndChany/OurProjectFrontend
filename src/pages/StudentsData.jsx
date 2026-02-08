@@ -3,9 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { getStudentDataThunk } from "../redux/slices/STUDENTS/getStudentDataThunk";
 import { motion } from "framer-motion";
 // import * as XLSX from "xlsx";
-import { Printer, FileUp, UserRoundPlus, UserPen } from "lucide-react";
+import { Printer, FileUp, UserRoundPlus, UserPen, UserRoundSearch } from "lucide-react";
 import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import { TextField, Button, IconButton } from "@mui/material";
+import { TextField, Button, IconButton, FormControl, RadioGroup, FormControlLabel, Radio } from "@mui/material";
 import { addStudentsThunk } from "../redux/slices/STUDENTS/addStudentsThunk";
 import { updateStudentThunk } from "../redux/slices/STUDENTS/updateStudentThunk";
 import { ExportToExcel } from "../components/ExportToExcel"
@@ -60,16 +60,24 @@ const fieldsDictHeb = Object.fromEntries(
     Object.entries(fieldsDict).map(([he, en]) => [en, he])
 );
 
-// כותרות לקבוצות והגדרת קבוצות לשדות בטופס
-const formGroupTitles = {
-    basic: "פרטים בסיסיים",
-    contact: "פרטי קשר",
-    parents: "הורי התלמידה",
-    personal: "פרטים אישיים",
-    study: "לימודים ומגמות",
-    payments: "תשלומים",
-    other: "פרטים נוספים",
-};
+// קונפיגורציה אחידה לקבוצות כדי לחסוך כפילויות
+const GROUPS = [
+    { key: 'basic', title: 'פרטים בסיסיים', navLabel: 'נתונים בסיסיים', showInNav: true },
+    { key: 'personal', title: 'פרטים אישיים', navLabel: 'נתונים אישיים', showInNav: true },
+    { key: 'payments', title: 'תשלומים', navLabel: 'פרטי תשלומים', showInNav: true },
+    { key: 'parents', title: 'הורי התלמידה', navLabel: 'נתוני הורים', showInNav: true },
+    { key: 'study', title: 'לימודים ומגמות', navLabel: 'תכנית לימודים', showInNav: true },
+    { key: 'contact', title: 'פרטי קשר', navLabel: 'אלפון', showInNav: true },
+    // הקבוצות הבאות מופיעות בניווט אך ללא שדות בטופס ההוספה/עריכה
+    { key: 'photos', title: 'תצוגת תמונות', navLabel: 'תצוגת תמונות', showInNav: true },
+    { key: 'documents', title: 'מסמכים', navLabel: 'מסמכים', showInNav: true },
+    // "other" נשארת לזיהוי עתידי, לא מוצגת בניווט כרגע
+    { key: 'other', title: 'פרטים נוספים', navLabel: 'פרטים נוספים', showInNav: false },
+];
+
+// הפקה אוטומטית של כותרות לקבוצות ושל ניווט מהקונפיגורציה
+const formGroupTitles = Object.fromEntries(GROUPS.map(g => [g.key, g.title]));
+const navGroups = GROUPS.filter(g => g.showInNav).map(g => ({ key: g.key, label: g.navLabel }));
 
 // קבוצות לשדות בטופס (סדר הופעה)
 const formGroups = {
@@ -112,18 +120,6 @@ const formGroups = {
     photos: ["photoUrl"],
     documents: []
 };
-
-// const fieldGroups = {
-//     basic: ["id_number", "first_name", "last_name", "class_kodesh", "track", "track2"],
-//     personal: [
-//         "id_number", "first_name", "last_name", "phone", "marital_status", "address",
-//         "father_name_he", "father_mobile_he", "mother_name_he", "mother_mobile_he", "class_kodesh"
-//     ],
-//     payments: ["id_number", "first_name", "last_name", "payment_status", "paid_amount", "class_kodesh"],
-//     phonebook: ["id_number", "first_name", "last_name", "phone", "class_kodesh", "track"],
-//     photos: ["id_number", "first_name", "last_name", "photoUrl", "class_kodesh"],
-//     documents: []
-// };
 
 const filterFields = ["id_number", "class_kodesh", "first_name", "last_name", "track"];
 
@@ -214,15 +210,16 @@ const StudentsTable = () => {
     const dispatch = useDispatch();
 
     const allStudentData = useSelector((state) => state.student.studentsData);
-    const [selectedFields, setSelectedFields] = useState(formGroups.basic);
+    const [selectedFields, setSelectedFields] = useState(
+        Array.from(new Set([...(formGroups.basic || []), ...(formGroups.contact || [])]))
+    );
     const [students, setStudents] = useState([]);
-    const [selectedGroup, setSelectedGroup] = useState("basic");
+    const [selectedGroup, setSelectedGroup] = useState("contact");
     const [filters, setFilters] = useState({});
     const [newStudent, setNewStudent] = useState(initialNewStudent);
     const [open, setOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [studentToEdit, setStudentToEdit] = useState(null);
-    const [group, setGroup] = useState("רשימת הבנות");
     const [filesDialogOpen, setFilesDialogOpen] = useState(false);
     const [studentForFiles, setStudentForFiles] = useState(null);
     const [selectedRegistrationYear, setSelectedRegistrationYear] = useState(null);
@@ -233,6 +230,9 @@ const StudentsTable = () => {
     const [activeDocs, setActiveDocs] = useState([]);
     const [docFilters, setDocFilters] = useState({ id_number: "", class_kodesh: "", track: "" });
     const [docsSource, setDocsSource] = useState(null); // 'id' | 'class' | 'track'
+    const [docMode, setDocMode] = useState('id');
+    const [docsLoading, setDocsLoading] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
 
     const toApiField = (f) => (f === 'photoUrl' ? 'photo_url' : f);
 
@@ -296,6 +296,10 @@ const StudentsTable = () => {
         setGroup(value);
     };
 
+    const openSearch = () => {
+        setShowSearch((prev) => !prev);
+    };
+
     // חשב מס׳ סידורי הבא לפי שנת רישום מהנתונים הקיימים
     const computeNextSerialNumber = (year) => {
         const yearStr = year?.toString();
@@ -330,7 +334,10 @@ const StudentsTable = () => {
 
 
     const printTable = () => {
-        const titleText = group || (selectedGroup === 'photos' ? 'תצוגת תמונות' : 'רשימת הבנות');
+        const titleText =
+            (navGroups.find((g) => g.key === selectedGroup)?.label)
+            || formGroupTitles[selectedGroup]
+            || selectedGroup;
         const printWindow = window.open("", "_blank");
 
         // Minimal print CSS to ensure reasonable formatting without app styles
@@ -414,29 +421,33 @@ const StudentsTable = () => {
     };
 
     // Fetch documents based on current docFilters
-    const fetchDocuments = () => {
+    const fetchDocuments = async () => {
         const id = (docFilters.id_number || "").trim();
         const klass = (docFilters.class_kodesh || "").trim();
         const trk = (docFilters.track || "").trim();
-
-        if (id) {
-            setDocsSource('id');
-            dispatch(getDocumentsByStudentThunk(id));
-            return;
+        setDocsLoading(true);
+        try {
+            if (docMode === 'id' && id) {
+                setDocsSource('id');
+                await dispatch(getDocumentsByStudentThunk(id));
+                return;
+            }
+            if (docMode === 'class' && klass) {
+                setDocsSource('class');
+                await dispatch(getDocumentsByClassThunk(klass));
+                return;
+            }
+            if (docMode === 'track' && trk) {
+                setDocsSource('track');
+                await dispatch(getDocumentsByTrackThunk(trk));
+                return;
+            }
+            // No active value for the chosen mode → clear
+            setDocsSource(null);
+            setActiveDocs([]);
+        } finally {
+            setDocsLoading(false);
         }
-        if (klass) {
-            setDocsSource('class');
-            dispatch(getDocumentsByClassThunk(klass));
-            return;
-        }
-        if (trk) {
-            setDocsSource('track');
-            dispatch(getDocumentsByTrackThunk(trk));
-            return;
-        }
-        // No filters → clear
-        setDocsSource(null);
-        setActiveDocs([]);
     };
 
     // Update active docs when store updates
@@ -473,8 +484,6 @@ const StudentsTable = () => {
     return (
         <div className="pt-28 p-6 [direction:rtl] font-sans bg-gray-100 min-h-screen">
             <div className="mb-6 space-y-6 max-w-6xl mx-auto">
-                <h1>{group}</h1>
-
                 {/* כותרת + בחירת שנתון לפי שנת רישום */}
                 <motion.div
                     className="rounded-xl border border-[#0A3960]/20 bg-blue-50 px-6 py-4 text-right"
@@ -526,39 +535,24 @@ const StudentsTable = () => {
                     </div>
                 </motion.div>
 
-                <motion.div className="flex gap-4 flex-wrap justify-start items-center"
+                <motion.div className="flex gap-6 flex-wrap justify-center items-center"
                     initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-                    <button
-                        onClick={() => handleGroupChange('basic')}
-                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'basic' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    >נתונים בסיסיים</button>
-                    <button
-                        onClick={() => handleGroupChange('personal')}
-                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'personal' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    >נתונים אישיים</button>
-                    <button
-                        onClick={() => handleGroupChange('payments')}
-                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'payments' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    >פרטי תשלומים</button><button
-                        onClick={() => handleGroupChange('parents')}
-                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'parents' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    >נתוני הורים</button>
-                    <button
-                        onClick={() => handleGroupChange('study')}
-                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'study' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    >תכנית לימודים</button>
-                    <button
-                        onClick={() => handleGroupChange('contact')}
-                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'phonebook' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    >אלפון</button>
-                    <button
-                        onClick={() => handleGroupChange('photos')}
-                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'photos' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    >תצוגת תמונות</button>
-                    <button
-                        onClick={() => handleGroupChange('documents')}
-                        className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === 'documents' ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    >מסמכים</button>
+
+                    {navGroups.map(({ key, label }) => (
+                        key !== "basic" && (
+                            <button
+                                key={key}
+                                onClick={() => handleGroupChange(key)}
+                                className={`rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 shadow ${selectedGroup === key ? 'bg-[#0A3960] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            >
+                                {label}
+                            </button>
+                        )
+                    ))}
+                     </motion.div>
+
+                <motion.div className="flex gap-6 flex-wrap justify-center items-center"
+                    initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                     <ExportToExcel data={students} />
                     <ExcelImport onData={handleImport} columns={fieldsDict} />
                     <button
@@ -566,15 +560,21 @@ const StudentsTable = () => {
                         className="p-2 rounded-full hover:bg-gray-200 transition"
                         title="הדפסה"
                     >
-                        <Printer className="w-5 h-5" />
+                        <Printer className="w-8 h-8" />
                     </button>
-
+                    <button
+                        onClick={openSearch}
+                        className="p-2 rounded-full hover:bg-gray-200 transition"
+                        title="חיפוש או מיון"
+                    >
+                        <UserRoundSearch className="w-8 h-8" />
+                    </button>
                     <button
                         onClick={openAddDialog}
                         className="p-2 rounded-full hover:bg-gray-200 transition"
                         title="הוספת תלמידה"
                     >
-                        <UserRoundPlus className="w-5 h-5" />
+                        <UserRoundPlus className="w-8 h-8" />
                     </button>
 
                     <Dialog open={open} onClose={() => setOpen(false)}>
@@ -613,19 +613,21 @@ const StudentsTable = () => {
 
                 </motion.div>
 
-                <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-4"
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-                    {filterFields.map((field) => (
-                        <input
-                            key={field}
-                            type="text"
-                            placeholder={`סנן לפי ${getHebrewLabel(field)}`}
-                            value={filters[field] || ""}
-                            onChange={(e) => handleFilterChange(field, e.target.value)}
-                            className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
-                        />
-                    ))}
-                </motion.div>
+                {showSearch && (
+                    <motion.div className="grid grid-cols-2 md:grid-cols-5 gap-4"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+                        {filterFields.map((field) => (
+                            <input
+                                key={field}
+                                type="text"
+                                placeholder={`סנן לפי ${getHebrewLabel(field)}`}
+                                value={filters[field] || ""}
+                                onChange={(e) => handleFilterChange(field, e.target.value)}
+                                className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
+                            />
+                        ))}
+                    </motion.div>
+                )}
             </div>
 
             {selectedGroup === 'photos' && students.length > 0 && (
@@ -646,32 +648,71 @@ const StudentsTable = () => {
             )}
             {selectedGroup === 'documents' && (
                 <motion.div className="mt-4 space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <input
-                            type="text"
-                            placeholder="מ.ז. תלמידה"
-                            value={docFilters.id_number}
-                            onChange={(e) => setDocFilters((p) => ({ ...p, id_number: e.target.value }))}
-                            className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
-                        />
-                        <input
-                            type="text"
-                            placeholder="כיתה"
-                            value={docFilters.class_kodesh}
-                            onChange={(e) => setDocFilters((p) => ({ ...p, class_kodesh: e.target.value }))}
-                            className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
-                        />
-                        <input
-                            type="text"
-                            placeholder="מסלול"
-                            value={docFilters.track}
-                            onChange={(e) => setDocFilters((p) => ({ ...p, track: e.target.value }))}
-                            className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
-                        />
-                    </div>
-                    <div className="flex gap-3">
-                        <Button variant="outlined" onClick={fetchDocuments}>חפש מסמכים</Button>
-                        <Button variant="text" onClick={() => { setDocFilters({ id_number: "", class_kodesh: "", track: "" }); setActiveDocs([]); setDocsSource(null); }}>נקה</Button>
+                    <div className="rounded-xl border border-[#0A3960]/20 bg-white p-4">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                            <FormControl>
+                                <RadioGroup
+                                    row
+                                    aria-label="document-search-mode"
+                                    value={docMode}
+                                    onChange={(e) => setDocMode(e.target.value)}
+                                >
+                                    <FormControlLabel value="id" control={<Radio />} label="חיפוש לפי ת.ז." />
+                                    <FormControlLabel value="class" control={<Radio />} label="חיפוש לפי כיתה" />
+                                    <FormControlLabel value="track" control={<Radio />} label="חיפוש לפי מסלול" />
+                                </RadioGroup>
+                            </FormControl>
+
+                            {docMode === 'id' && (
+                                <TextField
+                                    label="מ.ז. תלמידה"
+                                    placeholder="לדוגמה: 123456789"
+                                    value={docFilters.id_number}
+                                    onChange={(e) => setDocFilters((p) => ({ ...p, id_number: e.target.value }))}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') fetchDocuments(); }}
+                                    size="small"
+                                />
+                            )}
+                            {docMode === 'class' && (
+                                <TextField
+                                    label="כיתה"
+                                    placeholder="לדוגמה: ה׳1"
+                                    value={docFilters.class_kodesh}
+                                    onChange={(e) => setDocFilters((p) => ({ ...p, class_kodesh: e.target.value }))}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') fetchDocuments(); }}
+                                    size="small"
+                                />
+                            )}
+                            {docMode === 'track' && (
+                                <TextField
+                                    label="מסלול"
+                                    placeholder="לדוגמה: עיצוב"
+                                    value={docFilters.track}
+                                    onChange={(e) => setDocFilters((p) => ({ ...p, track: e.target.value }))}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') fetchDocuments(); }}
+                                    size="small"
+                                />
+                            )}
+
+                            <div className="flex gap-3">
+                                <Button variant="outlined" onClick={fetchDocuments} disabled={docsLoading}>
+                                    {docsLoading ? 'טוען…' : 'חפש מסמכים'}
+                                </Button>
+                                <Button
+                                    variant="text"
+                                    onClick={() => {
+                                        setDocFilters({ id_number: "", class_kodesh: "", track: "" });
+                                        setActiveDocs([]);
+                                        setDocsSource(null);
+                                    }}
+                                >
+                                    נקה
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="mt-3 text-sm text-gray-600">
+                            {docsSource ? `נמצאו ${activeDocs.length} מסמכים` : 'הזינו ערך וחפשו מסמכים'}
+                        </div>
                     </div>
 
                     <div className="overflow-auto max-w-full">
@@ -720,18 +761,17 @@ const StudentsTable = () => {
                     </div>
                 </motion.div>
             )}
-            {selectedGroup !== 'photos' && students.length > 0 && (
+            {selectedGroup !== 'photos' && selectedGroup !== 'documents' && students.length > 0 && (
                 <motion.div className="overflow-auto max-w-full"
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
                     <table id="students-table" className="min-w-full mt-6 border-collapse border border-gray-400 text-sm text-right bg-white shadow rounded-xl overflow-hidden">
                         <thead>
                             <tr className="bg-[#0A3960] text-white">
-                                {selectedGroup === 'personal' && (<div>
-                                    <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>עריכה</th>
-                                    <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>קבצים</th>
-
-                                </div>
-
+                                {selectedGroup === 'personal' && (
+                                    <>
+                                        <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>עריכה</th>
+                                        <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>קבצים</th>
+                                    </>
                                 )}
                                 {selectedFields.map((field) => (
                                     <th key={field} className="border border-gray-300 px-4 py-2">
@@ -743,25 +783,26 @@ const StudentsTable = () => {
                         <tbody>
                             {students.map((student, idx) => (
                                 <motion.tr key={idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.03 }}>
-                                    {selectedGroup === 'personal' && (<div>
-                                        <Cell style={{ width: "80px", minWidth: "80px" }}>
-                                            <IconButton onClick={() => {
-                                                setStudentToEdit({ ...initialNewStudent, ...student });
-                                                setEditDialogOpen(true);
-                                            }}>
-                                                <UserPen />
-                                            </IconButton>
-                                        </Cell>
+                                    {selectedGroup === 'personal' && (
+                                        <>
+                                            <Cell style={{ width: "80px", minWidth: "80px" }}>
+                                                <IconButton onClick={() => {
+                                                    setStudentToEdit({ ...initialNewStudent, ...student });
+                                                    setEditDialogOpen(true);
+                                                }}>
+                                                    <UserPen size={24} />
+                                                </IconButton>
+                                            </Cell>
 
-                                        <Cell style={{ width: "80px", minWidth: "80px" }}>
-                                            <IconButton onClick={() => {
-                                                setStudentForFiles({ ...initialNewStudent, ...student });
-                                                setFilesDialogOpen(true);
-                                            }}>
-                                                <FileUp />
-                                            </IconButton>
-                                        </Cell>
-                                    </div>
+                                            <Cell style={{ width: "80px", minWidth: "80px" }}>
+                                                <IconButton onClick={() => {
+                                                    setStudentForFiles({ ...initialNewStudent, ...student });
+                                                    setFilesDialogOpen(true);
+                                                }}>
+                                                    <FileUp size={24} />
+                                                </IconButton>
+                                            </Cell>
+                                        </>
                                     )}
 
                                     {selectedFields.map((field) => (
