@@ -23,6 +23,9 @@ export default function ScheduleViewer() {
   const [modalCancelled, setModalCancelled] = useState(false);
   const [modalReason, setModalReason] = useState("");
     const navigate = useNavigate();
+  const printTable = () => {
+    window.print();
+  };
 
   // מודל להוספת שיעור ידני
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -343,6 +346,7 @@ const getDailyLessons = (date) => {
     const cls = classes.find((c) => c.id === classId);
     return cls ? cls.name : "לא ידוע";
   };
+  const selectedClassName = selectedClassId === "kodesh" ? "לימודי קודש" : getClassName(Number(selectedClassId));
 
   /**
    * פונקציה לקבלת שיעור ספציפי לפי כיתה, יום ושעה
@@ -684,6 +688,12 @@ const getDailyLessons = (date) => {
               >
                 הוסף שיעור בתאריך
               </button>
+              <button
+                className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+                onClick={printTable}
+              >
+                הדפס טבלה
+              </button>
               {/* בחירת שנה */}  
 <div className="flex items-center gap-2">
   <label className="text-lg font-semibold text-gray-700">שנה:</label>
@@ -722,7 +732,11 @@ const getDailyLessons = (date) => {
         </div>
 
         {/* טבלת מערכת שבועית */}
-        <div className="overflow-x-auto bg-white rounded-xl shadow-lg">
+        <div id="print-section" className="overflow-x-auto bg-white rounded-xl shadow-lg">
+          {/* כותרת הדפסה בלבד: שם הכיתה */}
+          <div className="print-only hidden text-center text-2xl font-bold py-4">
+            מערכת שבועית - {selectedClassName}
+          </div>
           <table className="w-full border-collapse">
             {/* כותרת טבלה - ימי השבוע */}
             <thead>
