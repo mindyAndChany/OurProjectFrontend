@@ -22,7 +22,7 @@ export default function ScheduleViewer() {
   const [modalLesson, setModalLesson] = useState(null);
   const [modalCancelled, setModalCancelled] = useState(false);
   const [modalReason, setModalReason] = useState("");
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const printTable = () => {
     window.print();
   };
@@ -65,7 +65,7 @@ export default function ScheduleViewer() {
   const schedule = useSelector((state) => state.weekly_schedule?.data ?? []); // מערכת שבועית קבועה
   const classes = useSelector((state) => state.classes?.data ?? []); // רשימת כיתות
   const teachers = useSelector((state) => state.teacher?.data ?? []); // רשימת מקצועות/מורים
-  
+
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const dispatch = useDispatch();
@@ -183,7 +183,7 @@ export default function ScheduleViewer() {
     // רענון אופציונלי
     setTimeout(() => dispatch(getLessonsThunk()), 0);
   };
-const openComponent = () => {
+  const openComponent = () => {
     navigate("/WeeklyScheduleEditor");
   };
   // פתיחת מודל הוספת שיעור ידני
@@ -197,7 +197,7 @@ const openComponent = () => {
       date: format(selectedDate, "yyyy-MM-dd"),
       start_time: "",
       end_time: "",
-      year: selectedYear ,
+      year: selectedYear,
       topic: "",
       topic_id: "",
       is_cancelled: false,
@@ -257,55 +257,55 @@ const openComponent = () => {
    * @param {Date} date - התאריך המבוקש
    * @returns {Array} - מערך שיעורים
    */
-const getDailyLessons = (date) => {
-  const dayOfWeek = date.getDay();
-  const dateStr = format(date, "yyyy-MM-dd");
+  const getDailyLessons = (date) => {
+    const dayOfWeek = date.getDay();
+    const dateStr = format(date, "yyyy-MM-dd");
 
-  // Real lessons for the specific date
-  const realLessons = lessons.filter((l) => l.date === dateStr);
-  const filteredByClass = selectedClassId
-    ? realLessons.filter((l) => String(l.class_id) === String(selectedClassId))
-    : realLessons;
+    // Real lessons for the specific date
+    const realLessons = lessons.filter((l) => l.date === dateStr);
+    const filteredByClass = selectedClassId
+      ? realLessons.filter((l) => String(l.class_id) === String(selectedClassId))
+      : realLessons;
 
-  // Weekly schedule lessons for the day
-  const weeklyByDay = schedule.filter((s) => s.day_of_week === dayOfWeek && s.year === selectedYear);
-  const filteredWeekly = selectedClassId
-    ? weeklyByDay.filter((s) => String(s.class_id) === String(selectedClassId))
-    : weeklyByDay;
+    // Weekly schedule lessons for the day
+    const weeklyByDay = schedule.filter((s) => s.day_of_week === dayOfWeek && s.year === selectedYear);
+    const filteredWeekly = selectedClassId
+      ? weeklyByDay.filter((s) => String(s.class_id) === String(selectedClassId))
+      : weeklyByDay;
 
-  // Combine lessons, marking their status for weekly-defined slots
-  const combinedLessons = filteredWeekly.map((lesson) => {
-    const realLesson = filteredByClass.find(
-      (l) =>
-        l.class_id === lesson.class_id &&
-        l.start_time === lesson.start_time &&
-        l.end_time === lesson.end_time
+    // Combine lessons, marking their status for weekly-defined slots
+    const combinedLessons = filteredWeekly.map((lesson) => {
+      const realLesson = filteredByClass.find(
+        (l) =>
+          l.class_id === lesson.class_id &&
+          l.start_time === lesson.start_time &&
+          l.end_time === lesson.end_time
+      );
+
+      if (realLesson) {
+        return {
+          ...realLesson,
+          status: realLesson.is_cancelled ? "canceled" : "held",
+        };
+      }
+
+      return { ...lesson, status: "tentative" };
+    });
+
+    // Add real lessons that do not exist in weekly schedule slots (standalone additions)
+    const weeklyKeys = new Set(
+      filteredWeekly.map((w) => `${w.class_id}|${w.start_time}|${w.end_time}`)
     );
+    const extraReal = filteredByClass.filter(
+      (l) => !weeklyKeys.has(`${l.class_id}|${l.start_time}|${l.end_time}`)
+    );
+    const extraRealMapped = extraReal.map((l) => ({
+      ...l,
+      status: l.is_cancelled ? "canceled" : "held",
+    }));
 
-    if (realLesson) {
-      return {
-        ...realLesson,
-        status: realLesson.is_cancelled ? "canceled" : "held",
-      };
-    }
-
-    return { ...lesson, status: "tentative" };
-  });
-
-  // Add real lessons that do not exist in weekly schedule slots (standalone additions)
-  const weeklyKeys = new Set(
-    filteredWeekly.map((w) => `${w.class_id}|${w.start_time}|${w.end_time}`)
-  );
-  const extraReal = filteredByClass.filter(
-    (l) => !weeklyKeys.has(`${l.class_id}|${l.start_time}|${l.end_time}`)
-  );
-  const extraRealMapped = extraReal.map((l) => ({
-    ...l,
-    status: l.is_cancelled ? "canceled" : "held",
-  }));
-
-  return [...combinedLessons, ...extraRealMapped];
-};
+    return [...combinedLessons, ...extraRealMapped];
+  };
 
   /**
    * פונקציה לאיסוף כל שעות השיעורים בשבוע (למיון השורות בטבלה)
@@ -359,11 +359,11 @@ const getDailyLessons = (date) => {
   const getLessonForClassAndTime = (classId, dayOfWeek, time) => {
     const dayLessons = schedule.filter(
       (s) => s.day_of_week === dayOfWeek && s.class_id === classId && s.start_time === time
-      && s.year === selectedYear
+        && s.year === selectedYear
     );
     return dayLessons[0] || null;
   };
-  
+
 
   // סינון כיתות לימודי קודש (14-22)
   const kodeshClasses = useMemo(() => {
@@ -410,27 +410,28 @@ const getDailyLessons = (date) => {
                 >
                   הוסף שיעור בתאריך
                 </button>
-                  <button
+                <button
                   className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
                   onClick={openComponent}
                 >
-עריכת מערכת חדשה                </button>
+                  עריכת מערכת חדשה
+                </button>
               </div>
-{/* בחירת שנה */}  
-<div className="flex items-center gap-2">
-  <label className="text-lg font-semibold text-gray-700">שנה:</label>
-  <select
-    className="border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition min-w-24"
-    value={selectedYear}
-    onChange={(e) => setSelectedYear(Number(e.target.value))}
-  >
-    {[2024, 2025, 2026, 2027].map((year) => (
-      <option key={year} value={year}>
-        {year}
-      </option>
-    ))}
-  </select>
-</div>
+              {/* בחירת שנה */}
+              <div className="flex items-center gap-2">
+                <label className="text-lg font-semibold text-gray-700">שנה:</label>
+                <select
+                  className="border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition min-w-24"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                >
+                  {[2024, 2025, 2026, 2027].map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               {/* בחירת כיתה */}
               <div className="flex items-center gap-2 ml-auto">
@@ -458,7 +459,7 @@ const getDailyLessons = (date) => {
               // סינון שיעורים רק ליום זה ורק לכיתות לימודי קודש (14-22)
               const daySchedule = schedule.filter(
                 (s) => s.day_of_week === dayOfWeek && s.class_id >= 14 && s.class_id <= 22
-                && s.year === selectedYear
+                  && s.year === selectedYear
               );
               // שיעורים אמיתיים מתוך LESSONS עבור תאריך זה ולכיתות לימודי קודש
               const dateStr = format(day, "yyyy-MM-dd");
@@ -481,7 +482,7 @@ const getDailyLessons = (date) => {
                   {/* כותרת יום */}
                   <div className="mb-4 flex items-center gap-3">
                     <h3 className="text-2xl font-bold text-indigo-700">
-                        {dayNames[dayOfWeek]} - {format(day, "dd/MM/yyyy")}
+                      {dayNames[dayOfWeek]} - {format(day, "dd/MM/yyyy")}
                     </h3>
                     {/* תגית מיוחדת לימי ראשון ורביעי */}
                     {[0, 3].includes(dayOfWeek) && (
@@ -528,11 +529,10 @@ const getDailyLessons = (date) => {
                                 >
                                   {realLesson ? (
                                     <div
-                                      className={`font-medium cursor-pointer hover:opacity-90 px-2 py-1 rounded inline-block ${
-                                        realLesson.is_cancelled
+                                      className={`font-medium cursor-pointer hover:opacity-90 px-2 py-1 rounded inline-block ${realLesson.is_cancelled
                                           ? "bg-red-50 text-red-700 border border-red-200"
                                           : "bg-green-50 text-green-700 border border-green-200"
-                                      }`}
+                                        }`}
                                       onClick={() => openLessonModal(realLesson, day, cls.id)}
                                       title="שיעור מתוך LESSONS — לחץ לעדכון/ביטול"
                                     >
@@ -694,21 +694,21 @@ const getDailyLessons = (date) => {
               >
                 הדפס טבלה
               </button>
-              {/* בחירת שנה */}  
-<div className="flex items-center gap-2">
-  <label className="text-lg font-semibold text-gray-700">שנה:</label>
-  <select
-    className="border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition min-w-24"
-    value={selectedYear}
-    onChange={(e) => setSelectedYear(Number(e.target.value))}
-  >
-    {[2024, 2025, 2026, 2027].map((year) => (
-      <option key={year} value={year}>
-        {year}
-      </option>
-    ))}
-  </select>
-</div>
+              {/* בחירת שנה */}
+              <div className="flex items-center gap-2">
+                <label className="text-lg font-semibold text-gray-700">שנה:</label>
+                <select
+                  className="border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition min-w-24"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                >
+                  {[2024, 2025, 2026, 2027].map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
             </div>
 
@@ -765,63 +765,62 @@ const getDailyLessons = (date) => {
             {/* גוף הטבלה - שורות לפי שעות */}
             <tbody>
               {getAllTimes.length > 0 ? (
-  getAllTimes.map((time, idx) => (
-    <tr
-      key={time}
-      className={idx % 2 === 0 ? "bg-white" : "bg-gray-50 hover:bg-gray-100"}
-    >
-      {/* Time column */}
-      <td className="border border-gray-300 p-4 font-semibold text-center bg-gray-100 text-gray-700">
-        {formatTime(time)}
-      </td>
-      {/* Lessons for each day */}
-      {weekDays.map((day) => {
-        const lessonsAtSlot = getLessonsAtTime(day, time);
-        return (
-          <td
-            key={`${day.toISOString()}-${time}`}
-            className="border border-gray-300 p-4 align-top"
-          >
-            {lessonsAtSlot.length > 0 ? (
-              <div className="space-y-3">
-                {lessonsAtSlot.map((lesson) => (
-                  <div
-                    key={`${lesson.id ?? lesson.class_id}-${time}`}
-                    className={`bg-gradient-to-br border-2 rounded-lg p-4 hover:shadow-md transition cursor-pointer ${
-                      lesson.status === "tentative"
-                        ? "bg-yellow-50 border-yellow-300 text-yellow-800"
-                        : lesson.status === "held"
-                        ? "bg-green-50 border-green-300 text-green-800"
-                        : "bg-red-50 border-red-300 text-red-800"
-                    }`}
-                    onClick={() => openLessonModal(lesson, day)}
-                    title="לחץ לאישור/ביטול שיעור"
+                getAllTimes.map((time, idx) => (
+                  <tr
+                    key={time}
+                    className={idx % 2 === 0 ? "bg-white" : "bg-gray-50 hover:bg-gray-100"}
                   >
-                    <div className="flex items-center justify-between text-xs text-gray-700 mb-2">
-                      <span>{formatTime(lesson.start_time)} - {formatTime(lesson.end_time)}</span>
-                    </div>
-                    <div className="font-bold text-sm">
-                      {getLessonTopicName(lesson) || "ללא נושא"}
-                    </div>
-                   
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-gray-300 text-center text-sm">-</div>
-            )}
-          </td>
-        );
-      })}
-    </tr>
-  ))
-) : (
-  <tr>
-    <td colSpan={7} className="border border-gray-300 p-8 text-center text-gray-500">
-      אין שיעורים בשבוע זה
-    </td>
-  </tr>
-)}
+                    {/* Time column */}
+                    <td className="border border-gray-300 p-4 font-semibold text-center bg-gray-100 text-gray-700">
+                      {formatTime(time)}
+                    </td>
+                    {/* Lessons for each day */}
+                    {weekDays.map((day) => {
+                      const lessonsAtSlot = getLessonsAtTime(day, time);
+                      return (
+                        <td
+                          key={`${day.toISOString()}-${time}`}
+                          className="border border-gray-300 p-4 align-top"
+                        >
+                          {lessonsAtSlot.length > 0 ? (
+                            <div className="space-y-3">
+                              {lessonsAtSlot.map((lesson) => (
+                                <div
+                                  key={`${lesson.id ?? lesson.class_id}-${time}`}
+                                  className={`bg-gradient-to-br border-2 rounded-lg p-4 hover:shadow-md transition cursor-pointer ${lesson.status === "tentative"
+                                      ? "bg-yellow-50 border-yellow-300 text-yellow-800"
+                                      : lesson.status === "held"
+                                        ? "bg-green-50 border-green-300 text-green-800"
+                                        : "bg-red-50 border-red-300 text-red-800"
+                                    }`}
+                                  onClick={() => openLessonModal(lesson, day)}
+                                  title="לחץ לאישור/ביטול שיעור"
+                                >
+                                  <div className="flex items-center justify-between text-xs text-gray-700 mb-2">
+                                    <span>{formatTime(lesson.start_time)} - {formatTime(lesson.end_time)}</span>
+                                  </div>
+                                  <div className="font-bold text-sm">
+                                    {getLessonTopicName(lesson) || "ללא נושא"}
+                                  </div>
+
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-gray-300 text-center text-sm">-</div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="border border-gray-300 p-8 text-center text-gray-500">
+                    אין שיעורים בשבוע זה
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -834,135 +833,135 @@ const getDailyLessons = (date) => {
         </p>
       </div>
 
-      {/* מודל אישור/ביטול שיעור - מחוץ לתוך max-w-7xl כדי להיות מעל הכל */ }
+      {/* מודל אישור/ביטול שיעור - מחוץ לתוך max-w-7xl כדי להיות מעל הכל */}
 
-  {
-    modalOpen && modalLesson && (
-      <div
-        className="fixed inset-0 z-[80] bg-black/40 flex items-center justify-center px-4"
-        dir="rtl"
-        style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            confirmLessonModal();
-          }
-        }}
-        tabIndex={0}
-      >
-        <div className="w-full max-w-xl bg-white rounded-3xl p-6 shadow-xl">
-          <h3 className="text-2xl font-bold mb-4">אישור שיעור לתאריך נבחר</h3>
-          <div className="space-y-2 text-sm text-gray-700">
-            <div><span className="font-semibold">כיתה:</span> {getClassName(Number(modalLesson.class_id))}</div>
-            <div><span className="font-semibold">תאריך:</span> {modalLesson.date}</div>
-            <div><span className="font-semibold">שעה:</span> {formatTime(modalLesson.start_time)} - {formatTime(modalLesson.end_time)}</div>
-            <div><span className="font-semibold">נושא:</span> {modalLesson.topic || 'ללא נושא'}</div>
-            
-          </div>
+      {
+        modalOpen && modalLesson && (
+          <div
+            className="fixed inset-0 z-[80] bg-black/40 flex items-center justify-center px-4"
+            dir="rtl"
+            style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmLessonModal();
+              }
+            }}
+            tabIndex={0}
+          >
+            <div className="w-full max-w-xl bg-white rounded-3xl p-6 shadow-xl">
+              <h3 className="text-2xl font-bold mb-4">אישור שיעור לתאריך נבחר</h3>
+              <div className="space-y-2 text-sm text-gray-700">
+                <div><span className="font-semibold">כיתה:</span> {getClassName(Number(modalLesson.class_id))}</div>
+                <div><span className="font-semibold">תאריך:</span> {modalLesson.date}</div>
+                <div><span className="font-semibold">שעה:</span> {formatTime(modalLesson.start_time)} - {formatTime(modalLesson.end_time)}</div>
+                <div><span className="font-semibold">נושא:</span> {modalLesson.topic || 'ללא נושא'}</div>
 
-          <div className="mt-4 p-3 border rounded-lg bg-gray-50">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                className="scale-110"
-                checked={modalCancelled}
-                onChange={(e) => setModalCancelled(e.target.checked)}
-              />
-              <span className="font-semibold">סמן אם השיעור מבוטל</span>
-            </label>
-            {modalCancelled && (
-              <textarea
-                className="mt-3 w-full border rounded px-3 py-2"
-                rows={3}
-                placeholder="סיבת ביטול (חובה)"
-                value={modalReason}
-                onChange={(e) => setModalReason(e.target.value)}
-              />
-            )}
-          </div>
+              </div>
 
-          <div className="mt-5 flex gap-2">
-            <button
-              onClick={confirmLessonModal}
-              className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
-            >
-              אשר (ENTER)
-            </button>
-            <button
-              onClick={closeLessonModal}
-              className="border px-4 py-2 rounded"
-            >
-              סגור
-            </button>
+              <div className="mt-4 p-3 border rounded-lg bg-gray-50">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="scale-110"
+                    checked={modalCancelled}
+                    onChange={(e) => setModalCancelled(e.target.checked)}
+                  />
+                  <span className="font-semibold">סמן אם השיעור מבוטל</span>
+                </label>
+                {modalCancelled && (
+                  <textarea
+                    className="mt-3 w-full border rounded px-3 py-2"
+                    rows={3}
+                    placeholder="סיבת ביטול (חובה)"
+                    value={modalReason}
+                    onChange={(e) => setModalReason(e.target.value)}
+                  />
+                )}
+              </div>
+
+              <div className="mt-5 flex gap-2">
+                <button
+                  onClick={confirmLessonModal}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                >
+                  אשר (ENTER)
+                </button>
+                <button
+                  onClick={closeLessonModal}
+                  className="border px-4 py-2 rounded"
+                >
+                  סגור
+                </button>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">בברירת מחדל (ENTER) השיעור מאושר לתאריך זה.</div>
+            </div>
           </div>
-          <div className="mt-2 text-xs text-gray-500">בברירת מחדל (ENTER) השיעור מאושר לתאריך זה.</div>
+        )
+      }
+      {/* מודל הוספת שיעור ידני */}
+      {addModalOpen && (
+        <div className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center px-4" dir="rtl">
+          <div className="w-full max-w-xl bg-white rounded-3xl p-6 shadow-xl">
+            <h3 className="text-2xl font-bold mb-4">הוספת שיעור לתאריך</h3>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <label className="flex flex-col">
+                <span className="font-semibold mb-1">כיתה</span>
+                <select
+                  className="border rounded px-3 py-2"
+                  value={newLessonData.class_id}
+                  onChange={(e) => setNewLessonData({ ...newLessonData, class_id: e.target.value })}
+                >
+                  {classes.map((cls) => (
+                    <option key={cls.id} value={cls.id}>{cls.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col">
+                <span className="font-semibold mb-1">תאריך</span>
+                <input
+                  type="date"
+                  className="border rounded px-3 py-2"
+                  value={newLessonData.date}
+                  onChange={(e) => setNewLessonData({ ...newLessonData, date: e.target.value })}
+                />
+              </label>
+              <label className="flex flex-col">
+                <span className="font-semibold mb-1">שעת התחלה</span>
+                <input
+                  type="time"
+                  className="border rounded px-3 py-2"
+                  value={newLessonData.start_time}
+                  onChange={(e) => setNewLessonData({ ...newLessonData, start_time: e.target.value })}
+                />
+              </label>
+              <label className="flex flex-col">
+                <span className="font-semibold mb-1">שעת סיום</span>
+                <input
+                  type="time"
+                  className="border rounded px-3 py-2"
+                  value={newLessonData.end_time}
+                  onChange={(e) => setNewLessonData({ ...newLessonData, end_time: e.target.value })}
+                />
+              </label>
+              <label className="flex flex-col col-span-2">
+                <span className="font-semibold mb-1">נושא (אופציונלי)</span>
+                <input
+                  type="text"
+                  className="border rounded px-3 py-2"
+                  placeholder="לדוגמה: דקדוק - זמנים"
+                  value={newLessonData.topic}
+                  onChange={(e) => setNewLessonData({ ...newLessonData, topic: e.target.value })}
+                />
+              </label>
+            </div>
+            <div className="mt-5 flex gap-2">
+              <button className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700" onClick={confirmAddLessonModal}>אישור</button>
+              <button className="border px-4 py-2 rounded" onClick={closeAddLessonModal}>ביטול</button>
+            </div>
+          </div>
         </div>
-      </div>
-    )
-  }
-  {/* מודל הוספת שיעור ידני */}
-  {addModalOpen && (
-    <div className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center px-4" dir="rtl">
-      <div className="w-full max-w-xl bg-white rounded-3xl p-6 shadow-xl">
-        <h3 className="text-2xl font-bold mb-4">הוספת שיעור לתאריך</h3>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <label className="flex flex-col">
-            <span className="font-semibold mb-1">כיתה</span>
-            <select
-              className="border rounded px-3 py-2"
-              value={newLessonData.class_id}
-              onChange={(e) => setNewLessonData({ ...newLessonData, class_id: e.target.value })}
-            >
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>{cls.name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col">
-            <span className="font-semibold mb-1">תאריך</span>
-            <input
-              type="date"
-              className="border rounded px-3 py-2"
-              value={newLessonData.date}
-              onChange={(e) => setNewLessonData({ ...newLessonData, date: e.target.value })}
-            />
-          </label>
-          <label className="flex flex-col">
-            <span className="font-semibold mb-1">שעת התחלה</span>
-            <input
-              type="time"
-              className="border rounded px-3 py-2"
-              value={newLessonData.start_time}
-              onChange={(e) => setNewLessonData({ ...newLessonData, start_time: e.target.value })}
-            />
-          </label>
-          <label className="flex flex-col">
-            <span className="font-semibold mb-1">שעת סיום</span>
-            <input
-              type="time"
-              className="border rounded px-3 py-2"
-              value={newLessonData.end_time}
-              onChange={(e) => setNewLessonData({ ...newLessonData, end_time: e.target.value })}
-            />
-          </label>
-          <label className="flex flex-col col-span-2">
-            <span className="font-semibold mb-1">נושא (אופציונלי)</span>
-            <input
-              type="text"
-              className="border rounded px-3 py-2"
-              placeholder="לדוגמה: דקדוק - זמנים"
-              value={newLessonData.topic}
-              onChange={(e) => setNewLessonData({ ...newLessonData, topic: e.target.value })}
-            />
-          </label>
-        </div>
-        <div className="mt-5 flex gap-2">
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700" onClick={confirmAddLessonModal}>אישור</button>
-          <button className="border px-4 py-2 rounded" onClick={closeAddLessonModal}>ביטול</button>
-        </div>
-      </div>
-    </div>
-  )}
+      )}
     </div >
   );
 }
