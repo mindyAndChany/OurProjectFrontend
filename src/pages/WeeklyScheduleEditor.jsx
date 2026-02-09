@@ -41,6 +41,11 @@ export default function WeeklyScheduleEditor() {
     }
   };
 
+  const updateCourseForKodesh = () => {
+    setCourse_id(19);
+    dispatch(getTopicsByCourseThunk(19));
+  };
+
 
   useEffect(() => {
     dispatch(getRoomsThunk());
@@ -54,13 +59,23 @@ export default function WeeklyScheduleEditor() {
     updateCourseByClassId(selectedClassId);
   },[selectedClassId, classes, dispatch])
 
+  useEffect(() => {
+    if (selectedClassId === 'kodesh') {
+      updateCourseForKodesh();
+    }
+  }, [selectedClassId, dispatch])
+
   const filteredSchedule = schedule.filter(lesson => {
     if (selectedClassId === 'kodesh') return lesson.year === selectedYear;
     return lesson.class_id?.toString() === selectedClassId && lesson.year === selectedYear;
   });
 
   const openModal = (day, class_id) => {
-    updateCourseByClassId(class_id);
+    if (selectedClassId === 'kodesh') {
+      updateCourseForKodesh();
+    } else {
+      updateCourseByClassId(class_id);
+    }
     setModalData({
       id: undefined,
       day_of_week: day,
@@ -70,13 +85,23 @@ export default function WeeklyScheduleEditor() {
       topic_id: '',
       teacher_name: '',
       room_id: '',
+      group: 'all',
     });
     setModalOpen(true);
   };
 
+  const getKodeshClasses = () => classes.filter(c => c.id >= 14 && c.id <= 22);
+
+  const getGroupClassIds = (group) => {
+    const kodeshClasses = getKodeshClasses();
+    if (group === 'heh') return kodeshClasses.filter(c => c.name?.includes('ה')).map(c => c.id);
+    if (group === 'vav') return kodeshClasses.filter(c => c.name?.includes('ו')).map(c => c.id);
+    return kodeshClasses.map(c => c.id);
+  };
+
   const saveLesson = () => {
-    const { id, class_id, day_of_week, start_time, end_time, topic_id, room_id } = modalData;
-    if (!class_id || !day_of_week || !start_time || !end_time || !topic_id || !room_id) {
+    const { id, class_id, day_of_week, start_time, end_time, topic_id, room_id, group } = modalData;
+    if (!day_of_week || !start_time || !end_time || !topic_id || !room_id) {
       alert('נא למלא את כל השדות');
       return;
     }
@@ -97,21 +122,51 @@ export default function WeeklyScheduleEditor() {
     const teacher = teachers.find(t => t.id === topic_id);
     const room = rooms.find(r => r.id === room_id);
 
-    const payload = {
-      id: id ?? 0,
-      class_id,
-      day_of_week,
-      start_time,
-      end_time,
-      topic_id,
-      teacher_name: teacher?.name,
-      room_id,
-      year: selectedYear,
-    };
-
     if (id) {
+      const payload = {
+        id: id ?? 0,
+        class_id,
+        day_of_week,
+        start_time,
+        end_time,
+        topic_id,
+        teacher_name: teacher?.name,
+        room_id,
+        year: selectedYear,
+      };
       dispatch(updateWeeklyLessonThunk(payload));
+    } else if (selectedClassId === 'kodesh') {
+      const classIds = getGroupClassIds(group || 'all');
+      if (!classIds.length) {
+        alert('לא נמצאו כיתות לקבוצה שנבחרה');
+        return;
+      }
+      classIds.forEach(cid => {
+        const payload = {
+          id: 0,
+          class_id: cid,
+          day_of_week,
+          start_time,
+          end_time,
+          topic_id,
+          teacher_name: teacher?.name,
+          room_id,
+          year: selectedYear,
+        };
+        dispatch(addWeeklyLessonThunk(payload));
+      });
     } else {
+      const payload = {
+        id: 0,
+        class_id,
+        day_of_week,
+        start_time,
+        end_time,
+        topic_id,
+        teacher_name: teacher?.name,
+        room_id,
+        year: selectedYear,
+      };
       dispatch(addWeeklyLessonThunk(payload));
     }
     setModalOpen(false);
@@ -223,7 +278,15 @@ export default function WeeklyScheduleEditor() {
 
       return dayNames.map((name, i) => (
         <div key={i} className="mb-10" dir="rtl">
-          <h2 className="text-xl font-bold text-gray-700 mb-2">{name}</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-bold text-gray-700">{name}</h2>
+            <button
+              onClick={() => openModal(i, null)}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              הוסף שיעור ליום זה
+            </button>
+          </div>
           <div className="overflow-auto">
             <table className="min-w-full text-sm text-center border border-gray-300">
               <thead className="bg-gray-100">
@@ -269,7 +332,7 @@ export default function WeeklyScheduleEditor() {
                           }
                           openModal(i, cid);
                         }}   className="mt-1 text-xs text-blue-600 hover:underline" >
-                        הוסף שיעור
+                        הוסף שיעור לכיתה זו
                       </button>
                     </td>
                   ))}
@@ -367,6 +430,18 @@ export default function WeeklyScheduleEditor() {
         <DialogContent className="space-y-4">
           <TextField label="שעת התחלה" type="time" fullWidth value={modalData.start_time || ''} onChange={e => setModalData({ ...modalData, start_time: e.target.value })} />
           <TextField label="שעת סיום" type="time" fullWidth value={modalData.end_time || ''} onChange={e => setModalData({ ...modalData, end_time: e.target.value })} />
+          {selectedClassId === 'kodesh' && !modalData?.id && (
+            <Select
+              fullWidth
+              value={modalData.group || 'all'}
+              onChange={e => setModalData({ ...modalData, group: e.target.value })}
+              displayEmpty
+            >
+              <MenuItem value="all">כל הכיתות</MenuItem>
+              <MenuItem value="heh">כיתות ה</MenuItem>
+              <MenuItem value="vav">כיתות ו</MenuItem>
+            </Select>
+          )}
           <Select fullWidth value={modalData.topic_id || ''} onChange={e => setModalData({ ...modalData, topic_id: e.target.value })} displayEmpty>
             <MenuItem value=""><em>בחר נושא</em></MenuItem>
             {teachers.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
