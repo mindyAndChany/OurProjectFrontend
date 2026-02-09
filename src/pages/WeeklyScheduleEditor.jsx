@@ -29,8 +29,17 @@ export default function WeeklyScheduleEditor() {
   const [newTopicName, setNewTopicName] = useState('');
   const [contextMenu, setContextMenu] = useState(null);
   const selectedClass = classes.find(c => String(c.id) === String(selectedClassId));
-  const course_id =selectedClass?.course_id||19;
+  const [course_id,setCourse_id] =useState(19);
   const teachers = useSelector(state => state.topics?.byCourse[course_id] || []);
+
+  const updateCourseByClassId = (classId) => {
+    if (!classId) return;
+    const cls = classes.find(c => String(c.id) === String(classId));
+    if (cls?.course_id) {
+      setCourse_id(cls.course_id);
+      dispatch(getTopicsByCourseThunk(cls.course_id));
+    }
+  };
 
 
   useEffect(() => {
@@ -41,11 +50,9 @@ export default function WeeklyScheduleEditor() {
 
   //קבלת רשימת המורות המתאימות לכיתה שנבחרה
   useEffect(()=>{
-    console.log("selectedClassId",selectedClassId);
-    console.log("course_id",course_id);
-    
-    dispatch(getTopicsByCourseThunk(course_id));
-  },[selectedClassId])
+    if (!selectedClassId || selectedClassId === 'kodesh') return;
+    updateCourseByClassId(selectedClassId);
+  },[selectedClassId, classes, dispatch])
 
   const filteredSchedule = schedule.filter(lesson => {
     if (selectedClassId === 'kodesh') return lesson.year === selectedYear;
@@ -53,6 +60,7 @@ export default function WeeklyScheduleEditor() {
   });
 
   const openModal = (day, class_id) => {
+    updateCourseByClassId(class_id);
     setModalData({
       id: undefined,
       day_of_week: day,
@@ -151,13 +159,21 @@ export default function WeeklyScheduleEditor() {
     setModalOpen(true);
   };
 
-  const handleAddTopic = () => {
-    if (!course_id) {
+  const handleAddTopic = (cid) => {
+    let courseIdToUse = course_id;
+    if (courseIdToUse === 19 && cid) {
+      const cls = classes.find(c => String(c.id) === String(cid));
+      if (cls?.course_id) {
+        courseIdToUse = cls.course_id;
+        setCourse_id(cls.course_id);
+      }
+    }
+    if (!courseIdToUse) {
       alert('יש לבחור כיתה לפני הוספת נושא');
       return;
     }
-    dispatch(addTopicThunk({ name: newTopicName, course_id }));
-    dispatch(getTopicsByCourseThunk());
+    dispatch(addTopicThunk({ name: newTopicName, course_id: courseIdToUse }));
+    dispatch(getTopicsByCourseThunk(courseIdToUse));
     setNewTopicName('');
     setNewTopicDialog(false);
   };
