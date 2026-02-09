@@ -18,6 +18,17 @@ export const Screen = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    // Load 'remember', email, and password from localStorage if exists
+    const rememberValue = localStorage.getItem("rememberMe");
+    if (rememberValue !== null) {
+      setRemember(rememberValue === "true");
+      if (rememberValue === "true") {
+        const savedEmail = localStorage.getItem("rememberedEmail");
+        const savedPassword = localStorage.getItem("rememberedPassword");
+        if (savedEmail) setEmail(savedEmail);
+        if (savedPassword) setPassword(savedPassword);
+      }
+    }
     const t = setTimeout(() => setMounted(true), 40);
     return () => clearTimeout(t);
   }, []);
@@ -38,6 +49,18 @@ export const Screen = () => {
     dispatch(logInThunk({ email, password }));
     navigate("/home");
   }
+
+  // Update localStorage when 'remember', email, or password changes
+  useEffect(() => {
+    localStorage.setItem("rememberMe", remember);
+    if (remember) {
+      localStorage.setItem("rememberedEmail", email);
+      localStorage.setItem("rememberedPassword", password);
+    } else {
+      localStorage.removeItem("rememberedEmail");
+      localStorage.removeItem("rememberedPassword");
+    }
+  }, [remember, email, password]);
 
   function onKeyDown(e) {
     if (e.key === "Enter") login();

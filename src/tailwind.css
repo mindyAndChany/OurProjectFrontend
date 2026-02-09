@@ -16,6 +16,10 @@
   textarea {
     @apply appearance-none bg-transparent border-0 outline-none;
   }
+
+  input[type="checkbox"] {
+    @apply appearance-auto bg-white border border-black;
+  }
 }
 
 @tailwind components;
