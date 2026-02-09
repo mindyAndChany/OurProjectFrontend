@@ -9,6 +9,7 @@ import scheduleReducer from "./slices/SCHEDULE/scheduleSlice.js";
 import teacherReducer from "./slices/TEACHERS/teachersSlice.js";
 import attendanceReducer from "./slices/ATTENDANCE/attendanceSlice.js";
 import roomsReducer from "./slices/ROOMS/roomSlice.js";
+import topicsReducer from "./slices/TOPIC/topicSlice.js";
 export const store = configureStore({
   reducer: {
     // userSlice נשאר בדיוק כמו שהוא
@@ -21,5 +22,6 @@ export const store = configureStore({
     attendance: attendanceReducer,
     teacher: teacherReducer,
     rooms: roomsReducer,
+    topics: topicsReducer,
   },
 });
