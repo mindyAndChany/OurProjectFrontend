@@ -1,218 +1,48 @@
-// import React, { useEffect, useState } from 'react';
-// import { useDispatch, useSelector } from 'react-redux';
-// import { getTeachersThunk } from '../redux/slices/TEACHERS/getTeachersThunk';
-// import { getRoomsThunk } from '../redux/slices/ROOMS/getRoomsThunk';
-// import { getClassesThunk } from '../redux/slices/CLASSES/getClassesThunk';
-// import { addWeeklyLessonThunk } from '../redux/slices/SCHEDULE/addSchedulThunk';
-
-// export default function WeeklyScheduleEditor() {
-//   const dispatch = useDispatch();
-//   const classes = useSelector(state => state.classes?.data || []);
-//   const teachers = useSelector(state => state.teacher?.data || []);
-//   const rooms = useSelector(state => state.rooms?.data || []);
-
-//   const [selectedClassId, setSelectedClassId] = useState('');
-//   const [weekSchedule, setWeekSchedule] = useState({});
-//   const [modalOpen, setModalOpen] = useState(false);
-//   const [modalData, setModalData] = useState({});
-// const currentYear = new Date().getFullYear();
-// const [selectedYear, setSelectedYear] = useState(currentYear);
-
-//   useEffect(() => {
-//     dispatch(getTeachersThunk());
-//     dispatch(getRoomsThunk());
-//     dispatch(getClassesThunk());
-//   }, [dispatch]);
-
-//   const openModal = (day) => {
-//     console.log("📆 פתיחת מודל ליום:", day); // 0 = ראשון, 1 = שני וכו'
-
-//     setModalData({
-//       day_of_week: day,
-//       class_id: selectedClassId,
-//       start_time: '',
-//       end_time: '',
-//       topic_id: '',
-//       topicRef: {},
-//       teacher_name: '',
-//       room_id: '',
-//       roomRef: {},
-//     });
-//     setModalOpen(true);
-//   };
-
-//   const saveLesson = () => {
-//     console.log("📤 נתונים לשמירה:", modalData);
-//   if (
-//     modalData.class_id==undefined ||
-//     modalData.day_of_week==undefined ||
-//     !modalData.start_time ||
-//     !modalData.end_time ||
-//     !modalData.topic_id ||
-//     !modalData.room_id
-//   ) {
-//     alert('נא למלא את כל השדות החובה');
-//     return;
-//   }
-
-//   const topic = teachers.find(t => Number(t.id) === Number(modalData.topic_id));
-//   const room = rooms.find(r => Number(r.id) === Number(modalData.room_id));
-
-//   if (!topic || !room) {
-//     alert('מורה או חדר לא נמצאו');
-//     return;
-//   }
-
-//   const payload = {
-//     id: 0,
-//     class_id:modalData.class_id,
-//     day_of_week: modalData.day_of_week,
-//     start_time: modalData.start_time,
-//     end_time: modalData.end_time,
-//     topic_id: topic.id,
-//     // topicRef: { id: topic.id, name: topic.name },
-//     teacher_name: topic.name,
-//     room_id: room.id,
-//     // roomRef: {
-//     //   id: room.id,
-//     //   name: room.name,
-//     //   number: room.number,
-//     //   is_computer_lab: room.is_computer_lab,
-//     //   has_makren: room.has_makren,
-//     //   floor: room.floor,
-//     //   seat_count: room.seat_count,
-//     //   is_available: room.is_available,
-//     //   primary_use: room.primary_use,
-//     // },
-//      year: selectedYear,
-//   };
-
-//   console.log('📦 payload שנשלח:', payload);
-//   dispatch(addWeeklyLessonThunk(payload));
-//   setModalOpen(false);
-// };
-
-
-//   return (
-//     <div className="p-6">
-//       <h1 className="text-3xl font-bold text-indigo-800 mb-6">עריכת מערכת שבועית קבועה</h1>
-//       <div className="mb-4">
-//         <div className="mb-4">
-//   <label className="font-semibold">בחר שנה:</label>
-//   <select
-//     className="border p-2 rounded ml-3"
-//     value={selectedYear}
-//     onChange={(e) => setSelectedYear(Number(e.target.value))}
-//   >
-//     {[2024, 2025, 2026, 2027].map((year) => (
-//       <option key={year} value={year}>{year}</option>
-//     ))}
-//   </select>
-// </div>
-
-//         <label className="font-semibold">בחר כיתה:</label>
-//         <select
-//           className="border p-2 rounded ml-3"
-//           value={selectedClassId}
-//           onChange={(e) => setSelectedClassId(e.target.value)}
-//         >
-//           <option value="">בחר כיתה</option>
-//           {classes.map(cls => (
-//             <option key={cls.id} value={cls.id}>{cls.name}</option>
-//           ))}
-//         </select>
-//       </div>
-
-//       <div className="grid grid-cols-6 gap-4">
-//         {["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"].map((dayName, i) => (
-//           <div key={i} className="border rounded-lg bg-white shadow p-4">
-//             <div className="font-bold text-indigo-700 mb-2">{dayName}</div>
-//             <button
-//               className="bg-indigo-500 text-white px-3 py-1 rounded hover:bg-indigo-600"
-//               onClick={() => openModal(i)}
-//             >
-//               הוסף שיעור
-//             </button>
-//           </div>
-//         ))}
-//       </div>
-
-//       {modalOpen && (
-//         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" dir="rtl">
-//           <div className="bg-white rounded-xl p-6 w-full max-w-xl shadow-xl">
-//             <h2 className="text-xl font-bold mb-4">הוספת שיעור ליום</h2>
-//             <div className="grid grid-cols-2 gap-3">
-//               <label className="flex flex-col">
-//                 <span>שעת התחלה</span>
-//                 <input type="time" value={modalData.start_time} onChange={(e) => setModalData({ ...modalData, start_time: e.target.value })} className="border rounded px-2 py-1" />
-//               </label>
-//               <label className="flex flex-col">
-//                 <span>שעת סיום</span>
-//                 <input type="time" value={modalData.end_time} onChange={(e) => setModalData({ ...modalData, end_time: e.target.value })} className="border rounded px-2 py-1" />
-//               </label>
-//               <label className="flex flex-col col-span-2">
-//                 <span>נושא</span>
-//                 <select value={modalData.topic_id} onChange={(e) => setModalData({ ...modalData, topic_id: Number(e.target.value) })}
-// className="border rounded px-2 py-1">
-//                   <option value="">בחר נושא</option>
-//                   {teachers.map(t => (
-//                     <option key={t.id} value={t.id}>{t.name}</option>
-//                   ))}
-//                 </select>
-//               </label>
-//               <label className="flex flex-col col-span-2">
-//                 <span>חדר</span>
-//                 <select value={modalData.room_id} onChange={(e) => setModalData({ ...modalData, room_id: Number(e.target.value) })} className="border rounded px-2 py-1">
-//                   <option value="">בחר חדר</option>
-//                   {rooms.map(r => (
-//                     <option key={r.id} value={r.id}>{r.name} ({r.number})</option>
-//                   ))}
-//                 </select>
-//               </label>
-//             </div>
-//             <div className="mt-5 flex gap-2">
-//               <button onClick={saveLesson} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">שמור</button>
-//               <button onClick={() => setModalOpen(false)} className="border px-4 py-2 rounded">ביטול</button>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getTeachersThunk } from '../redux/slices/TEACHERS/getTeachersThunk';
 import { getRoomsThunk } from '../redux/slices/ROOMS/getRoomsThunk';
 import { getClassesThunk } from '../redux/slices/CLASSES/getClassesThunk';
 import { getweeklySchedulesThunk } from '../redux/slices/SCHEDULE/getScheduleThunk';
 import { addWeeklyLessonThunk } from '../redux/slices/SCHEDULE/addSchedulThunk';
 import { Plus, Clock, School, User } from 'lucide-react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem } from '@mui/material';
+import { addTopicThunk } from '../redux/slices/TOPIC/addTopicThunk';
+import { getTopicsByCourseThunk } from '../redux/slices/TOPIC/getTopicsByCourseThunk';
+import { getTopicsThunk } from '../redux/slices/TOPIC/getTopicsThunk';
 
 const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
 
 export default function WeeklyScheduleEditor() {
   const dispatch = useDispatch();
   const classes = useSelector(state => state.classes?.data || []);
-  const teachers = useSelector(state => state.teacher?.data || []);
   const rooms = useSelector(state => state.rooms?.data || []);
   const schedule = useSelector(state => state.weekly_schedule?.data ?? []);
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [selectedClassId, setSelectedClassId] = useState('');
+  const [selectedClassId, setSelectedClassId] = useState('kodesh');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState({});
   const [newTopicDialog, setNewTopicDialog] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
+  const selectedClass = classes.find(c => String(c.id) === String(selectedClassId));
+  const course_id =selectedClass?.course_id||19;
+  const teachers = useSelector(state => state.topics?.byCourse[course_id] || []);
+
 
   useEffect(() => {
-    dispatch(getTeachersThunk());
     dispatch(getRoomsThunk());
     dispatch(getClassesThunk());
     dispatch(getweeklySchedulesThunk());
   }, [dispatch]);
+
+  //קבלת רשימת המורות המתאימות לכיתה שנבחרה
+  useEffect(()=>{
+    console.log("selectedClassId",selectedClassId);
+    console.log("course_id",course_id);
+    
+    dispatch(getTopicsByCourseThunk(course_id));
+  },[selectedClassId])
 
   const filteredSchedule = schedule.filter(lesson => {
     if (selectedClassId === 'kodesh') return lesson.year === selectedYear;
@@ -271,15 +101,36 @@ export default function WeeklyScheduleEditor() {
   };
 
   const handleAddTopic = () => {
-    fetch('http://localhost:4000/api/topics', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newTopicName, course_id: 0 })
-    }).then(() => {
-      dispatch(getTeachersThunk());
-      setNewTopicName('');
-      setNewTopicDialog(false);
-    });
+    if (!course_id) {
+      alert('יש לבחור כיתה לפני הוספת נושא');
+      return;
+    }
+    dispatch(addTopicThunk({ name: newTopicName, course_id }));
+    dispatch(getTopicsByCourseThunk());
+    setNewTopicName('');
+    setNewTopicDialog(false);
+  };
+
+  //שיניתי לשימוש בטנק
+  // const handleAddTopic = () => {
+  //   fetch('http://localhost:4000/api/topics', {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({ name: newTopicName, course_id: 0 })
+  //   }).then(() => {
+  //     dispatch(getTeachersThunk());
+  //     setNewTopicName('');
+  //     setNewTopicDialog(false);
+  //   });
+  // };
+
+    /**
+   * פונקציה לעיצוב שעה - מסירה שניות מהתצוגה
+   * @param {string} timeStr - שעה בפורמט HH:MM:SS או HH:MM
+   * @returns {string} - שעה בפורמט HH:MM
+   */
+  const formatTime = (timeStr = "") => {
+    return timeStr.length >= 5 ? timeStr.slice(0, 5) : timeStr;
   };
 
   const renderDayGrid = () => {
@@ -321,7 +172,7 @@ export default function WeeklyScheduleEditor() {
                     <td key={cid} className="border p-2 align-top">
                       {(grouped[i]?.[cid] || []).map((lesson, idx) => (
                         <div key={idx} className="mb-2 p-1 bg-gray-50 rounded border text-xs">
-                          <div className="flex items-center gap-1"><Clock size={14} />{lesson.start_time}-{lesson.end_time}</div>
+                          <div className="flex items-center gap-1"><Clock size={14} /> {formatTime(lesson.start_time)}-{formatTime(lesson.end_time)}</div>
                           {lesson.roomRef && (
                             <div className="flex items-center gap-2 text-sm">
                               <School size={16} />{lesson.roomRef.number}
@@ -340,9 +191,12 @@ export default function WeeklyScheduleEditor() {
                       ))}
                       {/* כפתור הוספת שיעור לכיתה זו ביום זה */}
                       <button
-                        onClick={() => openModal(i, cid)}
-                        className="mt-1 text-xs text-blue-600 hover:underline"
-                      >
+                        onClick={() => {
+                          if (!cid) {
+                            alert("לא ניתן להוסיף שיעור אם לא נבחרה כיתה"); return;
+                          }
+                          openModal(i, cid);
+                        }}   className="mt-1 text-xs text-blue-600 hover:underline" >
                         הוסף שיעור
                       </button>
                     </td>
@@ -362,7 +216,7 @@ export default function WeeklyScheduleEditor() {
               <h2 className="font-bold text-lg text-gray-800 mb-2">{name}</h2>
               {filteredSchedule.filter(l => l.day_of_week === i).map((l, idx) => (
                 <div key={idx} className="border px-2 py-1 rounded mb-2 flex flex-col gap-1 bg-gray-50">
-                  <div className="flex items-center gap-2 text-sm"><Clock size={16} />{l.start_time} - {l.end_time}</div>
+                  <div className="flex items-center gap-2 text-sm"><Clock size={16} />{formatTime(lesson.start_time)}-{formatTime(lesson.end_time)}</div>
                   {/* <div className="flex items-center gap-2 text-sm"><School size={16} />{l.roomRef.number}</div> */}
                   {l.roomRef && (
                     <div className="flex items-center gap-2 text-sm">
@@ -379,7 +233,16 @@ export default function WeeklyScheduleEditor() {
                 </div>
               ))}
 
-              <button className="text-blue-600 hover:underline" onClick={() => openModal(i, selectedClassId)}>
+              <button
+                onClick={() => {
+                  if (!selectedClassId) {
+                    alert("לא ניתן להוסיף שיעור אם לא נבחרה כיתה");
+                    return;
+                  }
+                  openModal(i, selectedClassId);
+                }}
+                className="mt-1 text-xs text-blue-600 hover:underline"
+              >
                 הוסף שיעור
               </button>
             </div>
