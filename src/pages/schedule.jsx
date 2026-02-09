@@ -6,8 +6,8 @@ import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
 import { getweeklySchedulesThunk } from "../redux/slices/SCHEDULE/getScheduleThunk";
 import { addRealyLessonThunk } from "../redux/slices/LESSONS/addRealyLessonThunk";
 import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
-import { getTeachersThunk } from "../redux/slices/TEACHERS/getTeachersThunk";
 import { useNavigate } from "react-router-dom";
+import { getTopicsThunk } from "../redux/slices/TOPIC/getTopicsThunk";
 
 /**
  * קומפוננטת מערכת שבועית - מציגה את לוח השעות של כל הכיתות או כיתה ספציפית
@@ -75,7 +75,7 @@ export default function ScheduleViewer() {
     dispatch(getClassesThunk());
     dispatch(getweeklySchedulesThunk());
     dispatch(getLessonsThunk());
-    dispatch(getTeachersThunk());
+    dispatch(getTopicsThunk());
   }, [dispatch]);
 
 
