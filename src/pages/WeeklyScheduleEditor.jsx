@@ -6,10 +6,11 @@ import { getweeklySchedulesThunk } from '../redux/slices/SCHEDULE/getScheduleThu
 import { addWeeklyLessonThunk } from '../redux/slices/SCHEDULE/addSchedulThunk';
 import { deleteWeeklyLessonThunk } from '../redux/slices/SCHEDULE/deleteWeeklyLessonThunk';
 import { Plus, Clock, School, User } from 'lucide-react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, Menu, MenuItem } from '@mui/material';
 import { addTopicThunk } from '../redux/slices/TOPIC/addTopicThunk';
 import { getTopicsByCourseThunk } from '../redux/slices/TOPIC/getTopicsByCourseThunk';
 import { getTopicsThunk } from '../redux/slices/TOPIC/getTopicsThunk';
+import { updateWeeklyLessonThunk } from '../redux/slices/SCHEDULE/updateWeeklyLessonThunk';
 
 const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
 
@@ -26,6 +27,7 @@ export default function WeeklyScheduleEditor() {
   const [modalData, setModalData] = useState({});
   const [newTopicDialog, setNewTopicDialog] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
+  const [contextMenu, setContextMenu] = useState(null);
   const selectedClass = classes.find(c => String(c.id) === String(selectedClassId));
   const course_id =selectedClass?.course_id||19;
   const teachers = useSelector(state => state.topics?.byCourse[course_id] || []);
@@ -52,6 +54,7 @@ export default function WeeklyScheduleEditor() {
 
   const openModal = (day, class_id) => {
     setModalData({
+      id: undefined,
       day_of_week: day,
       class_id,
       start_time: '',
@@ -64,7 +67,7 @@ export default function WeeklyScheduleEditor() {
   };
 
   const saveLesson = () => {
-    const { class_id, day_of_week, start_time, end_time, topic_id, room_id } = modalData;
+    const { id, class_id, day_of_week, start_time, end_time, topic_id, room_id } = modalData;
     if (!class_id || !day_of_week || !start_time || !end_time || !topic_id || !room_id) {
       alert('נא למלא את כל השדות');
       return;
@@ -74,6 +77,7 @@ export default function WeeklyScheduleEditor() {
       l.day_of_week === day_of_week &&
       l.room_id === room_id &&
       l.year === selectedYear &&
+      (id ? String(l.id) !== String(id) : true) &&
       ((start_time >= l.start_time && start_time < l.end_time) ||
         (end_time > l.start_time && end_time <= l.end_time))
     );
@@ -86,7 +90,7 @@ export default function WeeklyScheduleEditor() {
     const room = rooms.find(r => r.id === room_id);
 
     const payload = {
-      id: 0,
+      id: id ?? 0,
       class_id,
       day_of_week,
       start_time,
@@ -97,7 +101,11 @@ export default function WeeklyScheduleEditor() {
       year: selectedYear,
     };
 
-    dispatch(addWeeklyLessonThunk(payload));
+    if (id) {
+      dispatch(updateWeeklyLessonThunk(payload));
+    } else {
+      dispatch(addWeeklyLessonThunk(payload));
+    }
     setModalOpen(false);
   };
 
@@ -109,6 +117,38 @@ export default function WeeklyScheduleEditor() {
     const confirmed = window.confirm('האם למחוק את השיעור?');
     if (!confirmed) return;
     dispatch(deleteWeeklyLessonThunk(lesson.id));
+  };
+
+  const handleOpenContextMenu = (event, lesson) => {
+    event.preventDefault();
+    setContextMenu(
+      contextMenu === null
+        ? {
+            mouseX: event.clientX + 2,
+            mouseY: event.clientY - 6,
+            lesson,
+          }
+        : null,
+    );
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu(null);
+  };
+
+  const handleEditLesson = (lesson) => {
+    if (!lesson) return;
+    setModalData({
+      id: lesson.id,
+      day_of_week: lesson.day_of_week,
+      class_id: lesson.class_id,
+      start_time: formatTime(lesson.start_time),
+      end_time: formatTime(lesson.end_time),
+      topic_id: lesson.topic_id,
+      teacher_name: lesson.teacher_name,
+      room_id: lesson.room_id,
+    });
+    setModalOpen(true);
   };
 
   const handleAddTopic = () => {
@@ -185,11 +225,8 @@ export default function WeeklyScheduleEditor() {
                         <div
                           key={idx}
                           className="mb-2 p-1 bg-gray-50 rounded border text-xs"
-                          onContextMenu={(e) => {
-                            e.preventDefault();
-                            handleDeleteLesson(lesson);
-                          }}
-                          title="לחיצה ימנית למחיקה"
+                          onContextMenu={(e) => handleOpenContextMenu(e, lesson)}
+                          title="לחיצה ימנית לפעולות"
                         >
                           <div className="flex items-center gap-1"><Clock size={14} /> {formatTime(lesson.start_time)}-{formatTime(lesson.end_time)}</div>
                           {lesson.roomRef && (
@@ -237,11 +274,8 @@ export default function WeeklyScheduleEditor() {
                 <div
                   key={idx}
                   className="border px-2 py-1 rounded mb-2 flex flex-col gap-1 bg-gray-50"
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    handleDeleteLesson(l);
-                  }}
-                  title="לחיצה ימנית למחיקה"
+                  onContextMenu={(e) => handleOpenContextMenu(e, l)}
+                  title="לחיצה ימנית לפעולות"
                 >
                   <div className="flex items-center gap-2 text-sm"><Clock size={16} />{formatTime(l.start_time)}-{formatTime(l.end_time)}</div>
                   {/* <div className="flex items-center gap-2 text-sm"><School size={16} />{l.roomRef.number}</div> */}
@@ -313,7 +347,7 @@ export default function WeeklyScheduleEditor() {
       {renderDayGrid()}
 
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)}>
-        <DialogTitle>הוספת שיעור</DialogTitle>
+        <DialogTitle>{modalData?.id ? 'עריכת שיעור' : 'הוספת שיעור'}</DialogTitle>
         <DialogContent className="space-y-4">
           <TextField label="שעת התחלה" type="time" fullWidth value={modalData.start_time || ''} onChange={e => setModalData({ ...modalData, start_time: e.target.value })} />
           <TextField label="שעת סיום" type="time" fullWidth value={modalData.end_time || ''} onChange={e => setModalData({ ...modalData, end_time: e.target.value })} />
@@ -332,6 +366,34 @@ export default function WeeklyScheduleEditor() {
           <Button onClick={saveLesson}>שמור</Button>
         </DialogActions>
       </Dialog>
+
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleCloseContextMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
+      >
+        <MenuItem
+          onClick={() => {
+            handleEditLesson(contextMenu?.lesson);
+            handleCloseContextMenu();
+          }}
+        >
+          עריכה
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleDeleteLesson(contextMenu?.lesson);
+            handleCloseContextMenu();
+          }}
+        >
+          מחיקה
+        </MenuItem>
+      </Menu>
 
       <Dialog open={newTopicDialog} onClose={() => setNewTopicDialog(false)}>
         <DialogTitle>הוספת נושא חדש</DialogTitle>
