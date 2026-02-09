@@ -70,7 +70,7 @@ export default function WeeklyScheduleEditor() {
     return lesson.class_id?.toString() === selectedClassId && lesson.year === selectedYear;
   });
 
-  const openModal = (day, class_id) => {
+  const openModal = (day, class_id, options = {}) => {
     if (selectedClassId === 'kodesh') {
       updateCourseForKodesh();
     } else {
@@ -86,6 +86,7 @@ export default function WeeklyScheduleEditor() {
       teacher_name: '',
       room_id: '',
       group: 'all',
+      isDayGroup: options.isDayGroup ?? false,
     });
     setModalOpen(true);
   };
@@ -281,7 +282,7 @@ export default function WeeklyScheduleEditor() {
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-bold text-gray-700">{name}</h2>
             <button
-              onClick={() => openModal(i, null)}
+              onClick={() => openModal(i, null, { isDayGroup: true })}
               className="text-xs text-blue-600 hover:underline"
             >
               הוסף שיעור ליום זה
@@ -330,7 +331,7 @@ export default function WeeklyScheduleEditor() {
                           if (!cid) {
                             alert("לא ניתן להוסיף שיעור אם לא נבחרה כיתה"); return;
                           }
-                          openModal(i, cid);
+                          openModal(i, cid, { isDayGroup: false });
                         }}   className="mt-1 text-xs text-blue-600 hover:underline" >
                         הוסף שיעור לכיתה זו
                       </button>
@@ -430,7 +431,7 @@ export default function WeeklyScheduleEditor() {
         <DialogContent className="space-y-4">
           <TextField label="שעת התחלה" type="time" fullWidth value={modalData.start_time || ''} onChange={e => setModalData({ ...modalData, start_time: e.target.value })} />
           <TextField label="שעת סיום" type="time" fullWidth value={modalData.end_time || ''} onChange={e => setModalData({ ...modalData, end_time: e.target.value })} />
-          {selectedClassId === 'kodesh' && !modalData?.id && (
+          {selectedClassId === 'kodesh' && !modalData?.id && modalData?.isDayGroup && (
             <Select
               fullWidth
               value={modalData.group || 'all'}
