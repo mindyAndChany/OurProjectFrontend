@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { getweeklySchedulesThunk } from './getScheduleThunk.js';
 import { addWeeklyLessonThunk } from './addSchedulThunk.js';
+import { deleteWeeklyLessonThunk } from './deleteWeeklyLessonThunk.js';
 
 const scheduleSlice = createSlice({
   name: 'weekly_schedule',
@@ -34,6 +35,20 @@ const scheduleSlice = createSlice({
           })
           .addCase(addWeeklyLessonThunk.rejected, (state, action) => {
             console.log("addWeeklyLesson error:", action.error);
+          });
+          builder
+          .addCase(deleteWeeklyLessonThunk.pending, () => {
+            console.log("deleteWeeklyLesson start");
+          })
+          .addCase(deleteWeeklyLessonThunk.fulfilled, (state, action) => {
+            const deletedId = action.payload?.id ?? action.payload;
+            if (deletedId !== undefined && deletedId !== null) {
+              state.data = state.data.filter(l => String(l.id) !== String(deletedId));
+            }
+            console.log("deleteWeeklyLesson success:", deletedId);
+          })
+          .addCase(deleteWeeklyLessonThunk.rejected, (state, action) => {
+            console.log("deleteWeeklyLesson error:", action.error);
           });
   }
 });

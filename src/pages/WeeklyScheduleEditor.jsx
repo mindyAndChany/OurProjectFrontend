@@ -4,6 +4,7 @@ import { getRoomsThunk } from '../redux/slices/ROOMS/getRoomsThunk';
 import { getClassesThunk } from '../redux/slices/CLASSES/getClassesThunk';
 import { getweeklySchedulesThunk } from '../redux/slices/SCHEDULE/getScheduleThunk';
 import { addWeeklyLessonThunk } from '../redux/slices/SCHEDULE/addSchedulThunk';
+import { deleteWeeklyLessonThunk } from '../redux/slices/SCHEDULE/deleteWeeklyLessonThunk';
 import { Plus, Clock, School, User } from 'lucide-react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem } from '@mui/material';
 import { addTopicThunk } from '../redux/slices/TOPIC/addTopicThunk';
@@ -100,6 +101,16 @@ export default function WeeklyScheduleEditor() {
     setModalOpen(false);
   };
 
+  const handleDeleteLesson = (lesson) => {
+    if (!lesson?.id) {
+      alert('לא ניתן למחוק שיעור ללא מזהה');
+      return;
+    }
+    const confirmed = window.confirm('האם למחוק את השיעור?');
+    if (!confirmed) return;
+    dispatch(deleteWeeklyLessonThunk(lesson.id));
+  };
+
   const handleAddTopic = () => {
     if (!course_id) {
       alert('יש לבחור כיתה לפני הוספת נושא');
@@ -171,7 +182,15 @@ export default function WeeklyScheduleEditor() {
                   {classIds.map(cid => (
                     <td key={cid} className="border p-2 align-top">
                       {(grouped[i]?.[cid] || []).map((lesson, idx) => (
-                        <div key={idx} className="mb-2 p-1 bg-gray-50 rounded border text-xs">
+                        <div
+                          key={idx}
+                          className="mb-2 p-1 bg-gray-50 rounded border text-xs"
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            handleDeleteLesson(lesson);
+                          }}
+                          title="לחיצה ימנית למחיקה"
+                        >
                           <div className="flex items-center gap-1"><Clock size={14} /> {formatTime(lesson.start_time)}-{formatTime(lesson.end_time)}</div>
                           {lesson.roomRef && (
                             <div className="flex items-center gap-2 text-sm">
@@ -215,8 +234,16 @@ export default function WeeklyScheduleEditor() {
             <div key={i} className="bg-white rounded-xl shadow p-4">
               <h2 className="font-bold text-lg text-gray-800 mb-2">{name}</h2>
               {filteredSchedule.filter(l => l.day_of_week === i).map((l, idx) => (
-                <div key={idx} className="border px-2 py-1 rounded mb-2 flex flex-col gap-1 bg-gray-50">
-                  <div className="flex items-center gap-2 text-sm"><Clock size={16} />{formatTime(lesson.start_time)}-{formatTime(lesson.end_time)}</div>
+                <div
+                  key={idx}
+                  className="border px-2 py-1 rounded mb-2 flex flex-col gap-1 bg-gray-50"
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    handleDeleteLesson(l);
+                  }}
+                  title="לחיצה ימנית למחיקה"
+                >
+                  <div className="flex items-center gap-2 text-sm"><Clock size={16} />{formatTime(l.start_time)}-{formatTime(l.end_time)}</div>
                   {/* <div className="flex items-center gap-2 text-sm"><School size={16} />{l.roomRef.number}</div> */}
                   {l.roomRef && (
                     <div className="flex items-center gap-2 text-sm">
