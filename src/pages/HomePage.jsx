@@ -7,6 +7,7 @@ import mortarboard01 from "../icons/mortarboard-01.png";
 import payByCheck from "../icons/pay-by-check.png";
 import task01 from "../icons/task-01.png";
 import taskDone02 from "../icons/task-done-02.png";
+import { CalendarClock } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 
 const items = [
@@ -29,7 +30,7 @@ const items = [
   },
   {
     title: "מערכת שעות",
-    icon: taskDone02,
+    icon: CalendarClock,
     bg: "bg-[#d8cdc2]",
     to: "/schedule",
   },
@@ -92,11 +93,18 @@ export default function Screen() {
                 ${item.to ? "cursor-pointer" : "cursor-default"}
               `}
             >
-              <img
-                src={item.icon}
-                alt=""
-                className="w-14 h-14 object-contain"
-              />
+              {typeof item.icon === "string" ? (
+                <img
+                  src={item.icon}
+                  alt=""
+                  className="w-14 h-14 object-contain"
+                />
+              ) : (
+                (() => {
+                  const Icon = item.icon;
+                  return <Icon className="w-14 h-14 opacity-80" />;
+                })()
+              )}
               <span>{item.title}</span>
             </button>
           ))}
