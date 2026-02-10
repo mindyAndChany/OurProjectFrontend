@@ -299,9 +299,7 @@ export const Screen = () => {
     if (!selectedClassId) return "";
     const cls = classes.find((c) => String(c.id) === String(selectedClassId));
     const className = cls?.name || "";
-    const cleaned = className.replace(/'/g, "");
-    console.log("cleaned", cleaned);
-    return cleaned;
+    return className;
   }, [classes, selectedClassId]);
 
   // שמות תלמידות לפי כיתה 
