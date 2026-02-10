@@ -222,7 +222,7 @@ export const Screen = () => {
     return (classes || []).filter((cls) => courseIds.has(String(cls.course_id ?? cls.courseId)));
   }, [classes, courses, selectedDomain]);
 
-    const filteredTeachers = useMemo(() => {
+  const filteredTeachers = useMemo(() => {
     if (!selectedDomain) return teachers;
     const courseIds = new Set(
       (courses || [])
@@ -530,12 +530,14 @@ export const Screen = () => {
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <HebrewDateSelector id="flexcal-input" onCommit={handleHebCommit} />
-            <HebrewDateShow isoDate={selectedDateISO} />
-            {isLoadingLessons && <span className="text-sm text-gray-500">טוען שיעורים…</span>}
-            {lessonsError && <span className="text-sm text-red-600">{lessonsError}</span>}
-          </div>
+          {viewMode === "class" && (
+            <div className="flex items-center gap-2">
+              <HebrewDateSelector id="flexcal-input" onCommit={handleHebCommit} />
+              <HebrewDateShow isoDate={selectedDateISO} />
+              {isLoadingLessons && <span className="text-sm text-gray-500">טוען שיעורים…</span>}
+              {lessonsError && <span className="text-sm text-red-600">{lessonsError}</span>}
+            </div>)}
+
 
           {viewMode !== "student" && (
             <div className="flex items-center gap-2">
