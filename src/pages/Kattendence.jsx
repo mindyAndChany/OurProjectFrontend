@@ -51,7 +51,7 @@ function StatusSelect({ value, onChange, disabled }) {
 
   const handleKeyDown = (e) => {
     if (disabled) return;
-console.log("raw:", raw, "| translated:", translated);
+    console.log("raw:", raw, "| translated:", translated);
 
     // קיצור דרך: אם נכתב מספר ואז אנטר
     if (e.key === "Enter" && e.target.value.length === 1) {
@@ -315,14 +315,9 @@ export const Screen = () => {
 
   const getDomainKey = (type) => {
     const t = String(type || "").toLowerCase();
-    if (t.includes("קודש") || t.includes("kodesh") || t.includes("kodes")) return "kodesh";
-    if (
-      t.includes("התמח") ||
-      t.includes("hitmach") ||
-      t.includes("hitmahut") ||
-      t.includes("special")
-    ) return "hitmachuyot";
-    if (t.includes("הוראה") || t.includes("horaa") || t.includes("teach")) return "horaa";
+    if (t.includes("kodesh")) return "kodesh";
+    if (t.includes("hitmahut")) return "hitmahut";
+    if (t.includes("horaah")) return "horaah";
     return "";
   };
 
@@ -330,7 +325,7 @@ export const Screen = () => {
     if (!selectedDomain) return classes;
     const courseIds = new Set(
       (courses || [])
-        .filter((c) => getDomainKey(c?.type ?? c?.course_type ?? c?.track ?? c?.name) === selectedDomain)
+        .filter((c) => getDomainKey(c?.type) === selectedDomain)
         .map((c) => String(c.id))
     );
     if (courseIds.size === 0) return [];
@@ -524,39 +519,39 @@ export const Screen = () => {
     }
   }
   function handleStatusChange(e, studentId, lessonId, currentStatus, recordId) {
-  const next = e.target.value;
-  if (next === "") return;
+    const next = e.target.value;
+    if (next === "") return;
 
-  if (!currentStatus) {
-    // טרם נקבע סטטוס – מוסיפים חדש
-    dispatch(
-      addAttendanceThunk({
-        student_id: studentId,
-        lesson_id: lessonId,
-        status: next,
-      })
-    );
-  } else if (recordId) {
-    // סטטוס קיים ויש מזהה רשומה – מעדכנים
-    dispatch(
-      updateAttendanceThunk({
-        id: recordId,
-        status: next,
-        lesson_id: lessonId,
-        student_id: studentId,
-      })
-    );
-  } else {
-    // סטטוס קיים אך אין מזהה (כנראה מולא אוטומטית) – מוסיפים רשומה
-    dispatch(
-      addAttendanceThunk({
-        student_id: studentId,
-        lesson_id: lessonId,
-        status: next,
-      })
-    );
+    if (!currentStatus) {
+      // טרם נקבע סטטוס – מוסיפים חדש
+      dispatch(
+        addAttendanceThunk({
+          student_id: studentId,
+          lesson_id: lessonId,
+          status: next,
+        })
+      );
+    } else if (recordId) {
+      // סטטוס קיים ויש מזהה רשומה – מעדכנים
+      dispatch(
+        updateAttendanceThunk({
+          id: recordId,
+          status: next,
+          lesson_id: lessonId,
+          student_id: studentId,
+        })
+      );
+    } else {
+      // סטטוס קיים אך אין מזהה (כנראה מולא אוטומטית) – מוסיפים רשומה
+      dispatch(
+        addAttendanceThunk({
+          student_id: studentId,
+          lesson_id: lessonId,
+          status: next,
+        })
+      );
+    }
   }
-}
 
   const handleSaveAllAttendance = async () => {
 
@@ -627,7 +622,8 @@ export const Screen = () => {
               onChange={(e) => setViewMode(e.target.value)}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
             >
-              <option value="class">יומן כיתה</option>
+              {selectedDomain == "hitmachuyot" ? <option value="class">יומן התמחות</option> :
+                <option value="class">יומן כיתה</option>}
               <option value="teacher">יומן מורה</option>
               <option value="student">יומן תלמידה</option>
             </select>
@@ -642,7 +638,9 @@ export const Screen = () => {
 
           {viewMode !== "student" && (
             <div className="flex items-center gap-2">
-              <label className="text-sm">כיתה:</label>
+              {selectedDomain == "hitmachuyot" ?
+                <label className="text-sm">התמחות:</label> :
+                <label className="text-sm">כיתה:</label>}
               <select
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
@@ -667,9 +665,9 @@ export const Screen = () => {
                 onChange={(e) => setSelectedTeacher(e.target.value)}
                 className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
               >
-              {teachers.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
+                {teachers.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
               </select>
               {isLoadingTeachers && <span className="text-sm text-gray-500">טוען מורים…</span>}
               {teachersError && <span className="text-sm text-red-600">{teachersError}</span>}
@@ -721,7 +719,7 @@ export const Screen = () => {
           transition={{ delay: 0.2 }}
           className="overflow-auto bg-white rounded-xl shadow ring-1 ring-black/5 p-4"
         >
-        {studentsByClass.length>0&&filteredLessons.length>0?<table className="w-full min-w-max border-collapse text-right text-sm">
+          {studentsByClass.length > 0 && filteredLessons.length > 0 ? <table className="w-full min-w-max border-collapse text-right text-sm">
             <thead>
               <tr className="bg-[#0A3960] text-white">
                 <th className="sticky right-0 bg-[#0A3960] px-4 py-3">שם התלמידה</th>
@@ -754,13 +752,13 @@ export const Screen = () => {
               ))}
             </tbody>
           </table>
-          :
-          <motion.div className="flex items-center justify-center min-h-[50vh]">
-            <div className="flex items-center gap-3 text-gray-500">
-              <CalendarX2 className="w-5 h-5 text-gray-400" />
-              <span className="text-sm sm:text-base">לא נמצאו שיעורים לכיתה/תאריך שנבחרו</span>
-            </div>
-          </motion.div>}
+            :
+            <motion.div className="flex items-center justify-center min-h-[50vh]">
+              <div className="flex items-center gap-3 text-gray-500">
+                <CalendarX2 className="w-5 h-5 text-gray-400" />
+                <span className="text-sm sm:text-base">לא נמצאו שיעורים לכיתה/תאריך שנבחרו</span>
+              </div>
+            </motion.div>}
         </motion.div>
       )}
 
