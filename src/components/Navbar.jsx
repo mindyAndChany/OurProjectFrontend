@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { Edulink } from "../components/Edulink";
 import Profil from "../components/profil";
 
@@ -16,8 +16,13 @@ const navItems = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [showDomainMenu, setShowDomainMenu] = useState(false);
   const user = useSelector((state) => state.user);
   const isLoggedIn = !!user?.userDetails;
+  const location = useLocation();
+  const pathParts = location.pathname.split("/").filter(Boolean);
+  const domainFromPath = pathParts[0] === "Kattendence" ? pathParts[1] : "";
+  const currentDomain = domainFromPath || new URLSearchParams(location.search).get("domain") || "";
 
   const linkClass = ({ isActive }) =>
     `
@@ -48,11 +53,66 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center justify-center gap-4 md:gap-6 lg:gap-8">
-            {navItems.map((item) => (
-              <NavLink key={item.to} to={item.to} className={linkClass}>
-                {item.label}
-              </NavLink>
-            ))}
+            {navItems.map((item) => {
+              if (item.to === "/Kattendence") {
+                return (
+                  <div key={item.to} className="relative flex items-center gap-2">
+                    <NavLink
+                      to={item.to}
+                      onClick={() => setShowDomainMenu((v) => !v)}
+                      className={linkClass}
+                    >
+                      {item.label}
+                    </NavLink>
+                    {showDomainMenu && (
+                      <div className="absolute right-0 top-full mt-2 w-40 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
+                        <NavLink
+                          to="/Kattendence/kodesh"
+                          onClick={() => {
+                            setOpen(false);
+                            setShowDomainMenu(false);
+                          }}
+                          className={({ isActive }) =>
+                            `block w-full text-right px-3 py-2 text-sm hover:bg-gray-100 ${isActive || currentDomain === "kodesh" ? "text-[#295f8b] font-semibold" : "text-gray-700"}`
+                          }
+                        >
+                          קודש
+                        </NavLink>
+                        <NavLink
+                          to="/Kattendence/hitmachuyot"
+                          onClick={() => {
+                            setOpen(false);
+                            setShowDomainMenu(false);
+                          }}
+                          className={({ isActive }) =>
+                            `block w-full text-right px-3 py-2 text-sm hover:bg-gray-100 ${isActive || currentDomain === "hitmachuyot" ? "text-[#295f8b] font-semibold" : "text-gray-700"}`
+                          }
+                        >
+                          התמחויות
+                        </NavLink>
+                        <NavLink
+                          to="/Kattendence/horaa"
+                          onClick={() => {
+                            setOpen(false);
+                            setShowDomainMenu(false);
+                          }}
+                          className={({ isActive }) =>
+                            `block w-full text-right px-3 py-2 text-sm hover:bg-gray-100 ${isActive || currentDomain === "horaa" ? "text-[#295f8b] font-semibold" : "text-gray-700"}`
+                          }
+                        >
+                          הוראה
+                        </NavLink>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return (
+                <NavLink key={item.to} to={item.to} className={linkClass}>
+                  {item.label}
+                </NavLink>
+              );
+            })}
           </nav>
 
           {/* Actions */}
@@ -106,16 +166,65 @@ export default function Navbar() {
           ${open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
         >
           <nav className="flex flex-col gap-1.5 pb-4 sm:pb-5">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={() => setOpen(false)}
-                className="px-4 py-3 text-base sm:text-lg font-bold text-gray-800 rounded-lg hover:bg-gray-100 transition"
-              >
-                {item.label}
-              </NavLink>
-            ))}
+            {navItems.map((item) => {
+              if (item.to === "/Kattendence") {
+                return (
+                  <div key={item.to} className="px-4">
+                    <NavLink
+                      to={item.to}
+                      onClick={() => setShowDomainMenu((v) => !v)}
+                      className="block w-full text-right py-3 text-base sm:text-lg font-bold text-gray-800 rounded-lg hover:bg-gray-100 transition"
+                    >
+                      {item.label}
+                    </NavLink>
+                    {showDomainMenu && (
+                      <div className="pb-2 space-y-1">
+                        <NavLink
+                          to="/Kattendence/kodesh"
+                          onClick={() => {
+                            setOpen(false);
+                            setShowDomainMenu(false);
+                          }}
+                          className={`block w-full text-right px-3 py-2 text-sm rounded-md hover:bg-gray-100 ${currentDomain === "kodesh" ? "text-[#295f8b] font-semibold" : "text-gray-700"}`}
+                        >
+                          קודש
+                        </NavLink>
+                        <NavLink
+                          to="/Kattendence/hitmachuyot"
+                          onClick={() => {
+                            setOpen(false);
+                            setShowDomainMenu(false);
+                          }}
+                          className={`block w-full text-right px-3 py-2 text-sm rounded-md hover:bg-gray-100 ${currentDomain === "hitmachuyot" ? "text-[#295f8b] font-semibold" : "text-gray-700"}`}
+                        >
+                          התמחויות
+                        </NavLink>
+                        <NavLink
+                          to="/Kattendence/horaa"
+                          onClick={() => {
+                            setOpen(false);
+                            setShowDomainMenu(false);
+                          }}
+                          className={`block w-full text-right px-3 py-2 text-sm rounded-md hover:bg-gray-100 ${currentDomain === "horaa" ? "text-[#295f8b] font-semibold" : "text-gray-700"}`}
+                        >
+                          הוראה
+                        </NavLink>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className="px-4 py-3 text-base sm:text-lg font-bold text-gray-800 rounded-lg hover:bg-gray-100 transition"
+                >
+                  {item.label}
+                </NavLink>
+              );
+            })}
           </nav>
         </div>
       </div>

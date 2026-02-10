@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
@@ -12,6 +13,7 @@ import { updateAttendanceThunk } from "../redux/slices/ATTENDANCE/updateAttendan
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 import { ChevronDown, CalendarX2 } from "lucide-react";
 import { getTopicsThunk } from "../redux/slices/TOPIC/getTopicsThunk.js";
+import { getCoursesThunk } from "../redux/slices/COURSES/getCoursesThunk.js";
 
 const Cell = ({ children, className = "", stickyRight = false }) => (
   <td
@@ -226,7 +228,10 @@ function StatusInput({ value, onChange, disabled }) {
 
 export const Screen = () => {
   const dispatch = useDispatch();
-  const [selectedClassId, setSelectedClassId] = useState("ה'1");
+  const { domain } = useParams();
+  const location = useLocation();
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const [selectedDomain, setSelectedDomain] = useState("");
   const [selectedDateISO, setSelectedDateISO] = useState(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -234,6 +239,7 @@ export const Screen = () => {
 
   // Selectors to fetch data from Redux Store
   const classes = useSelector((state) => state.classes?.data || []);
+  const courses = useSelector((state) => state.courses?.data || []);
   const students = useSelector((state) => state.student.studentsData || []);
   const lessons = useSelector((state) => state.lessons?.data || []);
   const teachers = useSelector((state) => state.teacher?.data || []);
@@ -278,6 +284,7 @@ export const Screen = () => {
   // Initial data load
   useEffect(() => {
     dispatch(getClassesThunk());
+    dispatch(getCoursesThunk());
     dispatch(getStudentDataThunk("id,id_number,first_name,last_name,class_kodesh"));
     setIsLoadingLessons(true);
     setLessonsError("");
@@ -293,6 +300,42 @@ export const Screen = () => {
       .finally(() => setIsLoadingTeachers(false));
 
   }, [dispatch]);
+
+  useEffect(() => {
+    const searchDomain = new URLSearchParams(location.search).get("domain") || "";
+    const domainParam = domain || searchDomain;
+    if (domainParam !== selectedDomain) {
+      setSelectedDomain(domainParam);
+    }
+  }, [domain, location.search, selectedDomain]);
+
+  useEffect(() => {
+    setSelectedClassId("");
+  }, [selectedDomain]);
+
+  const getDomainKey = (type) => {
+    const t = String(type || "").toLowerCase();
+    if (t.includes("קודש") || t.includes("kodesh") || t.includes("kodes")) return "kodesh";
+    if (
+      t.includes("התמח") ||
+      t.includes("hitmach") ||
+      t.includes("hitmahut") ||
+      t.includes("special")
+    ) return "hitmachuyot";
+    if (t.includes("הוראה") || t.includes("horaa") || t.includes("teach")) return "horaa";
+    return "";
+  };
+
+  const filteredClasses = useMemo(() => {
+    if (!selectedDomain) return classes;
+    const courseIds = new Set(
+      (courses || [])
+        .filter((c) => getDomainKey(c?.type ?? c?.course_type ?? c?.track ?? c?.name) === selectedDomain)
+        .map((c) => String(c.id))
+    );
+    if (courseIds.size === 0) return [];
+    return (classes || []).filter((cls) => courseIds.has(String(cls.course_id ?? cls.courseId)));
+  }, [classes, courses, selectedDomain]);
 
   // שם הכיתה הנבחרת (נגזר מה-ID לביצוע התאמות מול תלמידות)
   const selectedClassName = useMemo(() => {
@@ -603,10 +646,13 @@ export const Screen = () => {
               <select
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                disabled={!selectedDomain}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               >
-                <option value="" disabled>בחרי כיתה</option>
-                {classes.map((cls) => (
+                <option value="" disabled>
+                  {selectedDomain ? "בחרי כיתה" : "בחרי תחום תחילה"}
+                </option>
+                {filteredClasses.map((cls) => (
                   <option key={cls.id} value={cls.id}>{cls.name}</option>
                 ))}
               </select>

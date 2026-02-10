@@ -29,6 +29,7 @@ export default function Routing() {
         <Route path="/Equipments" element={<Equipments />} />
         <Route path="/Calendar" element={<CalendarModern />} />
         <Route path="/Kattendence" element={<Kattendence />} />
+        <Route path="/Kattendence/:domain" element={<Kattendence />} />
         <Route path="/Approvals" element={<Approvals />} />
         <Route path="/StudentsData" element={<StudentsData />} />
         <Route path="/schedule" element={<Schedule />} />
