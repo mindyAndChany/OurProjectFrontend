@@ -242,7 +242,8 @@ export const Screen = () => {
   const courses = useSelector((state) => state.courses?.data || []);
   const students = useSelector((state) => state.student.studentsData || []);
   const lessons = useSelector((state) => state.lessons?.data || []);
-  const teachers = useSelector((state) => state.teacher?.data || []);
+  const teachers = useSelector((state) => state.topics?.data || []);
+
   const attendanceByLesson = useSelector((state) => state.attendance?.byLesson || {});
   const attendanceIdsByLesson = useSelector((state) => state.attendance?.idsByLesson || {});
   const prefilledLessonsRef = useRef(new Set());
@@ -330,6 +331,17 @@ export const Screen = () => {
     );
     if (courseIds.size === 0) return [];
     return (classes || []).filter((cls) => courseIds.has(String(cls.course_id ?? cls.courseId)));
+  }, [classes, courses, selectedDomain]);
+
+    const filteredTeachers = useMemo(() => {
+    if (!selectedDomain) return teachers;
+    const courseIds = new Set(
+      (courses || [])
+        .filter((c) => getDomainKey(c?.type) === selectedDomain)
+        .map((c) => String(c.id))
+    );
+    if (courseIds.size === 0) return [];
+    return (teachers || []).filter((cls) => courseIds.has(String(cls.course_id)));
   }, [classes, courses, selectedDomain]);
 
   // שם הכיתה הנבחרת (נגזר מה-ID לביצוע התאמות מול תלמידות)
@@ -665,7 +677,7 @@ export const Screen = () => {
                 onChange={(e) => setSelectedTeacher(e.target.value)}
                 className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
               >
-                {teachers.map((t) => (
+                {filteredTeachers.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
