@@ -14,17 +14,18 @@ const items = [
     title: "לימודי קודש",
     icon: bookEdit,
     bg: "bg-white",
-    to: "/Kattendence",
-  },
+    to:"/Kattendence/kodesh"  },
   {
     title: "לימודי הוראה",
     icon: mortarboard01,
     bg: "bg-[#bda39b]",
+    to:"/Kattendence/horaah"
   },
   {
     title: "התמחויות",
     icon: desk,
     bg: "bg-[#295f8b] text-white",
+    to:"/Kattendence/hitmachuyot"
   },
   {
     title: "מערכת שעות",
