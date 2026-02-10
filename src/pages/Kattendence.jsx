@@ -15,116 +15,6 @@ import { ChevronDown, CalendarX2 } from "lucide-react";
 import { getTopicsThunk } from "../redux/slices/TOPIC/getTopicsThunk.js";
 import { getCoursesThunk } from "../redux/slices/COURSES/getCoursesThunk.js";
 
-const Cell = ({ children, className = "", stickyRight = false }) => (
-  <td
-    className={
-      `border border-black px-3 py-2 text-center align-middle text-sm ` +
-      (stickyRight ? "sticky right-0 bg-white z-20" : "") +
-      (className ? ` ${className}` : "")
-    }
-  >
-    {children || ""}
-  </td>
-);
-
-// ... שאר הייבוא והקוד הקיים ...
-
-function StatusSelect({ value, onChange, disabled }) {
-  const selectRef = useRef();
-
-  const baseStyle = "w-full min-w-[120px] rounded-md border px-2 py-1 text-sm focus:outline-none focus:ring-2 disabled:opacity-50";
-
-  const statusStyles = {
-    present: "bg-green-50 text-green-800 border-green-300",
-    late: "bg-yellow-50 text-yellow-800 border-yellow-300",
-    absent: "bg-red-50 text-red-800 border-red-300",
-    "approved absent": "bg-blue-50 text-blue-800 border-blue-300",
-    default: "bg-white text-gray-900 border-gray-300",
-  };
-
-  const statusByShortcut = {
-    "0": "present",
-    "1": "absent",
-    "2": "late",
-    "3": "approved absent",
-  };
-
-  const handleKeyDown = (e) => {
-    if (disabled) return;
-    console.log("raw:", raw, "| translated:", translated);
-
-    // קיצור דרך: אם נכתב מספר ואז אנטר
-    if (e.key === "Enter" && e.target.value.length === 1) {
-      const newVal = statusByShortcut[e.target.value];
-      if (newVal) {
-        e.preventDefault();
-        onChange({ target: { value: newVal } });
-        e.target.blur(); // אופציונלי — יציאה מהתא
-        moveFocus(e, "down");
-      }
-    }
-
-    // ניווט עם מקשי חצים
-    if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-      e.preventDefault();
-      moveFocus(e, e.key.replace("Arrow", "").toLowerCase());
-    }
-
-    // אנטר לבד — מעבר לשורה הבאה
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      moveFocus(e, "down");
-    }
-
-    // Shift+Enter — שורה קודמת
-    if (e.key === "Enter" && e.shiftKey) {
-      e.preventDefault();
-      moveFocus(e, "up");
-    }
-  };
-
-  const moveFocus = (e, direction) => {
-    const cell = e.target.closest("td");
-    if (!cell) return;
-    let target;
-
-    if (direction === "right") target = cell.nextElementSibling;
-    if (direction === "left") target = cell.previousElementSibling;
-    if (direction === "down" || direction === "up") {
-      const colIndex = cell.cellIndex;
-      const row = cell.parentElement;
-      const targetRow = direction === "down" ? row.nextElementSibling : row.previousElementSibling;
-      if (targetRow) {
-        target = targetRow.cells[colIndex];
-      }
-    }
-
-    if (target) {
-      const select = target.querySelector("select");
-      if (select) select.focus();
-    }
-  };
-
-  const style = statusStyles[value] || statusStyles.default;
-
-  return (
-    <select
-      ref={selectRef}
-      value={value}
-      onChange={onChange}
-      onKeyDown={handleKeyDown}
-      disabled={disabled}
-      className={`${baseStyle} ${style}`}
-    >
-      <option value="">—</option>
-      <option value="present">נוכחת</option>
-      <option value="late">מאחרת</option>
-      <option value="absent">חסרה</option>
-      <option value="approved absent">חסרה באישור</option>
-    </select>
-  );
-}
-
 
 function StatusInput({ value, onChange, disabled }) {
   const inputRef = useRef();
@@ -246,7 +136,6 @@ export const Screen = () => {
 
   const attendanceByLesson = useSelector((state) => state.attendance?.byLesson || {});
   const attendanceIdsByLesson = useSelector((state) => state.attendance?.idsByLesson || {});
-  const prefilledLessonsRef = useRef(new Set());
   const [viewMode, setViewMode] = useState("class"); // options: 'class' | 'teacher' | 'student'
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
