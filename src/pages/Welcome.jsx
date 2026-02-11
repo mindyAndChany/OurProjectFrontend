@@ -9,6 +9,7 @@ import Task01 from "../icons/task-01.png";
 import User from "../icons/user.png";
 import { CalendarClock } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
+import { Edulink } from "../components/Edulink";
 
 export default function Frame() {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
@@ -74,9 +75,12 @@ useEffect(() => {
 
         {/* HERO */}
         <section className="max-w-6xl mx-auto px-6 pt-28 pb-10 relative">
-          <div className="inline-flex items-center gap-2 bg-white/70 backdrop-blur-md px-4 py-2 rounded-full border border-white/60 shadow-sm">
-            <span className="h-2 w-2 rounded-full bg-[#295f8b]" />
-            <span className="text-sm font-semibold text-[#295f8b]">מערכת ניהול סמינר מתקדמת</span>
+          <div className="flex items-center justify-between mb-8">
+            <Edulink className="scale-75 origin-left" />
+            <div className="inline-flex items-center gap-2 bg-white/70 backdrop-blur-md px-4 py-2 rounded-full border border-white/60 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-[#295f8b]" />
+              <span className="text-sm font-semibold text-[#295f8b]">מערכת ניהול סמינר מתקדמת</span>
+            </div>
           </div>
 
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-10 items-center">
