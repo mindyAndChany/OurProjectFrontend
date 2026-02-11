@@ -236,7 +236,7 @@ export default function WeeklyScheduleEditor() {
 
   //שיניתי לשימוש בטנק
   // const handleAddTopic = () => {
-  //   fetch('http://localhost:4000/api/topics', {
+  //   fetch(`${import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL}/api/topics`, {
   //     method: 'POST',
   //     headers: { 'Content-Type': 'application/json' },
   //     body: JSON.stringify({ name: newTopicName, course_id: 0 })

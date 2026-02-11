@@ -9,10 +9,11 @@ import User from "../icons/user.png";
 import { useNavigate } from "react-router-dom";
 
 export default function Frame() {
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
 
   // פונקציה לעורר את השרת
   async function wakeUpServer() {
-    const serverUrl = 'http://localhost:4000';
+    const serverUrl = BACKEND_URL;
 
     try {
       console.log('מעיר את השרת...');

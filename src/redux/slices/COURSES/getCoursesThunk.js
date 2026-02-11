@@ -1,9 +1,11 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
+
 export const getCoursesThunk = createAsyncThunk(
   "courses/getCourses",
   async () => {
-    const res = await fetch("http://localhost:4000/api/courses", {
+    const res = await fetch(`${BACKEND_URL}/api/courses`, {
       headers: { accept: "application/json" },
     });
 

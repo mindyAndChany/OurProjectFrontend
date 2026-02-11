@@ -1,9 +1,11 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
+
 export const getTopicsThunk = createAsyncThunk(
   'Topics/getTopics',
   async () => {
-    const res = await fetch('http://localhost:4000/api/topics');
+    const res = await fetch(`${BACKEND_URL}/api/topics`);
 
     if (res.ok) {
       const data = await res.json();
