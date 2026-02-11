@@ -32,6 +32,10 @@
     animation-delay: 4s;
   }
 
+  .animation-delay-500 {
+    animation-delay: 0.5s;
+  }
+
   @keyframes blob {
     0%, 100% {
       transform: translate(0, 0) scale(1);
