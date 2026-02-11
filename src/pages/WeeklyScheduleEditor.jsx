@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getRoomsThunk } from '../redux/slices/ROOMS/getRoomsThunk';
 import { getClassesThunk } from '../redux/slices/CLASSES/getClassesThunk';
@@ -19,18 +19,61 @@ export default function WeeklyScheduleEditor() {
   const classes = useSelector(state => state.classes?.data || []);
   const rooms = useSelector(state => state.rooms?.data || []);
   const schedule = useSelector(state => state.weekly_schedule?.data ?? []);
+  const courses = useSelector(state => state.courses?.data || []);
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  // תחום: קודש/הוראה/התמחויות
+  const [selectedDomain, setSelectedDomain] = useState('kodesh');
+  // ברירת מחדל: קודש, אחרת אין כיתה נבחרת (כללי לתחום)
   const [selectedClassId, setSelectedClassId] = useState('kodesh');
+  // סינון שנה עבור התמחויות
+  const [selectedYearLevel, setSelectedYearLevel] = useState('all'); // 'all' | 'a' | 'b'
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState({});
   const [newTopicDialog, setNewTopicDialog] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
   const [contextMenu, setContextMenu] = useState(null);
-  const selectedClass = classes.find(c => String(c.id) === String(selectedClassId));
-  const [course_id,setCourse_id] =useState(19);
+
+  // קורסים לפי תחום
+  const getDomainKey = (type) => {
+    const t = String(type || '').toLowerCase();
+    if (t.includes('kodesh')) return 'kodesh';
+    if (t.includes('hitmachuyot') || t.includes('hitmahut')) return 'hitmachuyot';
+    if (t.includes('horaah') || t.includes('horaa')) return 'horaah';
+    return t;
+  };
+
+  const domainCourseIds = useMemo(() => {
+    if (!selectedDomain) return new Set();
+    return new Set(
+      (courses || [])
+        .filter((c) => getDomainKey(c?.type) === selectedDomain)
+        .map((c) => String(c.id))
+    );
+  }, [courses, selectedDomain]);
+
+  // כיתות מסוננות לפי תחום + שנה (רק בהתמחויות)
+  const filteredClasses = useMemo(() => {
+    if (!selectedDomain) return [];
+    if (domainCourseIds.size === 0) return [];
+    let filtered = (classes || []).filter((cls) => domainCourseIds.has(String(cls.course_id ?? cls.courseId)));
+    if (selectedDomain === 'hitmachuyot' && selectedYearLevel !== 'all') {
+      // נניח שיש שדה year_level או name שמכיל "א" או "ב"
+      filtered = filtered.filter(cls => {
+        if (!cls.name) return false;
+        if (selectedYearLevel === 'a') return /\b[אa]\b|שנה.?א/i.test(cls.name);
+        if (selectedYearLevel === 'b') return /\b[בb]\b|שנה.?ב/i.test(cls.name);
+        return true;
+      });
+    }
+    return filtered;
+  }, [classes, domainCourseIds, selectedDomain, selectedYearLevel]);
+
+  // מורים/נושאים מסוננים לפי תחום
+  const [course_id, setCourse_id] = useState(19);
   const teachers = useSelector(state => state.topics?.byCourse[course_id] || []);
+
 
   const updateCourseByClassId = (classId) => {
     if (!classId) return;
@@ -46,29 +89,57 @@ export default function WeeklyScheduleEditor() {
     dispatch(getTopicsByCourseThunk(19));
   };
 
+  // עדכון קורס ברירת מחדל לפי תחום
+  useEffect(() => {
+    if (selectedDomain === 'kodesh') {
+      setCourse_id(19);
+      dispatch(getTopicsByCourseThunk(19));
+      setSelectedClassId('kodesh');
+    } else {
+      // אין כיתה נבחרת כברירת מחדל, מציגים מערכת כללית לתחום
+      setSelectedClassId('');
+      // קח קורס ראשון בתחום זה (אם יש)
+      const firstCourse = courses.find(c => getDomainKey(c?.type) === selectedDomain);
+      if (firstCourse) {
+        setCourse_id(firstCourse.id);
+        dispatch(getTopicsByCourseThunk(firstCourse.id));
+      }
+    }
+  }, [selectedDomain, courses, dispatch]);
+
+
 
   useEffect(() => {
     dispatch(getRoomsThunk());
     dispatch(getClassesThunk());
     dispatch(getweeklySchedulesThunk());
+    dispatch({ type: 'courses/getCoursesThunk' });
   }, [dispatch]);
 
   //קבלת רשימת המורות המתאימות לכיתה שנבחרה
-  useEffect(()=>{
+
+  useEffect(() => {
     if (!selectedClassId || selectedClassId === 'kodesh') return;
     updateCourseByClassId(selectedClassId);
-  },[selectedClassId, classes, dispatch])
+  }, [selectedClassId, classes, dispatch]);
+
 
   useEffect(() => {
     if (selectedClassId === 'kodesh') {
       updateCourseForKodesh();
     }
-  }, [selectedClassId, dispatch])
+  }, [selectedClassId, dispatch]);
 
-  const filteredSchedule = schedule.filter(lesson => {
-    if (selectedClassId === 'kodesh') return lesson.year === selectedYear;
-    return lesson.class_id?.toString() === selectedClassId && lesson.year === selectedYear;
-  });
+
+  // מערכת מסוננת לפי תחום/כיתה
+  const filteredSchedule = useMemo(() => {
+    if (selectedClassId === 'kodesh') return schedule.filter(lesson => lesson.year === selectedYear);
+    if (!selectedClassId) {
+      // כל הכיתות בתחום
+      return schedule.filter(lesson => lesson.year === selectedYear && domainCourseIds.has(String(classes.find(c => c.id === lesson.class_id)?.course_id)));
+    }
+    return schedule.filter(lesson => lesson.class_id?.toString() === selectedClassId && lesson.year === selectedYear);
+  }, [schedule, selectedClassId, selectedYear, domainCourseIds, classes]);
 
   const openModal = (day, class_id, options = {}) => {
     if (selectedClassId === 'kodesh') {
@@ -91,7 +162,10 @@ export default function WeeklyScheduleEditor() {
     setModalOpen(true);
   };
 
+
+  // כיתות קודש (קבוע)
   const getKodeshClasses = () => classes.filter(c => c.id >= 14 && c.id <= 22);
+
 
   const getGroupClassIds = (group) => {
     const kodeshClasses = getKodeshClasses();
@@ -102,7 +176,7 @@ export default function WeeklyScheduleEditor() {
 
   const saveLesson = () => {
     const { id, class_id, day_of_week, start_time, end_time, topic_id, room_id, group } = modalData;
-    if (!day_of_week || !start_time || !end_time || !topic_id || !room_id) {
+    if ((day_of_week === null || day_of_week === undefined) || !start_time || !end_time || !topic_id || !room_id) {
       alert('נא למלא את כל השדות');
       return;
     }
@@ -257,8 +331,11 @@ export default function WeeklyScheduleEditor() {
   };
 
   const renderDayGrid = () => {
-    if (selectedClassId === 'kodesh') {
-      // לימודי קודש: טבלת יום מול כיתות (ללא שעות קבועות)
+    // תצוגה כללית לתחום (אין כיתה נבחרת): טבלת יום מול כיתות בתחום
+    if (!selectedClassId && selectedDomain !== 'kodesh') {
+      const domainClassList = filteredClasses;
+      const classIds = domainClassList.map(c => c.id);
+      const classNames = domainClassList.map(c => c.name);
       const grouped = {};
       for (let d = 0; d < 6; d++) grouped[d] = {};
       filteredSchedule.forEach(l => {
@@ -266,17 +343,86 @@ export default function WeeklyScheduleEditor() {
         if (!grouped[day][l.class_id]) grouped[day][l.class_id] = [];
         grouped[day][l.class_id].push(l);
       });
-      const filteredClasses = classes.filter(c => c.id >= 14 && c.id <= 22);
-      const classIds = filteredClasses.map(c => c.id);
-      // const classNames = filteredClasses.map(c => c.name);
+      return dayNames.map((name, i) => (
+        <div key={i} className="mb-10" dir="rtl">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-bold text-gray-700">{name}</h2>
+            <button
+              onClick={() => openModal(i, null, { isDayGroup: true })}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              הוסף שיעור ליום זה
+            </button>
+          </div>
+          <div className="overflow-auto">
+            <table className="min-w-full text-sm text-center border border-gray-300">
+              <thead className="bg-gray-100">
+                <tr>
+                  {classNames.map((n, idx) => (
+                    <th key={classIds[idx]} className="border p-2" dir="rtl">{n}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {classIds.map(cid => (
+                    <td key={cid} className="border p-2 align-top">
+                      {(grouped[i]?.[cid] || []).map((lesson, idx) => (
+                        <div
+                          key={idx}
+                          className="mb-2 p-1 bg-gray-50 rounded border text-xs"
+                          onContextMenu={(e) => handleOpenContextMenu(e, lesson)}
+                          title="לחיצה ימנית לפעולות"
+                        >
+                          <div className="flex items-center gap-1"><Clock size={14} /> {formatTime(lesson.start_time)}-{formatTime(lesson.end_time)}</div>
+                          {lesson.roomRef && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <School size={16} />{lesson.roomRef.number}
+                            </div>
+                          )|| (
+                            <div className="flex items-center gap-1 text-sm"><School size={14} />{rooms.find(r => r.id === lesson.room_id)?.number || 'חדר לא ידוע'}</div>
+                          )}
+                          {lesson.topicRef && (
+                            <div className="flex items-center gap-2 text-sm"><User size={16} />{lesson.topicRef.name}</div>
+                          ) || (
+                            <div className="flex items-center gap-1"><User size={14} />{teachers.find(t => t.id === lesson.topic_id)?.name || 'מורה לא ידוע'}</div>
+                          )}
+                        </div>
+                      ))}
+                      {/* כפתור הוספת שיעור לכיתה זו ביום זה */}
+                      <button
+                        onClick={() => {
+                          if (!cid) {
+                            alert("לא ניתן להוסיף שיעור אם לא נבחרה כיתה"); return;
+                          }
+                          openModal(i, cid, { isDayGroup: false });
+                        }}   className="mt-1 text-xs text-blue-600 hover:underline" >
+                        הוסף שיעור לכיתה זו
+                      </button>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ));
+    }
+    // לימודי קודש: טבלת יום מול כיתות (ללא שעות קבועות)
+    if (selectedClassId === 'kodesh') {
+      const grouped = {};
+      for (let d = 0; d < 6; d++) grouped[d] = {};
+      filteredSchedule.forEach(l => {
+        const day = l.day_of_week;
+        if (!grouped[day][l.class_id]) grouped[day][l.class_id] = [];
+        grouped[day][l.class_id].push(l);
+      });
+      const filteredKodesh = classes.filter(c => c.id >= 14 && c.id <= 22);
+      const classIds = filteredKodesh.map(c => c.id);
       const classNames = classIds.map(cid => {
-  const cls = classes.find(c => c.id === cid);
-  return cls ? cls.name : `כיתה ${cid}`;
-});
-
-      // const classIds = [...new Set(filteredSchedule.map(l => l.class_id))];
-      // const classNames = classIds.map(cid => classes.find(c => c.id === cid)?.name || cid);
-
+        const cls = classes.find(c => c.id === cid);
+        return cls ? cls.name : `כיתה ${cid}`;
+      });
       return dayNames.map((name, i) => (
         <div key={i} className="mb-10" dir="rtl">
           <div className="flex items-center justify-between mb-2">
@@ -322,8 +468,6 @@ export default function WeeklyScheduleEditor() {
                              <div className="flex items-center gap-1"><User size={14} />{teachers.find(t => t.id === lesson.topic_id)?.name || 'מורה לא ידוע'}</div>
                            )}
                         </div>
-
-
                       ))}
                       {/* כפתור הוספת שיעור לכיתה זו ביום זה */}
                       <button
@@ -343,61 +487,77 @@ export default function WeeklyScheduleEditor() {
           </div>
         </div>
       ));
-    } else {
-      // רגיל לפי כיתה: ימים בשורה אחת
-      return (
-        <div className="grid grid-cols-6 gap-4" dir="rtl">
-          {dayNames.map((name, i) => (
-            <div key={i} className="bg-white rounded-xl shadow p-4">
-              <h2 className="font-bold text-lg text-gray-800 mb-2">{name}</h2>
-              {filteredSchedule.filter(l => l.day_of_week === i).map((l, idx) => (
-                <div
-                  key={idx}
-                  className="border px-2 py-1 rounded mb-2 flex flex-col gap-1 bg-gray-50"
-                  onContextMenu={(e) => handleOpenContextMenu(e, l)}
-                  title="לחיצה ימנית לפעולות"
-                >
-                  <div className="flex items-center gap-2 text-sm"><Clock size={16} />{formatTime(l.start_time)}-{formatTime(l.end_time)}</div>
-                  {/* <div className="flex items-center gap-2 text-sm"><School size={16} />{l.roomRef.number}</div> */}
-                  {l.roomRef && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <School size={16} />{l.roomRef.number}
-                    </div>
-                  )|| (
-                    <div className="flex items-center gap-1 text-sm"><School size={14} />{rooms.find(r => r.id === l.room_id)?.number || 'חדר לא ידוע'}</div>
-                  )}
-                {l.topicRef && (
-                  <div className="flex items-center gap-2 text-sm"><User size={16} />{l.topicRef.name}</div>
-                )|| (
-                  <div className="flex items-center gap-1 text-sm"><User size={14} />{teachers.find(t => t.id === l.topic_id)?.name || 'מורה לא ידוע'}</div>
-                )}
-                </div>
-              ))}
-
-              <button
-                onClick={() => {
-                  if (!selectedClassId) {
-                    alert("לא ניתן להוסיף שיעור אם לא נבחרה כיתה");
-                    return;
-                  }
-                  openModal(i, selectedClassId);
-                }}
-                className="mt-1 text-xs text-blue-600 hover:underline"
-              >
-                הוסף שיעור
-              </button>
-            </div>
-          ))}
-        </div>
-
-      );
     }
+    // רגיל לפי כיתה: ימים בשורה אחת
+    return (
+      <div className="grid grid-cols-6 gap-4" dir="rtl">
+        {dayNames.map((name, i) => (
+          <div key={i} className="bg-white rounded-xl shadow p-4">
+            <h2 className="font-bold text-lg text-gray-800 mb-2">{name}</h2>
+            <button
+              onClick={() => openModal(i, selectedClassId, { isDayGroup: true })}
+              className="mb-2 text-xs text-blue-600 hover:underline"
+            >
+              הוסף שיעור ליום זה
+            </button>
+            {filteredSchedule.filter(l => l.day_of_week === i).map((l, idx) => (
+              <div
+                key={idx}
+                className="border px-2 py-1 rounded mb-2 flex flex-col gap-1 bg-gray-50"
+                onContextMenu={(e) => handleOpenContextMenu(e, l)}
+                title="לחיצה ימנית לפעולות"
+              >
+                <div className="flex items-center gap-2 text-sm"><Clock size={16} />{formatTime(l.start_time)}-{formatTime(l.end_time)}</div>
+                {l.roomRef && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <School size={16} />{l.roomRef.number}
+                  </div>
+                )|| (
+                  <div className="flex items-center gap-1 text-sm"><School size={14} />{rooms.find(r => r.id === l.room_id)?.number || 'חדר לא ידוע'}</div>
+                )}
+              {l.topicRef && (
+                <div className="flex items-center gap-2 text-sm"><User size={16} />{l.topicRef.name}</div>
+              )|| (
+                <div className="flex items-center gap-1 text-sm"><User size={14} />{teachers.find(t => t.id === l.topic_id)?.name || 'מורה לא ידוע'}</div>
+              )}
+              </div>
+            ))}
+            <button
+              onClick={() => {
+                if (!selectedClassId) {
+                  alert("לא ניתן להוסיף שיעור אם לא נבחרה כיתה");
+                  return;
+                }
+                openModal(i, selectedClassId, { isDayGroup: false });
+              }}
+              className="mt-1 text-xs text-blue-600 hover:underline"
+            >
+              הוסף שיעור לכיתה זו
+            </button>
+          </div>
+        ))}
+      </div>
+    );
   };
+
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-[#0A3960] mb-6">עריכת מערכת שבועית</h1>
-      <div className="flex gap-4 mb-6">
+      {/* בחירת תחום */}
+      <div className="flex gap-4 mb-6 items-end">
+        <div>
+          <label className="block font-semibold mb-1">תחום</label>
+          <select
+            value={selectedDomain}
+            onChange={e => setSelectedDomain(e.target.value)}
+            className="border rounded px-3 py-2 min-w-[120px]"
+          >
+            <option value="kodesh">קודש</option>
+            <option value="horaah">הוראה</option>
+            <option value="hitmachuyot">התמחויות</option>
+          </select>
+        </div>
         <div>
           <label className="block font-semibold mb-1">שנה</label>
           <select
@@ -408,20 +568,39 @@ export default function WeeklyScheduleEditor() {
             {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
-        <div>
-          <label className="block font-semibold mb-1">כיתה</label>
-          <select
-            value={selectedClassId}
-            onChange={(e) => setSelectedClassId(e.target.value)}
-            className="border rounded px-3 py-2"
-          >
-            <option value="">בחר כיתה</option>
-            <option value="kodesh">לימודי קודש</option>
-            {classes.map(cls => (
-              <option key={cls.id} value={cls.id}>{cls.name}</option>
-            ))}
-          </select>
-        </div>
+        {/* סינון שנה א/ב בהתמחויות */}
+        {selectedDomain === 'hitmachuyot' && (
+          <div>
+            <label className="block font-semibold mb-1">שנה בהתמחות</label>
+            <select
+              value={selectedYearLevel}
+              onChange={e => setSelectedYearLevel(e.target.value)}
+              className="border rounded px-3 py-2 min-w-[100px]"
+            >
+              <option value="all">כל השנים</option>
+              <option value="a">שנה א</option>
+              <option value="b">שנה ב</option>
+            </select>
+          </div>
+        )}
+        {/* בחירת כיתה - רק אם לא תצוגה כללית לתחום */}
+        {(selectedDomain === 'kodesh' || filteredClasses.length > 0) && (
+          <div>
+            <label className="block font-semibold mb-1">כיתה</label>
+            <select
+              value={selectedClassId}
+              onChange={e => setSelectedClassId(e.target.value)}
+              className="border rounded px-3 py-2 min-w-[120px]"
+            >
+              {/* קודש */}
+              {selectedDomain === 'kodesh' && <option value="kodesh">כל לימודי קודש</option>}
+              <option value="">כל הכיתות בתחום</option>
+              {filteredClasses.map(cls => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {renderDayGrid()}
