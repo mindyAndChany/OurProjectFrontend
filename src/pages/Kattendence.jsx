@@ -157,6 +157,13 @@ export const Screen = () => {
     return id && name ? { id, name, class_kodesh: s.class_kodesh } : null;
   }, [students, selectedStudentId]);
 
+  const attendanceTitle = useMemo(() => {
+    if (selectedDomain === "kodesh") return "נוכחות לימודי קודש";
+    if (selectedDomain === "horaah") return "נוכחות לימודי הוראה";
+    if (selectedDomain === "hitmachuyot") return "נוכחות לימודי התמחות";
+    return "נוכחות";
+  }, [selectedDomain]);
+
   function getLessonTopicId(lesson) {
     return lesson?.topic_id ?? lesson?.topicId ?? undefined;
   }
@@ -191,11 +198,18 @@ export const Screen = () => {
 
   }, [dispatch]);
 
+  const normalizeDomain = (value) => {
+    const v = String(value || "").toLowerCase();
+    if (v === "horaa") return "horaah";
+    if (v === "hitmahut") return "hitmachuyot";
+    return v;
+  };
+
   useEffect(() => {
     const searchDomain = new URLSearchParams(location.search).get("domain") || "";
     const domainParam = domain || searchDomain;
     if (domainParam !== selectedDomain) {
-      setSelectedDomain(domainParam);
+      setSelectedDomain(normalizeDomain(domainParam));
     }
   }, [domain, location.search, selectedDomain]);
 
@@ -206,9 +220,9 @@ export const Screen = () => {
   const getDomainKey = (type) => {
     const t = String(type || "").toLowerCase();
     if (t.includes("kodesh")) return "kodesh";
-    if (t.includes("hitmahut")) return "hitmahut";
-    if (t.includes("horaah")) return "horaah";
-    return "";
+    if (t.includes("hitmachuyot") || t.includes("hitmahut")) return "hitmachuyot";
+    if (t.includes("horaah") || t.includes("horaa")) return "horaah";
+    return normalizeDomain(t);
   };
 
   const filteredClasses = useMemo(() => {
@@ -514,6 +528,14 @@ export const Screen = () => {
         transition={{ duration: 0.3 }}
         className="max-w-7xl mx-auto space-y-6"
       >
+        <div className="bg-white rounded-2xl shadow p-6 border border-gray-100">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#0A3960]">
+            {attendanceTitle}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            ניהול נוכחות לפי תחום הלימוד
+          </p>
+        </div>
         {/* כותרת עליונה עם בחירה דינמית */}
         <div className="bg-white rounded-xl shadow p-6 flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2">
