@@ -527,6 +527,7 @@ export default function MultiCertificateGenerator() {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedTrack, setSelectedTrack] = useState("");
   const [filterId, setFilterId] = useState("");
+  const [filterName, setFilterName] = useState("");
   const [showAddTemplate, setShowAddTemplate] = useState(false);
   const [newTemplateLabel, setNewTemplateLabel] = useState("");
   const [newTemplateText, setNewTemplateText] = useState("");
@@ -585,13 +586,23 @@ export default function MultiCertificateGenerator() {
 
   useEffect(() => {
     setSelectedStudentsIds([]);
-  }, [selectedClass, selectedTrack, filterId]);
+  }, [selectedClass, selectedTrack, filterId, filterName]);
   const uniqueTracks = [...new Set(students.map((s) => s.track).filter(Boolean))];
+  const uniqueClasses = [...new Set(students.map((s) => s.class_kodesh || s.class_teaching).filter(Boolean))].sort();
+
+  const selectAllStudents = () => {
+    setSelectedStudentsIds(filtered.map(s => s.id_number));
+  };
+
+  const clearSelection = () => {
+    setSelectedStudentsIds([]);
+  };
 
   const filtered = students.filter((s) =>
     (!selectedClass || s.class_teaching === selectedClass || s.class_kodesh === selectedClass) &&
     (!selectedTrack || s.track === selectedTrack) &&
-    (!filterId || s.id_number?.includes(filterId))
+    (!filterId || s.id_number?.includes(filterId)) &&
+    (!filterName || `${s.first_name} ${s.last_name}`.toLowerCase().includes(filterName.toLowerCase()))
   );
 
   const toggleStudent = (id) => {
@@ -836,7 +847,7 @@ const generateMultiplePDFs = async () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           <div className="flex gap-2">
             <select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="border p-2 rounded flex-1">
               {templates.map((t) => (
@@ -855,18 +866,29 @@ const generateMultiplePDFs = async () => {
           </div>
 
           <input
+            placeholder="סינון לפי שם"
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
+            className="border p-2 rounded"
+          />
+
+          <input
             placeholder="סינון לפי ת.ז."
             value={filterId}
             onChange={(e) => setFilterId(e.target.value)}
             className="border p-2 rounded"
           />
 
-          <input
-            placeholder="סינון לפי כיתה"
+          <select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
             className="border p-2 rounded"
-          />
+          >
+            <option value="">בחר כיתה</option>
+            {uniqueClasses.map((cls) => (
+              <option key={cls} value={cls}>{cls}</option>
+            ))}
+          </select>
 
           <select
             value={selectedTrack}
@@ -878,6 +900,23 @@ const generateMultiplePDFs = async () => {
               <option key={track} value={track}>{track}</option>
             ))}
           </select>
+        </div>
+
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={selectAllStudents}
+            disabled={filtered.length === 0}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+          >
+            ✓ בחר הכל ({filtered.length})
+          </button>
+          <button
+            onClick={clearSelection}
+            disabled={selectedStudentsIds.length === 0}
+            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50"
+          >
+            ✕ נקה בחירה
+          </button>
         </div>
 
        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 bg-gray-50 p-4 rounded border max-h-[500px] overflow-y-auto">
@@ -909,11 +948,11 @@ const generateMultiplePDFs = async () => {
 
         <div className="text-center">
           <button
-            disabled={filtered.length === 0 && selectedStudentsIds.length === 0}
+            disabled={selectedStudentsIds.length === 0}
             onClick={generateMultiplePDFs}
             className="bg-[#0A3960] text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            צור אישורים מרוכזים
+            צור אישורים מרוכזים ({selectedStudentsIds.length})
           </button>
         </div>
       </div>
