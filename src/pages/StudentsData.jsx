@@ -8,6 +8,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material
 import { TextField, Button, IconButton, FormControl, RadioGroup, FormControlLabel, Radio } from "@mui/material";
 import { addStudentsThunk } from "../redux/slices/STUDENTS/addStudentsThunk";
 import { updateStudentThunk } from "../redux/slices/STUDENTS/updateStudentThunk";
+import { getStudentByIdThunk } from "../redux/slices/STUDENTS/getStudentByIdThunk";
 import { ExportToExcel } from "../components/ExportToExcel"
 import { ExcelImport } from "../components/ExcelImport";
 import StudentFilesManager from "../components/StudentFilesManager";
@@ -221,6 +222,7 @@ const StudentsTable = () => {
     const [open, setOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [studentToEdit, setStudentToEdit] = useState(null);
+    const [editStudentId, setEditStudentId] = useState(null);
     const [filesDialogOpen, setFilesDialogOpen] = useState(false);
     const [studentForFiles, setStudentForFiles] = useState(null);
     const [selectedRegistrationYear, setSelectedRegistrationYear] = useState(null);
@@ -228,6 +230,8 @@ const StudentsTable = () => {
     const documentsByStudent = useSelector((state) => state.student.documentsByStudent);
     const documentsByClass = useSelector((state) => state.student.documentsByClass);
     const documentsByTrack = useSelector((state) => state.student.documentsByTrack);
+    const selectedStudent = useSelector((state) => state.student.selectedStudent);
+    const studentLoading = useSelector((state) => state.student.loading);
     const [activeDocs, setActiveDocs] = useState([]);
     const [docFilters, setDocFilters] = useState({ id_number: "", class_kodesh: "", track: "" });
     const [docsSource, setDocsSource] = useState(null); // 'id' | 'class' | 'track'
@@ -236,6 +240,14 @@ const StudentsTable = () => {
     const [showSearch, setShowSearch] = useState(false);
 
     const toApiField = (f) => (f === 'photoUrl' ? 'photo_url' : f);
+
+    const normalizeStudentFromApi = (student) => {
+        if (!student) return null;
+        return {
+            ...student,
+            photoUrl: student.photoUrl ?? student.photo_url,
+        };
+    };
 
     useEffect(() => {
         const categoriesArr = selectedFields.map(toApiField);
@@ -321,6 +333,18 @@ const StudentsTable = () => {
         setNewStudent({ ...initialNewStudent, registration_year: year, serial_number: nextSerial });
         setOpen(true);
     };
+
+    useEffect(() => {
+        if (!editDialogOpen || !selectedStudent || !editStudentId) return;
+        const selectedId = selectedStudent.id_number ?? selectedStudent.id;
+        if (!selectedId || selectedId.toString() !== editStudentId.toString()) return;
+        const normalized = normalizeStudentFromApi(selectedStudent);
+        setStudentToEdit((prev) => ({
+            ...initialNewStudent,
+            ...(prev || {}),
+            ...(normalized || {}),
+        }));
+    }, [editDialogOpen, selectedStudent, editStudentId]);
 
     // עדכון מס׳ סידורי אוטומטי כששנת רישום משתנה (בדיאלוג הוספה)
     useEffect(() => {
@@ -788,8 +812,13 @@ const StudentsTable = () => {
                                         <>
                                             <Cell style={{ width: "80px", minWidth: "80px" }}>
                                                 <IconButton onClick={() => {
+                                                    const id = student?.id_number ?? student?.id;
+                                                    setEditStudentId(id ?? null);
                                                     setStudentToEdit({ ...initialNewStudent, ...student });
                                                     setEditDialogOpen(true);
+                                                    if (id) {
+                                                        dispatch(getStudentByIdThunk(id));
+                                                    }
                                                 }}>
                                                     <UserPen size={24} />
                                                 </IconButton>
@@ -820,6 +849,9 @@ const StudentsTable = () => {
                 <DialogContent className="space-y-4 rtl text-right">
                     {studentToEdit && (
                         <div className="space-y-6">
+                            {studentLoading && (
+                                <div className="text-sm text-gray-500">טוען נתוני תלמידה מלאים...</div>
+                            )}
                             {Object.entries(formGroups).map(([groupKey, groupFields]) => (
                                 <div key={groupKey} className="space-y-3">
                                     <h3 className="text-base font-semibold text-gray-800">{formGroupTitles[groupKey]}</h3>
