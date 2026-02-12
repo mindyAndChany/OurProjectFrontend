@@ -480,18 +480,20 @@ import moment from "moment";
 import 'moment/locale/he';
 import { getStudentDataThunk } from "../redux/slices/STUDENTS/getStudentDataThunk";
 
-const templates = [
+const defaultTemplates = [
   {
     id: "student",
     label: "אישור לימודים",
     file: "/backgrounds/student.jpg",
     defaultText: (s) => `לכל המעוניין:\n\nהננו לאשר שהתלמידה:\n\n${s.first_name} ${s.last_name}\nמספר זהות: ${s.id_number}\nסטודנטית במוסדנו\nבשנת הלימודים תשפ"ד (2024-2025)\nבסמינר גור ירושלים`,
+    isCustom: false
   },
   {
     id: "single",
     label: "אישור רווקה",
     file: "/backgrounds/single.jpg",
     defaultText: (s) => `לכל המעוניין:\n\n${s.first_name} ${s.last_name}\nת.ז. ${s.id_number}\nהינה רווקה`,
+    isCustom: false
   },
 ];
 
@@ -499,25 +501,108 @@ export default function MultiCertificateGenerator() {
   const dispatch = useDispatch();
   const students = useSelector((s) => s.student.studentsData);
 
+  const [templates, setTemplates] = useState(() => {
+    const saved = localStorage.getItem('customTemplates');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.map(t => {
+        if (t.isCustom && t.textTemplate) {
+          const textTemplate = t.textTemplate;
+          return {
+            ...t,
+            defaultText: (s) => textTemplate
+              .replace('{שם}', `${s.first_name} ${s.last_name}`)
+              .replace('{תעודת_זהות}', s.id_number)
+              .replace('{כיתה}', s.class_kodesh || s.class_teaching || '')
+              .replace('{התמחות}', s.track || '')
+          };
+        }
+        return defaultTemplates.find(dt => dt.id === t.id) || t;
+      });
+    }
+    return defaultTemplates;
+  });
   const [templateId, setTemplateId] = useState("student");
   const [selectedStudentsIds, setSelectedStudentsIds] = useState([]);
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedTrack, setSelectedTrack] = useState("");
   const [filterId, setFilterId] = useState("");
+  const [filterName, setFilterName] = useState("");
+  const [showAddTemplate, setShowAddTemplate] = useState(false);
+  const [newTemplateLabel, setNewTemplateLabel] = useState("");
+  const [newTemplateText, setNewTemplateText] = useState("");
 
   useEffect(() => {
-    dispatch(getStudentDataThunk("track,class_kodesh,id_number,last_name,first_name"));
+    dispatch(getStudentDataThunk("first_name,last_name,id_number,class_kodesh,track,birthdate_hebrew"));
   }, [dispatch]);
 
   useEffect(() => {
+    if (students.length > 0) {
+      console.log("Sample student data:", students[0]);
+      console.log("All keys:", Object.keys(students[0]));
+    }
+  }, [students]);
+
+  useEffect(() => {
+    const templatesToSave = templates.map(t => {
+      if (t.isCustom) {
+        return { ...t, defaultText: t.textTemplate };
+      }
+      return { id: t.id, label: t.label, file: t.file, isCustom: false };
+    });
+    localStorage.setItem('customTemplates', JSON.stringify(templatesToSave));
+  }, [templates]);
+
+  const addNewTemplate = () => {
+    if (!newTemplateLabel.trim() || !newTemplateText.trim()) {
+      alert("יש למלא את שם האישור והטקסט");
+      return;
+    }
+    const newTemplate = {
+      id: `custom_${Date.now()}`,
+      label: newTemplateLabel,
+      file: "/backgrounds/student.jpg",
+      textTemplate: newTemplateText,
+      defaultText: (s) => newTemplateText
+        .replace('{שם}', `${s.first_name} ${s.last_name}`)
+        .replace('{תעודת_זהות}', s.id_number)
+        .replace('{כיתה}', s.class_kodesh || s.class_teaching || '')
+        .replace('{התמחות}', s.track || ''),
+      isCustom: true
+    };
+    setTemplates([...templates, newTemplate]);
+    setNewTemplateLabel("");
+    setNewTemplateText("");
+    setShowAddTemplate(false);
+    alert("סוג אישור חדש נוסף בהצלחה!");
+  };
+
+  const deleteTemplate = (id) => {
+    if (window.confirm("האם למחוק סוג אישור זה?")) {
+      setTemplates(templates.filter(t => t.id !== id));
+      if (templateId === id) setTemplateId("student");
+    }
+  };
+
+  useEffect(() => {
     setSelectedStudentsIds([]);
-  }, [selectedClass, selectedTrack, filterId]);
+  }, [selectedClass, selectedTrack, filterId, filterName]);
   const uniqueTracks = [...new Set(students.map((s) => s.track).filter(Boolean))];
+  const uniqueClasses = [...new Set(students.map((s) => s.class_kodesh || s.class_teaching).filter(Boolean))].sort();
+
+  const selectAllStudents = () => {
+    setSelectedStudentsIds(filtered.map(s => s.id_number));
+  };
+
+  const clearSelection = () => {
+    setSelectedStudentsIds([]);
+  };
 
   const filtered = students.filter((s) =>
-    (!selectedClass || s.class_kodesh === selectedClass) &&
+    (!selectedClass || s.class_teaching === selectedClass || s.class_kodesh === selectedClass) &&
     (!selectedTrack || s.track === selectedTrack) &&
-    (!filterId || s.id_number?.includes(filterId))
+    (!filterId || s.id_number?.includes(filterId)) &&
+    (!filterName || `${s.first_name} ${s.last_name}`.toLowerCase().includes(filterName.toLowerCase()))
   );
 
   const toggleStudent = (id) => {
@@ -637,10 +722,14 @@ const generateMultiplePDFs = async () => {
     return;
   }
 
-  const imageBytes = await fetch("/backgrounds/stamp.png").then((r) => r.arrayBuffer()); // ← שנה לפאת של הקובץ שלך
-  // const stampImage = await pdfDoc.embedJpg(imageBytes);
-  const stampImage = await pdfDoc.embedPng(imageBytes); 
   const template = templates.find((t) => t.id === templateId);
+  if (!template || typeof template.defaultText !== 'function') {
+    alert("שגיאה: תבנית לא נמצאה");
+    return;
+  }
+
+  const imageBytes = await fetch("/backgrounds/stamp.png").then((r) => r.arrayBuffer());
+  const stampImage = await pdfDoc.embedPng(imageBytes);
 
   for (const student of selectedStudents) {
   const page = pdfDoc.addPage([595, 842]); // A4
@@ -652,10 +741,12 @@ const generateMultiplePDFs = async () => {
   const lines = text.split("\n");
 
   // מיקום טקסט מותאם כמו ב־Word
-  let y = 720; // להתחיל גבוה יותר
+  let y = 720;
   for (const line of lines) {
+    const textWidth = font.widthOfTextAtSize(line, 14);
+    const centerX = (595 - textWidth) / 2;
     page.drawText(line, {
-      x: 60,
+      x: centerX,
       y,
       size: 14,
       font,
@@ -695,12 +786,91 @@ const generateMultiplePDFs = async () => {
       <div className="bg-white p-6 rounded-xl shadow border space-y-6 max-w-6xl mx-auto">
         <h2 className="text-xl font-bold">אישורים לתלמידות</h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="border p-2 rounded">
-            {templates.map((t) => (
-              <option key={t.id} value={t.id}>{t.label}</option>
-            ))}
-          </select>
+        <div className="bg-blue-50 p-4 rounded border border-blue-200">
+          <button
+            onClick={() => setShowAddTemplate(!showAddTemplate)}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-3"
+          >
+            {showAddTemplate ? "ביטול" : "+ הוסף סוג אישור חדש"}
+          </button>
+
+          {showAddTemplate && (
+            <div className="space-y-4 mt-3 bg-white p-5 rounded border">
+              <div>
+                <label className="block font-semibold mb-2 text-gray-700">שם סוג האישור:</label>
+                <input
+                  placeholder="לדוגמה: אישור השתתפות בקורס"
+                  value={newTemplateLabel}
+                  onChange={(e) => setNewTemplateLabel(e.target.value)}
+                  className="border p-3 rounded w-full text-lg"
+                />
+              </div>
+              
+              <div>
+                <label className="block font-semibold mb-2 text-gray-700">תוכן האישור:</label>
+                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded mb-2 text-sm">
+                  <p className="font-semibold mb-1">💡 טיפ: השתמש במילים המיוחדות הבאות:</p>
+                  <ul className="mr-4 space-y-1">
+                    <li>• <span className="font-mono bg-white px-2 py-0.5 rounded">{'{'}שם{'}'}</span> - יוחלף בשם התלמידה המלא</li>
+                    <li>• <span className="font-mono bg-white px-2 py-0.5 rounded">{'{'}תעודת_זהות{'}'}</span> - יוחלף במספר תעודת הזהות</li>
+                    <li>• <span className="font-mono bg-white px-2 py-0.5 rounded">{'{'}כיתה{'}'}</span> - יוחלף בכיתה</li>
+                    <li>• <span className="font-mono bg-white px-2 py-0.5 rounded">{'{'}התמחות{'}'}</span> - יוחלף בהתמחות</li>
+                  </ul>
+                </div>
+                <textarea
+                  placeholder={`דוגמה לטקסט אישור:
+
+לכל המעוניין,
+
+הננו לאשר כי התלמידה {שם}
+מספר תעודת זהות: {תעודת_זהות}
+מכיתה {כיתה}
+השתתפה בקורס מיוחד במוסדנו.
+
+בברכה,
+הנהלת הסמינר`}
+                  value={newTemplateText}
+                  onChange={(e) => setNewTemplateText(e.target.value)}
+                  rows="8"
+                  className="border p-3 rounded w-full text-lg font-sans"
+                  style={{lineHeight: '1.6'}}
+                />
+              </div>
+              
+              <button
+                onClick={addNewTemplate}
+                className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 text-lg font-semibold w-full"
+              >
+                ✓ שמור את סוג האישור החדש
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="flex gap-2">
+            <select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="border p-2 rounded flex-1">
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+            {templates.find(t => t.id === templateId)?.isCustom && (
+              <button
+                onClick={() => deleteTemplate(templateId)}
+                className="bg-red-500 text-white px-3 rounded hover:bg-red-600"
+                title="מחק סוג אישור"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <input
+            placeholder="סינון לפי שם"
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
+            className="border p-2 rounded"
+          />
 
           <input
             placeholder="סינון לפי ת.ז."
@@ -709,12 +879,16 @@ const generateMultiplePDFs = async () => {
             className="border p-2 rounded"
           />
 
-          <input
-            placeholder="סינון לפי כיתה"
+          <select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
             className="border p-2 rounded"
-          />
+          >
+            <option value="">בחר כיתה</option>
+            {uniqueClasses.map((cls) => (
+              <option key={cls} value={cls}>{cls}</option>
+            ))}
+          </select>
 
           <select
             value={selectedTrack}
@@ -726,6 +900,23 @@ const generateMultiplePDFs = async () => {
               <option key={track} value={track}>{track}</option>
             ))}
           </select>
+        </div>
+
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={selectAllStudents}
+            disabled={filtered.length === 0}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+          >
+            ✓ בחר הכל ({filtered.length})
+          </button>
+          <button
+            onClick={clearSelection}
+            disabled={selectedStudentsIds.length === 0}
+            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50"
+          >
+            ✕ נקה בחירה
+          </button>
         </div>
 
        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 bg-gray-50 p-4 rounded border max-h-[500px] overflow-y-auto">
@@ -745,7 +936,7 @@ const generateMultiplePDFs = async () => {
           {s.first_name} {s.last_name}
         </div>
         <div className="text-sm text-gray-600">
-          ת.ז: {s.id_number} | כיתה: {s.class_kodesh}
+          ת.ז: {s.id_number} | כיתה: {s.class_kodesh || s.class_teaching || "ללא"}
         </div>
         <div className="text-sm text-gray-600">
           התמחות: {s.track || "—"}
@@ -757,11 +948,11 @@ const generateMultiplePDFs = async () => {
 
         <div className="text-center">
           <button
-            disabled={filtered.length === 0 && selectedStudentsIds.length === 0}
+            disabled={selectedStudentsIds.length === 0}
             onClick={generateMultiplePDFs}
             className="bg-[#0A3960] text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            צור אישורים מרוכזים
+            צור אישורים מרוכזים ({selectedStudentsIds.length})
           </button>
         </div>
       </div>
