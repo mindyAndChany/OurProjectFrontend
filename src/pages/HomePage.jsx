@@ -14,57 +14,57 @@ const items = [
   {
     title: "לימודי קודש",
     icon: bookEdit,
-    gradient: "from-purple-400 via-pink-400 to-red-400",
-    glow: "group-hover:shadow-purple-500/50",
+    gradient: "from-[#295f8b] via-[#3b78b2] to-[#4a8fc4]",
+    glow: "group-hover:shadow-[#295f8b]/50",
     to:"/Kattendence/kodesh"
   },
   {
     title: "לימודי הוראה",
     icon: mortarboard01,
-    gradient: "from-amber-400 via-orange-400 to-rose-400",
-    glow: "group-hover:shadow-amber-500/50",
+    gradient: "from-[#bda39b] via-[#c9b5ad] to-[#d4c3bb]",
+    glow: "group-hover:shadow-[#bda39b]/50",
     to:"/Kattendence/horaah"
   },
   {
     title: "התמחויות",
     icon: desk,
-    gradient: "from-cyan-400 via-blue-500 to-indigo-600",
-    glow: "group-hover:shadow-blue-500/50",
+    gradient: "from-[#295f8b] via-[#3b78b2] to-[#4a8fc4]",
+    glow: "group-hover:shadow-[#584041]/50",
     to:"/Kattendence/hitmachuyot"
   },
   {
     title: "מערכת שעות",
     icon: CalendarClock,
-    gradient: "from-emerald-400 via-teal-400 to-cyan-500",
-    glow: "group-hover:shadow-teal-500/50",
+    gradient: "from-[#bda39b] via-[#c9b5ad] to-[#d4c3bb]",
+    glow: "group-hover:shadow-[#3b78b2]/50",
     to: "/schedule",
   },
   {
     title: "לוח שנה",
     icon: calendar02,
-    gradient: "from-violet-400 via-purple-500 to-fuchsia-500",
-    glow: "group-hover:shadow-violet-500/50",
+    gradient: "from-[#3b78b2] via-[#4a8fc4] to-[#5ba3d4]",
+    glow: "group-hover:shadow-[#3b78b2]/50",
     to: "/Calendar",
   },
   {
     title: "השאלת ציוד",
     icon: payByCheck,
-    gradient: "from-rose-400 via-pink-400 to-purple-400",
-    glow: "group-hover:shadow-pink-500/50",
+    gradient: "from-[#c9b5ad] via-[#bda39b] to-[#a89189]",
+    glow: "group-hover:shadow-[#bda39b]/50",
     to: "/Equipments",
   },
   {
     title: "נתוני תלמידות",
     icon: task01,
-    gradient: "from-blue-400 via-indigo-400 to-purple-500",
-    glow: "group-hover:shadow-indigo-500/50",
+    gradient: "from-[#295f8b] via-[#3b78b2] to-[#4a8fc4]",
+    glow: "group-hover:shadow-[#295f8b]/50",
     to:"/StudentsData"
   },
   {
     title: "אישורים",
     icon: taskDone02,
-    gradient: "from-lime-400 via-green-400 to-emerald-500",
-    glow: "group-hover:shadow-green-500/50",
+    gradient: "from-[#bda39b] via-[#c9b5ad] to-[#d4c3bb]",
+    glow: "group-hover:shadow-[#bda39b]/50",
     to: "/Approvals",
   },
 ];
@@ -73,17 +73,17 @@ export default function Screen() {
   const navigate = useNavigate();
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 [direction:rtl] pt-36 pb-24 relative overflow-hidden">
+    <div className="w-full min-h-screen bg-gradient-to-br from-[#f7f4f1] via-[#f0f6ff] to-[#fef7f2] [direction:rtl] pt-36 pb-24 relative overflow-hidden">
       {/* Abstract Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-40 right-20 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-20 left-20 w-72 h-72 bg-[#bda39b]/30 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-20 w-72 h-72 bg-[#295f8b]/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-[#584041]/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
       {/* Title */}
       <section className="max-w-6xl mx-auto px-6 mb-16 relative z-10">
-        <h1 className="text-6xl font-bold text-right bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent animate-gradient-x">
+        <h1 className="text-6xl font-bold text-right bg-gradient-to-r from-[#295f8b] via-[#3b78b2] to-[#4a8fc4] bg-clip-text text-transparent animate-gradient-x">
           דף הבית
         </h1>
         <p className="mt-6 text-2xl text-gray-600 font-medium text-right">
@@ -152,7 +152,7 @@ export default function Screen() {
               </div>
 
               {/* Title with gradient on hover */}
-              <span className="relative z-10 group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-blue-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-500">
+              <span className="relative z-10 group-hover:bg-gradient-to-r group-hover:from-[#295f8b] group-hover:to-[#3b78b2] group-hover:bg-clip-text group-hover:text-transparent transition-all duration-500">
                 {item.title}
               </span>
 
