@@ -48,7 +48,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Edulink className="h-8 sm:h-9 md:h-10 lg:h-12 w-auto" />
+            <Edulink className="scale-75 origin-left" />
           </div>
 
           {/* Desktop Navigation */}
