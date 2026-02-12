@@ -197,7 +197,8 @@ const initialNewStudent = (() => {
 })();
 
 //ניתוב נכון לתמונה
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:4000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
+const API_BASE = BACKEND_URL;
 
 const resolveFileUrl = (url) => {
     if (!url) return '';

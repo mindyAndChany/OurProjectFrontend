@@ -8,6 +8,7 @@ import { addRealyLessonThunk } from "../redux/slices/LESSONS/addRealyLessonThunk
 import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
 import { useNavigate } from "react-router-dom";
 import { getTopicsThunk } from "../redux/slices/TOPIC/getTopicsThunk";
+import { getCoursesThunk } from "../redux/slices/COURSES/getCoursesThunk";
 
 /**
  * קומפוננטת מערכת שבועית - מציגה את לוח השעות של כל הכיתות או כיתה ספציפית
@@ -17,7 +18,8 @@ import { getTopicsThunk } from "../redux/slices/TOPIC/getTopicsThunk";
  */
 export default function ScheduleViewer() {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedClassId, setSelectedClassId] = useState("kodesh"); // "kodesh" = לימודי קודש
+  const [selectedDomain, setSelectedDomain] = useState("kodesh");
+  const [selectedClassId, setSelectedClassId] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [modalLesson, setModalLesson] = useState(null);
   const [modalCancelled, setModalCancelled] = useState(false);
@@ -65,6 +67,7 @@ export default function ScheduleViewer() {
   const schedule = useSelector((state) => state.weekly_schedule?.data ?? []); // מערכת שבועית קבועה
   const classes = useSelector((state) => state.classes?.data ?? []); // רשימת כיתות
   const teachers = useSelector((state) => state.teacher?.data ?? []); // רשימת מקצועות/מורים
+  const courses = useSelector((state) => state.courses?.data ?? []); // רשימת קורסים
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -73,10 +76,78 @@ export default function ScheduleViewer() {
   // טעינת נתוני כיתות ומערכת בעת טעינת הקומפוננטה
   useEffect(() => {
     dispatch(getClassesThunk());
+    dispatch(getCoursesThunk());
     dispatch(getweeklySchedulesThunk());
     dispatch(getLessonsThunk());
     dispatch(getTopicsThunk());
   }, [dispatch]);
+
+  useEffect(() => {
+    setSelectedClassId("");
+  }, [selectedDomain]);
+
+  const normalizeDomain = (value) => {
+    const v = String(value || "").toLowerCase();
+    if (v === "horaa") return "horaah";
+    if (v === "hitmahut") return "hitmachuyot";
+    return v;
+  };
+
+  const getDomainKey = (type) => {
+    const t = String(type || "").toLowerCase();
+    if (t.includes("kodesh")) return "kodesh";
+    if (t.includes("hitmachuyot") || t.includes("hitmahut")) return "hitmachuyot";
+    if (t.includes("horaah") || t.includes("horaa")) return "horaah";
+    return normalizeDomain(t);
+  };
+
+  const domainCourseIds = useMemo(() => {
+    if (!selectedDomain) return new Set();
+    return new Set(
+      (courses || [])
+        .filter((c) => getDomainKey(c?.type) === selectedDomain)
+        .map((c) => String(c.id))
+    );
+  }, [courses, selectedDomain]);
+
+  const filteredClasses = useMemo(() => {
+    if (!selectedDomain) return classes;
+    if (domainCourseIds.size === 0) return [];
+    return (classes || []).filter((cls) => domainCourseIds.has(String(cls.course_id ?? cls.courseId)));
+  }, [classes, domainCourseIds, selectedDomain]);
+
+  const filteredTeachers = useMemo(() => {
+    if (!selectedDomain) return teachers;
+    if (domainCourseIds.size === 0) return [];
+    return (teachers || []).filter((t) => domainCourseIds.has(String(t.course_id)));
+  }, [teachers, domainCourseIds, selectedDomain]);
+
+  const domainClasses = useMemo(() => {
+    if (filteredClasses.length > 0) return filteredClasses;
+    if (selectedDomain === "kodesh") {
+      return classes.filter((cls) => cls.id >= 14 && cls.id <= 22);
+    }
+    return filteredClasses;
+  }, [filteredClasses, classes, selectedDomain]);
+
+  const domainTeachers = useMemo(() => {
+    if (!selectedDomain) return teachers;
+    if (domainCourseIds.size === 0) return [];
+    return filteredTeachers;
+  }, [filteredTeachers, teachers, selectedDomain, domainCourseIds]);
+
+  const domainClassIds = useMemo(
+    () => new Set(domainClasses.map((c) => String(c.id))),
+    [domainClasses]
+  );
+
+  const isDomainView = !selectedClassId;
+  const domainTitle = useMemo(() => {
+    if (selectedDomain === "kodesh") return "לימודי קודש";
+    if (selectedDomain === "horaah") return "לימודי הוראה";
+    if (selectedDomain === "hitmachuyot") return "לימודי התמחות";
+    return "מערכת";
+  }, [selectedDomain]);
 
 
   // פתיחת מודל לאישור/ביטול שיעור
@@ -139,10 +210,9 @@ export default function ScheduleViewer() {
 
     // סינון מתוך המערכת השבועית ליום זה + לפי תצוגה (כיתה או לימודי קודש)
     const weeklyForDay = schedule.filter((s) => s.day_of_week === dayOfWeek && s.year === selectedYear);
-    const filteredWeekly =
-      selectedClassId === "kodesh"
-        ? weeklyForDay.filter((s) => s.class_id >= 14 && s.class_id <= 22)
-        : weeklyForDay.filter((s) => String(s.class_id) === String(selectedClassId));
+    const filteredWeekly = isDomainView
+      ? weeklyForDay.filter((s) => domainClassIds.has(String(s.class_id)))
+      : weeklyForDay.filter((s) => String(s.class_id) === String(selectedClassId));
 
     // שיעורים שכבר קיימים ביום זה (כדי להימנע מכפילות)
     const realOnDate = lessons.filter((l) => l.date === dateStr);
@@ -188,10 +258,7 @@ export default function ScheduleViewer() {
   };
   // פתיחת מודל הוספת שיעור ידני
   const openAddLessonModal = () => {
-    const defaultClassId =
-      selectedClassId === "kodesh"
-        ? (classes.find((c) => c.id >= 14 && c.id <= 22)?.id ?? "")
-        : selectedClassId;
+    const defaultClassId = selectedClassId || domainClasses[0]?.id || "";
     setNewLessonData({
       class_id: defaultClassId || "",
       date: format(selectedDate, "yyyy-MM-dd"),
@@ -265,13 +332,13 @@ export default function ScheduleViewer() {
     const realLessons = lessons.filter((l) => l.date === dateStr);
     const filteredByClass = selectedClassId
       ? realLessons.filter((l) => String(l.class_id) === String(selectedClassId))
-      : realLessons;
+      : realLessons.filter((l) => domainClassIds.has(String(l.class_id)));
 
     // Weekly schedule lessons for the day
     const weeklyByDay = schedule.filter((s) => s.day_of_week === dayOfWeek && s.year === selectedYear);
     const filteredWeekly = selectedClassId
       ? weeklyByDay.filter((s) => String(s.class_id) === String(selectedClassId))
-      : weeklyByDay;
+      : weeklyByDay.filter((s) => domainClassIds.has(String(s.class_id)));
 
     // Combine lessons, marking their status for weekly-defined slots
     const combinedLessons = filteredWeekly.map((lesson) => {
@@ -321,7 +388,7 @@ export default function ScheduleViewer() {
     });
 
     return Array.from(times).sort();
-  }, [weekDays, schedule, lessons, selectedClassId]);
+  }, [weekDays, schedule, lessons, selectedClassId, domainClassIds]);
 
   /**
    * פונקציה לקבלת כל השיעורים בשעה מסוימת ביום מסוים
@@ -346,7 +413,7 @@ export default function ScheduleViewer() {
     const cls = classes.find((c) => c.id === classId);
     return cls ? cls.name : "לא ידוע";
   };
-  const selectedClassName = selectedClassId === "kodesh" ? "לימודי קודש" : getClassName(Number(selectedClassId));
+  const selectedClassName = selectedClassId ? getClassName(Number(selectedClassId)) : domainTitle;
 
   /**
    * פונקציה לקבלת שיעור ספציפי לפי כיתה, יום ושעה
@@ -365,25 +432,32 @@ export default function ScheduleViewer() {
   };
 
 
-  // סינון כיתות לימודי קודש (14-22)
-  const kodeshClasses = useMemo(() => {
-    return classes.filter((cls) => cls.id >= 14 && cls.id <= 22);
-  }, [classes]);
-
   /**
    * תצוגה 1: לימודי קודש - סגנון אקסל
    * כאשר נבחר "לימודי קודש", מציגים טבלה נפרדת לכל יום עם כיתות 14-22
    * כל טבלה מכילה את כיתות לימודי קודש בעמודות ואת השעות בשורות
    */
-  if (selectedClassId === "kodesh") {
+  if (isDomainView) {
     return (
       <div className="min-h-screen px-6 py-10 text-right bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="max-w-full mx-auto">
           {/* כותרת וסרגל בקרה */}
-          <div className="mb-8">
-            <h2 className="text-4xl font-bold mb-6 text-gray-800">מערכת לימודי קודש שנתי/תש״פ</h2>
-
+          <div className="mb-8" dir="rtl">
+            <h2 className="text-4xl font-bold mb-6 text-gray-800">מערכת {domainTitle} שנתי/תש״פ</h2>
             <div className="flex flex-wrap items-center gap-4 mb-6">
+              {/* בחירת תחום */}
+              <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 shadow-sm">
+                <label className="text-lg font-bold text-indigo-700">בחר תחום:</label>
+                <select
+                  className="border-2 border-indigo-300 rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition min-w-36 bg-white"
+                  value={selectedDomain}
+                  onChange={(e) => setSelectedDomain(e.target.value)}
+                >
+                  <option value="kodesh">קודש</option>
+                  <option value="horaah">הוראה</option>
+                  <option value="hitmachuyot">התמחויות</option>
+                </select>
+              </div>
               {/* בחירת תאריך */}
               <label className="text-lg font-semibold text-gray-700">בחר תאריך:</label>
               <input
@@ -441,8 +515,8 @@ export default function ScheduleViewer() {
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
                 >
-                  <option value="kodesh">לימודי קודש</option>
-                  {classes.map((cls) => (
+                  <option value="">כל הכיתות בתחום</option>
+                  {domainClasses.map((cls) => (
                     <option key={cls.id} value={cls.id}>
                       {cls.name}
                     </option>
@@ -458,13 +532,13 @@ export default function ScheduleViewer() {
               const dayOfWeek = day.getDay();
               // סינון שיעורים רק ליום זה ורק לכיתות לימודי קודש (14-22)
               const daySchedule = schedule.filter(
-                (s) => s.day_of_week === dayOfWeek && s.class_id >= 14 && s.class_id <= 22
+                (s) => s.day_of_week === dayOfWeek && domainClassIds.has(String(s.class_id))
                   && s.year === selectedYear
               );
               // שיעורים אמיתיים מתוך LESSONS עבור תאריך זה ולכיתות לימודי קודש
               const dateStr = format(day, "yyyy-MM-dd");
               const realForDay = lessons.filter(
-                (l) => l.date === dateStr && l.class_id >= 14 && l.class_id <= 22
+                (l) => l.date === dateStr && domainClassIds.has(String(l.class_id))
               );
               // איסוף כל השעות ביום זה (ללא כפילויות)
               const times = [
@@ -499,7 +573,7 @@ export default function ScheduleViewer() {
                         <tr className="bg-indigo-600">
                           <th className="border border-gray-300 p-2 text-white font-bold w-20">שעה</th>
                           {/* עמודה לכל כיתת לימודי קודש */}
-                          {kodeshClasses.map((cls) => (
+                          {domainClasses.map((cls) => (
                             <th
                               key={cls.id}
                               className="border border-gray-300 p-2 text-white font-semibold min-w-32"
@@ -517,7 +591,7 @@ export default function ScheduleViewer() {
                               {formatTime(time)}
                             </td>
                             {/* תא לכל כיתת לימודי קודש בשעה זו */}
-                            {kodeshClasses.map((cls) => {
+                            {domainClasses.map((cls) => {
                               const lesson = getLessonForClassAndTime(cls.id, dayOfWeek, time);
                               const realLesson = realForDay.find(
                                 (l) => String(l.class_id) === String(cls.id) && l.start_time === time
@@ -547,7 +621,7 @@ export default function ScheduleViewer() {
                                       {getLessonTopicName(lesson) || "-"}
                                     </div>
                                   ) : (
-                                    <span className="text-gray-500 text-sm italic">לימודי התמחות</span>
+                                    <span className="text-gray-400 text-sm italic">-</span>
                                   )}
                                 </td>
                               );
@@ -614,7 +688,7 @@ export default function ScheduleViewer() {
                     value={newLessonData.topic_id}
                     onChange={(e) => {
                       const val = e.target.value;
-                      const t = (teachers || []).find((x) => String(x.id) === String(val));
+                      const t = (domainTeachers || teachers || []).find((x) => String(x.id) === String(val));
                       setNewLessonData({
                         ...newLessonData,
                         topic_id: val,
@@ -623,7 +697,7 @@ export default function ScheduleViewer() {
                     }}
                   >
                     <option value="">בחרי</option>
-                    {teachers.map((t) => (
+                    {domainTeachers.map((t) => (
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>
@@ -658,10 +732,22 @@ export default function ScheduleViewer() {
     <div className="min-h-screen px-6 py-10 text-right bg-gradient-to-br from-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto">
         {/* כותרת וסרגל בקרה */}
-        <div className="mb-8">
+        <div className="mb-8" dir="rtl">
           <h2 className="text-4xl font-bold mb-6 text-gray-800">מערכת שבועית</h2>
-
           <div className="flex flex-wrap items-center gap-4 mb-6">
+            {/* בחירת תחום */}
+            <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 shadow-sm">
+              <label className="text-lg font-bold text-indigo-700">בחר תחום:</label>
+              <select
+                className="border-2 border-indigo-300 rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition min-w-36 bg-white"
+                value={selectedDomain}
+                onChange={(e) => setSelectedDomain(e.target.value)}
+              >
+                <option value="kodesh">קודש</option>
+                <option value="horaah">הוראה</option>
+                <option value="hitmachuyot">התמחויות</option>
+              </select>
+            </div>
             {/* בחירת תאריך */}
             <label className="text-lg font-semibold text-gray-700">בחר תאריך:</label>
             <input
@@ -720,8 +806,8 @@ export default function ScheduleViewer() {
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
               >
-                <option value="kodesh">לימודי קודש</option>
-                {classes.map((cls) => (
+                <option value="">כל הכיתות בתחום</option>
+                {domainClasses.map((cls) => (
                   <option key={cls.id} value={cls.id}>
                     {cls.name}
                   </option>

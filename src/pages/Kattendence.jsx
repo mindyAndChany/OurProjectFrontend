@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
@@ -12,116 +13,7 @@ import { updateAttendanceThunk } from "../redux/slices/ATTENDANCE/updateAttendan
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 import { ChevronDown, CalendarX2 } from "lucide-react";
 import { getTopicsThunk } from "../redux/slices/TOPIC/getTopicsThunk.js";
-
-const Cell = ({ children, className = "", stickyRight = false }) => (
-  <td
-    className={
-      `border border-black px-3 py-2 text-center align-middle text-sm ` +
-      (stickyRight ? "sticky right-0 bg-white z-20" : "") +
-      (className ? ` ${className}` : "")
-    }
-  >
-    {children || ""}
-  </td>
-);
-
-// ... שאר הייבוא והקוד הקיים ...
-
-function StatusSelect({ value, onChange, disabled }) {
-  const selectRef = useRef();
-
-  const baseStyle = "w-full min-w-[120px] rounded-md border px-2 py-1 text-sm focus:outline-none focus:ring-2 disabled:opacity-50";
-
-  const statusStyles = {
-    present: "bg-green-50 text-green-800 border-green-300",
-    late: "bg-yellow-50 text-yellow-800 border-yellow-300",
-    absent: "bg-red-50 text-red-800 border-red-300",
-    "approved absent": "bg-blue-50 text-blue-800 border-blue-300",
-    default: "bg-white text-gray-900 border-gray-300",
-  };
-
-  const statusByShortcut = {
-    "0": "present",
-    "1": "absent",
-    "2": "late",
-    "3": "approved absent",
-  };
-
-  const handleKeyDown = (e) => {
-    if (disabled) return;
-console.log("raw:", raw, "| translated:", translated);
-
-    // קיצור דרך: אם נכתב מספר ואז אנטר
-    if (e.key === "Enter" && e.target.value.length === 1) {
-      const newVal = statusByShortcut[e.target.value];
-      if (newVal) {
-        e.preventDefault();
-        onChange({ target: { value: newVal } });
-        e.target.blur(); // אופציונלי — יציאה מהתא
-        moveFocus(e, "down");
-      }
-    }
-
-    // ניווט עם מקשי חצים
-    if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-      e.preventDefault();
-      moveFocus(e, e.key.replace("Arrow", "").toLowerCase());
-    }
-
-    // אנטר לבד — מעבר לשורה הבאה
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      moveFocus(e, "down");
-    }
-
-    // Shift+Enter — שורה קודמת
-    if (e.key === "Enter" && e.shiftKey) {
-      e.preventDefault();
-      moveFocus(e, "up");
-    }
-  };
-
-  const moveFocus = (e, direction) => {
-    const cell = e.target.closest("td");
-    if (!cell) return;
-    let target;
-
-    if (direction === "right") target = cell.nextElementSibling;
-    if (direction === "left") target = cell.previousElementSibling;
-    if (direction === "down" || direction === "up") {
-      const colIndex = cell.cellIndex;
-      const row = cell.parentElement;
-      const targetRow = direction === "down" ? row.nextElementSibling : row.previousElementSibling;
-      if (targetRow) {
-        target = targetRow.cells[colIndex];
-      }
-    }
-
-    if (target) {
-      const select = target.querySelector("select");
-      if (select) select.focus();
-    }
-  };
-
-  const style = statusStyles[value] || statusStyles.default;
-
-  return (
-    <select
-      ref={selectRef}
-      value={value}
-      onChange={onChange}
-      onKeyDown={handleKeyDown}
-      disabled={disabled}
-      className={`${baseStyle} ${style}`}
-    >
-      <option value="">—</option>
-      <option value="present">נוכחת</option>
-      <option value="late">מאחרת</option>
-      <option value="absent">חסרה</option>
-      <option value="approved absent">חסרה באישור</option>
-    </select>
-  );
-}
+import { getCoursesThunk } from "../redux/slices/COURSES/getCoursesThunk.js";
 
 
 function StatusInput({ value, onChange, disabled }) {
@@ -226,7 +118,10 @@ function StatusInput({ value, onChange, disabled }) {
 
 export const Screen = () => {
   const dispatch = useDispatch();
-  const [selectedClassId, setSelectedClassId] = useState("ה'1");
+  const { domain } = useParams();
+  const location = useLocation();
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const [selectedDomain, setSelectedDomain] = useState("");
   const [selectedDateISO, setSelectedDateISO] = useState(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -234,12 +129,13 @@ export const Screen = () => {
 
   // Selectors to fetch data from Redux Store
   const classes = useSelector((state) => state.classes?.data || []);
+  const courses = useSelector((state) => state.courses?.data || []);
   const students = useSelector((state) => state.student.studentsData || []);
   const lessons = useSelector((state) => state.lessons?.data || []);
-  const teachers = useSelector((state) => state.teacher?.data || []);
+  const teachers = useSelector((state) => state.topics?.data || []);
+
   const attendanceByLesson = useSelector((state) => state.attendance?.byLesson || {});
   const attendanceIdsByLesson = useSelector((state) => state.attendance?.idsByLesson || {});
-  const prefilledLessonsRef = useRef(new Set());
   const [viewMode, setViewMode] = useState("class"); // options: 'class' | 'teacher' | 'student'
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
@@ -261,6 +157,13 @@ export const Screen = () => {
     return id && name ? { id, name, class_kodesh: s.class_kodesh } : null;
   }, [students, selectedStudentId]);
 
+  const attendanceTitle = useMemo(() => {
+    if (selectedDomain === "kodesh") return "נוכחות לימודי קודש";
+    if (selectedDomain === "horaah") return "נוכחות לימודי הוראה";
+    if (selectedDomain === "hitmachuyot") return "נוכחות לימודי התמחות";
+    return "נוכחות";
+  }, [selectedDomain]);
+
   function getLessonTopicId(lesson) {
     return lesson?.topic_id ?? lesson?.topicId ?? undefined;
   }
@@ -278,6 +181,7 @@ export const Screen = () => {
   // Initial data load
   useEffect(() => {
     dispatch(getClassesThunk());
+    dispatch(getCoursesThunk());
     dispatch(getStudentDataThunk("id,id_number,first_name,last_name,class_kodesh"));
     setIsLoadingLessons(true);
     setLessonsError("");
@@ -294,14 +198,61 @@ export const Screen = () => {
 
   }, [dispatch]);
 
+  const normalizeDomain = (value) => {
+    const v = String(value || "").toLowerCase();
+    if (v === "horaa") return "horaah";
+    if (v === "hitmahut") return "hitmachuyot";
+    return v;
+  };
+
+  useEffect(() => {
+    const searchDomain = new URLSearchParams(location.search).get("domain") || "";
+    const domainParam = domain || searchDomain;
+    if (domainParam !== selectedDomain) {
+      setSelectedDomain(normalizeDomain(domainParam));
+    }
+  }, [domain, location.search, selectedDomain]);
+
+  useEffect(() => {
+    setSelectedClassId("");
+  }, [selectedDomain]);
+
+  const getDomainKey = (type) => {
+    const t = String(type || "").toLowerCase();
+    if (t.includes("kodesh")) return "kodesh";
+    if (t.includes("hitmachuyot") || t.includes("hitmahut")) return "hitmachuyot";
+    if (t.includes("horaah") || t.includes("horaa")) return "horaah";
+    return normalizeDomain(t);
+  };
+
+  const filteredClasses = useMemo(() => {
+    if (!selectedDomain) return classes;
+    const courseIds = new Set(
+      (courses || [])
+        .filter((c) => getDomainKey(c?.type) === selectedDomain)
+        .map((c) => String(c.id))
+    );
+    if (courseIds.size === 0) return [];
+    return (classes || []).filter((cls) => courseIds.has(String(cls.course_id ?? cls.courseId)));
+  }, [classes, courses, selectedDomain]);
+
+  const filteredTeachers = useMemo(() => {
+    if (!selectedDomain) return teachers;
+    const courseIds = new Set(
+      (courses || [])
+        .filter((c) => getDomainKey(c?.type) === selectedDomain)
+        .map((c) => String(c.id))
+    );
+    if (courseIds.size === 0) return [];
+    return (teachers || []).filter((cls) => courseIds.has(String(cls.course_id)));
+  }, [classes, courses, selectedDomain]);
+
   // שם הכיתה הנבחרת (נגזר מה-ID לביצוע התאמות מול תלמידות)
   const selectedClassName = useMemo(() => {
     if (!selectedClassId) return "";
     const cls = classes.find((c) => String(c.id) === String(selectedClassId));
     const className = cls?.name || "";
-    const cleaned = className.replace(/'/g, "");
-    console.log("cleaned", cleaned);
-    return cleaned;
+    return className;
   }, [classes, selectedClassId]);
 
   // שמות תלמידות לפי כיתה 
@@ -483,39 +434,39 @@ export const Screen = () => {
     }
   }
   function handleStatusChange(e, studentId, lessonId, currentStatus, recordId) {
-  const next = e.target.value;
-  if (next === "") return;
+    const next = e.target.value;
+    if (next === "") return;
 
-  if (!currentStatus) {
-    // טרם נקבע סטטוס – מוסיפים חדש
-    dispatch(
-      addAttendanceThunk({
-        student_id: studentId,
-        lesson_id: lessonId,
-        status: next,
-      })
-    );
-  } else if (recordId) {
-    // סטטוס קיים ויש מזהה רשומה – מעדכנים
-    dispatch(
-      updateAttendanceThunk({
-        id: recordId,
-        status: next,
-        lesson_id: lessonId,
-        student_id: studentId,
-      })
-    );
-  } else {
-    // סטטוס קיים אך אין מזהה (כנראה מולא אוטומטית) – מוסיפים רשומה
-    dispatch(
-      addAttendanceThunk({
-        student_id: studentId,
-        lesson_id: lessonId,
-        status: next,
-      })
-    );
+    if (!currentStatus) {
+      // טרם נקבע סטטוס – מוסיפים חדש
+      dispatch(
+        addAttendanceThunk({
+          student_id: studentId,
+          lesson_id: lessonId,
+          status: next,
+        })
+      );
+    } else if (recordId) {
+      // סטטוס קיים ויש מזהה רשומה – מעדכנים
+      dispatch(
+        updateAttendanceThunk({
+          id: recordId,
+          status: next,
+          lesson_id: lessonId,
+          student_id: studentId,
+        })
+      );
+    } else {
+      // סטטוס קיים אך אין מזהה (כנראה מולא אוטומטית) – מוסיפים רשומה
+      dispatch(
+        addAttendanceThunk({
+          student_id: studentId,
+          lesson_id: lessonId,
+          status: next,
+        })
+      );
+    }
   }
-}
 
   const handleSaveAllAttendance = async () => {
 
@@ -577,6 +528,14 @@ export const Screen = () => {
         transition={{ duration: 0.3 }}
         className="max-w-7xl mx-auto space-y-6"
       >
+        <div className="bg-white rounded-2xl shadow p-6 border border-gray-100">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#0A3960]">
+            {attendanceTitle}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            ניהול נוכחות לפי תחום הלימוד
+          </p>
+        </div>
         {/* כותרת עליונה עם בחירה דינמית */}
         <div className="bg-white rounded-xl shadow p-6 flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2">
@@ -586,29 +545,37 @@ export const Screen = () => {
               onChange={(e) => setViewMode(e.target.value)}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
             >
-              <option value="class">יומן כיתה</option>
+              {selectedDomain == "hitmachuyot" ? <option value="class">יומן התמחות</option> :
+                <option value="class">יומן כיתה</option>}
               <option value="teacher">יומן מורה</option>
               <option value="student">יומן תלמידה</option>
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <HebrewDateSelector id="flexcal-input" onCommit={handleHebCommit} />
-            <HebrewDateShow isoDate={selectedDateISO} />
-            {isLoadingLessons && <span className="text-sm text-gray-500">טוען שיעורים…</span>}
-            {lessonsError && <span className="text-sm text-red-600">{lessonsError}</span>}
-          </div>
+          {viewMode === "class" && (
+            <div className="flex items-center gap-2">
+              <HebrewDateSelector id="flexcal-input" onCommit={handleHebCommit} />
+              <HebrewDateShow isoDate={selectedDateISO} />
+              {isLoadingLessons && <span className="text-sm text-gray-500">טוען שיעורים…</span>}
+              {lessonsError && <span className="text-sm text-red-600">{lessonsError}</span>}
+            </div>)}
+
 
           {viewMode !== "student" && (
             <div className="flex items-center gap-2">
-              <label className="text-sm">כיתה:</label>
+              {selectedDomain == "hitmachuyot" ?
+                <label className="text-sm">התמחות:</label> :
+                <label className="text-sm">כיתה:</label>}
               <select
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                disabled={!selectedDomain}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               >
-                <option value="" disabled>בחרי כיתה</option>
-                {classes.map((cls) => (
+                <option value="" disabled>
+                  {selectedDomain ? "בחרי כיתה" : "בחרי תחום תחילה"}
+                </option>
+                {filteredClasses.map((cls) => (
                   <option key={cls.id} value={cls.id}>{cls.name}</option>
                 ))}
               </select>
@@ -623,9 +590,9 @@ export const Screen = () => {
                 onChange={(e) => setSelectedTeacher(e.target.value)}
                 className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
               >
-              {teachers.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
+                {filteredTeachers.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
               </select>
               {isLoadingTeachers && <span className="text-sm text-gray-500">טוען מורים…</span>}
               {teachersError && <span className="text-sm text-red-600">{teachersError}</span>}
@@ -677,7 +644,7 @@ export const Screen = () => {
           transition={{ delay: 0.2 }}
           className="overflow-auto bg-white rounded-xl shadow ring-1 ring-black/5 p-4"
         >
-        {studentsByClass.length>0&&filteredLessons.length>0?<table className="w-full min-w-max border-collapse text-right text-sm">
+          {studentsByClass.length > 0 && filteredLessons.length > 0 ? <table className="w-full min-w-max border-collapse text-right text-sm">
             <thead>
               <tr className="bg-[#0A3960] text-white">
                 <th className="sticky right-0 bg-[#0A3960] px-4 py-3">שם התלמידה</th>
@@ -710,13 +677,13 @@ export const Screen = () => {
               ))}
             </tbody>
           </table>
-          :
-          <motion.div className="flex items-center justify-center min-h-[50vh]">
-            <div className="flex items-center gap-3 text-gray-500">
-              <CalendarX2 className="w-5 h-5 text-gray-400" />
-              <span className="text-sm sm:text-base">לא נמצאו שיעורים לכיתה/תאריך שנבחרו</span>
-            </div>
-          </motion.div>}
+            :
+            <motion.div className="flex items-center justify-center min-h-[50vh]">
+              <div className="flex items-center gap-3 text-gray-500">
+                <CalendarX2 className="w-5 h-5 text-gray-400" />
+                <span className="text-sm sm:text-base">לא נמצאו שיעורים לכיתה/תאריך שנבחרו</span>
+              </div>
+            </motion.div>}
         </motion.div>
       )}
 
