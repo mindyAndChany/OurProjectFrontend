@@ -106,6 +106,35 @@ export default function ScheduleViewer() {
     return `${dayHeb} ${monthName} ${yearHeb}`;
   };
 
+  const formatHebrewDateFromISO = (iso) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return "";
+    return formatHebrewDateFromDate(new Date(y, m - 1, d));
+  };
+
+  const convertHebFormattedToISO = async (hebFormatted) => {
+    const [yStr, mStr, dStr] = String(hebFormatted).split("-");
+    const y = Number(yStr);
+    const m = Number(mStr);
+    const d = Number(dStr);
+
+    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+      throw new Error("Invalid date parts");
+    }
+
+    if (y < 4000) {
+      return `${yStr}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }
+
+    const hmParam = HEB_MONTH_NAME_BY_INDEX[m] || mStr;
+    const url = `https://www.hebcal.com/converter?cfg=json&h2g=1&strict=0&hy=${y}&hm=${encodeURIComponent(hmParam)}&hd=${d}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed heb->greg conversion");
+    const data = await res.json();
+    return `${data.gy}-${String(data.gm).padStart(2, "0")}-${String(data.gd).padStart(2, "0")}`;
+  };
+
   const selectedDateISO = useMemo(
     () => format(selectedDate, "yyyy-MM-dd"),
     [selectedDate]
@@ -136,28 +165,9 @@ export default function ScheduleViewer() {
   // Handle Hebrew date selection from flexcal
   const handleHebCommit = async (hebFormatted) => {
     try {
-      const [yStr, mStr, dStr] = String(hebFormatted).split("-");
-      const y = Number(yStr);
-      const m = Number(mStr);
-      const d = Number(dStr);
-
-      if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
-        throw new Error("Invalid date parts");
-      }
-
-      // If year looks Gregorian (< 4000), treat as ISO directly
-      if (y < 4000) {
-        setSelectedDate(new Date(y, m - 1, d));
-        return;
-      }
-
-      // Otherwise, it's Hebrew date: convert via Hebcal h2g
-      const hmParam = HEB_MONTH_NAME_BY_INDEX[m] || mStr;
-      const url = `https://www.hebcal.com/converter?cfg=json&h2g=1&strict=0&hy=${y}&hm=${encodeURIComponent(hmParam)}&hd=${d}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed heb->greg conversion");
-      const data = await res.json();
-      setSelectedDate(new Date(data.gy, data.gm - 1, data.gd));
+      const iso = await convertHebFormattedToISO(hebFormatted);
+      const [y, m, d] = iso.split("-").map(Number);
+      setSelectedDate(new Date(y, m - 1, d));
     } catch {
       // ignore invalid selection
     }
@@ -331,7 +341,7 @@ export default function ScheduleViewer() {
     const defaultClassId = selectedClassId || domainClasses[0]?.id || "";
     setNewLessonData({
       class_id: defaultClassId || "",
-      date: format(selectedDate, "yyyy-MM-dd"),
+      date: selectedDateISO,
       start_time: "",
       end_time: "",
       year: selectedYear,
@@ -725,12 +735,18 @@ export default function ScheduleViewer() {
                 </label>
                 <label className="flex flex-col">
                   <span className="font-semibold mb-1">תאריך</span>
-                  <input
-                    type="date"
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                    value={newLessonData.date}
-                    onChange={(e) => setNewLessonData({ ...newLessonData, date: e.target.value })}
-                  />
+                  <div className="flex items-center gap-2">
+                    <HebrewDateSelector
+                      id="add-lesson-date-domain"
+                      onCommit={async (hebFormatted) => {
+                        try {
+                          const iso = await convertHebFormattedToISO(hebFormatted);
+                          setNewLessonData({ ...newLessonData, date: iso });
+                        } catch {}
+                      }}
+                    />
+                    <HebrewDateShow isoDate={newLessonData.date} />
+                  </div>
                 </label>
                 <label className="flex flex-col">
                   <span className="font-semibold mb-1">שעת התחלה</span>
@@ -1009,7 +1025,7 @@ export default function ScheduleViewer() {
               <h3 className="text-xl font-bold text-[#0A3960] mb-4">אישור שיעור לתאריך נבחר</h3>
               <div className="space-y-2 text-sm text-gray-700">
                 <div><span className="font-semibold">כיתה:</span> {getClassName(Number(modalLesson.class_id))}</div>
-                <div><span className="font-semibold">תאריך:</span> {modalLesson.date}</div>
+                <div><span className="font-semibold">תאריך:</span> {formatHebrewDateFromISO(modalLesson.date)} ({modalLesson.date})</div>
                 <div><span className="font-semibold">שעה:</span> {formatTime(modalLesson.start_time)} - {formatTime(modalLesson.end_time)}</div>
                 <div><span className="font-semibold">נושא:</span> {modalLesson.topic || 'ללא נושא'}</div>
 
@@ -1075,12 +1091,18 @@ export default function ScheduleViewer() {
               </label>
               <label className="flex flex-col">
                 <span className="font-semibold mb-1">תאריך</span>
-                <input
-                  type="date"
-                  className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                  value={newLessonData.date}
-                  onChange={(e) => setNewLessonData({ ...newLessonData, date: e.target.value })}
-                />
+                <div className="flex items-center gap-2">
+                  <HebrewDateSelector
+                    id="add-lesson-date-class"
+                    onCommit={async (hebFormatted) => {
+                      try {
+                        const iso = await convertHebFormattedToISO(hebFormatted);
+                        setNewLessonData({ ...newLessonData, date: iso });
+                      } catch {}
+                    }}
+                  />
+                  <HebrewDateShow isoDate={newLessonData.date} />
+                </div>
               </label>
               <label className="flex flex-col">
                 <span className="font-semibold mb-1">שעת התחלה</span>
