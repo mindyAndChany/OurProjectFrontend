@@ -15,6 +15,7 @@ import StudentFilesManager from "../components/StudentFilesManager";
 import { getDocumentsByStudentThunk } from "../redux/slices/STUDENTS/getDocumentsByStudentThunk";
 import { getDocumentsByClassThunk } from "../redux/slices/STUDENTS/getDocumentsByClassThunk";
 import { getDocumentsByTrackThunk } from "../redux/slices/STUDENTS/getDocumentsByTrackThunk";
+import { formatHebrewYear } from "../utils/hebrewGematria";
 
 // רשימת כל השדות
 const fieldsDict = {
@@ -190,6 +191,29 @@ const Cell = ({ children }) => (
 // ברירת מחדל: שנת הרישום היא השנה הבאה
 const CURRENT_YEAR = new Date().getFullYear();
 const DEFAULT_REG_YEAR = CURRENT_YEAR + 1;
+// מחזיר שנת לימודים עברית (אותיות) לפי הלוח העברי
+const normalizeToDate = (input) => {
+    if (input instanceof Date) return input;
+    if (Number.isFinite(input)) {
+        const now = new Date();
+        return new Date(input, now.getMonth(), now.getDate());
+    }
+    return new Date();
+};
+const getHebrewYearNumber = (input = new Date()) => {
+    const date = normalizeToDate(input);
+    try {
+        const fmt = new Intl.DateTimeFormat("he-IL-u-ca-hebrew-nu-latn", { year: "numeric" });
+        const yearPart = fmt.formatToParts(date).find((p) => p.type === "year")?.value;
+        const numeric = parseInt(String(yearPart || "").replace(/\D/g, ""), 10);
+        if (Number.isFinite(numeric)) return numeric;
+    } catch (_) {
+        // ignore and fall back
+    }
+    return date.getMonth() < 8 ? date.getFullYear() + 3760 : date.getFullYear() + 3761;
+};
+const HEB_SCHOOL_YEAR = (input = new Date()) => formatHebrewYear(getHebrewYearNumber(input));
+
 
 const initialNewStudent = (() => {
     const obj = Object.fromEntries(Object.values(fieldsDict).map((key) => [key, ""]));
@@ -523,7 +547,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR - 1 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR - 1}`}
                         >
-                            כיתות ו
+                            כיתות ו ({HEB_SCHOOL_YEAR(CURRENT_YEAR)})
                         </button>
                         <button
                             type="button"
@@ -531,7 +555,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR}`}
                         >
-                            כיתות ה
+                            כיתות ה ({HEB_SCHOOL_YEAR(CURRENT_YEAR)})
                         </button>
                         <button
                             type="button"
@@ -539,7 +563,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR + 1 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR + 1}`}
                         >
-                            נרשמות
+                            נרשמות ({HEB_SCHOOL_YEAR(CURRENT_YEAR + 1)})
                         </button>
                         <button
                             type="button"
@@ -574,7 +598,7 @@ const StudentsTable = () => {
                             </button>
                         )
                     ))}
-                     </motion.div>
+                </motion.div>
 
                 <motion.div className="flex gap-6 flex-wrap justify-center items-center"
                     initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
