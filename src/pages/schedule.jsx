@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { format, startOfWeek, addDays, parseISO } from "date-fns";
-import heLocale from 'date-fns/locale/he';
+import { format, startOfWeek, addDays } from "date-fns";
 import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
 import { getweeklySchedulesThunk } from "../redux/slices/SCHEDULE/getScheduleThunk";
 import { addRealyLessonThunk } from "../redux/slices/LESSONS/addRealyLessonThunk";
@@ -9,6 +8,9 @@ import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
 import { useNavigate } from "react-router-dom";
 import { getTopicsThunk } from "../redux/slices/TOPIC/getTopicsThunk";
 import { getCoursesThunk } from "../redux/slices/COURSES/getCoursesThunk";
+import HebrewDateSelector from "../components/HebrewDateSelector.jsx";
+import HebrewDateShow from "../components/HebrewDateShow.jsx";
+import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 
 /**
  * קומפוננטת מערכת שבועית - מציגה את לוח השעות של כל הכיתות או כיתה ספציפית
@@ -71,6 +73,44 @@ export default function ScheduleViewer() {
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
+  // Hebrew date helpers (display + conversion)
+  const HEB_MONTH_NAME_BY_INDEX = {
+    1: "Tishrei",
+    2: "Cheshvan",
+    3: "Kislev",
+    4: "Tevet",
+    5: "Shevat",
+    6: "Adar",
+    7: "Nisan",
+    8: "Iyar",
+    9: "Sivan",
+    10: "Tammuz",
+    11: "Av",
+    12: "Elul",
+  };
+
+  const hebFullFormatter = new Intl.DateTimeFormat("he-u-ca-hebrew", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const formatHebrewDateFromDate = (dateObj) => {
+    if (!dateObj) return "";
+    const parts = hebFullFormatter.formatToParts(dateObj);
+    const dayNum = Number(parts.find((p) => p.type === "day")?.value);
+    const monthName = parts.find((p) => p.type === "month")?.value || "";
+    const yearNum = Number(parts.find((p) => p.type === "year")?.value);
+    const dayHeb = numberToHebrewLetters(dayNum);
+    const yearHeb = formatHebrewYear(yearNum);
+    return `${dayHeb} ${monthName} ${yearHeb}`;
+  };
+
+  const selectedDateISO = useMemo(
+    () => format(selectedDate, "yyyy-MM-dd"),
+    [selectedDate]
+  );
+
   const dispatch = useDispatch();
 
   // טעינת נתוני כיתות ומערכת בעת טעינת הקומפוננטה
@@ -91,6 +131,36 @@ export default function ScheduleViewer() {
     if (v === "horaa") return "horaah";
     if (v === "hitmahut") return "hitmachuyot";
     return v;
+  };
+
+  // Handle Hebrew date selection from flexcal
+  const handleHebCommit = async (hebFormatted) => {
+    try {
+      const [yStr, mStr, dStr] = String(hebFormatted).split("-");
+      const y = Number(yStr);
+      const m = Number(mStr);
+      const d = Number(dStr);
+
+      if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+        throw new Error("Invalid date parts");
+      }
+
+      // If year looks Gregorian (< 4000), treat as ISO directly
+      if (y < 4000) {
+        setSelectedDate(new Date(y, m - 1, d));
+        return;
+      }
+
+      // Otherwise, it's Hebrew date: convert via Hebcal h2g
+      const hmParam = HEB_MONTH_NAME_BY_INDEX[m] || mStr;
+      const url = `https://www.hebcal.com/converter?cfg=json&h2g=1&strict=0&hy=${y}&hm=${encodeURIComponent(hmParam)}&hd=${d}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed heb->greg conversion");
+      const data = await res.json();
+      setSelectedDate(new Date(data.gy, data.gm - 1, data.gd));
+    } catch {
+      // ignore invalid selection
+    }
   };
 
   const getDomainKey = (type) => {
@@ -460,16 +530,14 @@ export default function ScheduleViewer() {
                 <option value="hitmachuyot">התמחויות</option>
               </select>
             </div>
-            {/* בחירת תאריך */}
+            {/* בחירת תאריך עברי */}
             <label className="text-sm font-semibold text-gray-700">בחר תאריך:</label>
-            <input
-              type="date"
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-              value={format(selectedDate, "yyyy-MM-dd")}
-              onChange={(e) => setSelectedDate(parseISO(e.target.value))}
-            />
+            <div className="flex items-center gap-3">
+              <HebrewDateSelector id="schedule-heb-date-domain" onCommit={handleHebCommit} />
+              <HebrewDateShow isoDate={selectedDateISO} />
+            </div>
             <span className="text-sm text-gray-500">
-              {format(weekDays[0], "dd/MM")} - {format(weekDays[5], "dd/MM/yyyy")}
+              {formatHebrewDateFromDate(weekDays[0])} - {formatHebrewDateFromDate(weekDays[5])}
             </span>
 
             {/* פעולות מהירות */}
@@ -557,7 +625,7 @@ export default function ScheduleViewer() {
                   {/* כותרת יום */}
                   <div className="mb-4 flex items-center gap-3">
                     <h3 className="text-xl font-bold text-[#0A3960]">
-                      {dayNames[dayOfWeek]} - {format(day, "dd/MM/yyyy")}
+                      {dayNames[dayOfWeek]} - {formatHebrewDateFromDate(day)}
                     </h3>
                     {/* תגית מיוחדת לימי ראשון ורביעי */}
                     {[0, 3].includes(dayOfWeek) && (
@@ -751,16 +819,14 @@ export default function ScheduleViewer() {
               <option value="hitmachuyot">התמחויות</option>
             </select>
           </div>
-          {/* בחירת תאריך */}
+          {/* בחירת תאריך עברי */}
           <label className="text-sm font-semibold text-gray-700">בחר תאריך:</label>
-          <input
-            type="date"
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-            value={format(selectedDate, "yyyy-MM-dd")}
-            onChange={(e) => setSelectedDate(parseISO(e.target.value))}
-          />
+          <div className="flex items-center gap-3">
+            <HebrewDateSelector id="schedule-heb-date-class" onCommit={handleHebCommit} />
+            <HebrewDateShow isoDate={selectedDateISO} />
+          </div>
           <span className="text-sm text-gray-500">
-            {format(weekDays[0], "dd/MM")} - {format(weekDays[5], "dd/MM/yyyy")}
+            {formatHebrewDateFromDate(weekDays[0])} - {formatHebrewDateFromDate(weekDays[5])}
           </span>
 
           {/* פעולות מהירות */}
@@ -837,7 +903,7 @@ export default function ScheduleViewer() {
                   >
                     <div className="text-lg">{dayNames[day.getDay()]}</div>
                     <div className="text-sm font-normal">
-                      {format(day, "dd/MM/yyyy", { locale: heLocale })}
+                      {formatHebrewDateFromDate(day)}
                     </div>
                     {/* תגית מיוחדת לימי ראשון ורביעי */}
                     {[0, 3].includes(day.getDay()) && (
