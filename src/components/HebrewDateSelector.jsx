@@ -82,7 +82,7 @@ export default function HebrewDateSelector({ onCommit, id = "flexcal-input", pla
     <input
       id={id}
       ref={inputRef}
-      className="relative z-10 cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="relative z-10 inline-flex w-fit cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
       placeholder={placeholder}
       readOnly
       onClick={() => {
