@@ -8,12 +8,14 @@ import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material
 import { TextField, Button, IconButton, FormControl, RadioGroup, FormControlLabel, Radio } from "@mui/material";
 import { addStudentsThunk } from "../redux/slices/STUDENTS/addStudentsThunk";
 import { updateStudentThunk } from "../redux/slices/STUDENTS/updateStudentThunk";
+import { getStudentByIdThunk } from "../redux/slices/STUDENTS/getStudentByIdThunk";
 import { ExportToExcel } from "../components/ExportToExcel"
 import { ExcelImport } from "../components/ExcelImport";
 import StudentFilesManager from "../components/StudentFilesManager";
 import { getDocumentsByStudentThunk } from "../redux/slices/STUDENTS/getDocumentsByStudentThunk";
 import { getDocumentsByClassThunk } from "../redux/slices/STUDENTS/getDocumentsByClassThunk";
 import { getDocumentsByTrackThunk } from "../redux/slices/STUDENTS/getDocumentsByTrackThunk";
+import { formatHebrewYear } from "../utils/hebrewGematria";
 
 // רשימת כל השדות
 const fieldsDict = {
@@ -189,6 +191,29 @@ const Cell = ({ children }) => (
 // ברירת מחדל: שנת הרישום היא השנה הבאה
 const CURRENT_YEAR = new Date().getFullYear();
 const DEFAULT_REG_YEAR = CURRENT_YEAR + 1;
+// מחזיר שנת לימודים עברית (אותיות) לפי הלוח העברי
+const normalizeToDate = (input) => {
+    if (input instanceof Date) return input;
+    if (Number.isFinite(input)) {
+        const now = new Date();
+        return new Date(input, now.getMonth(), now.getDate());
+    }
+    return new Date();
+};
+const getHebrewYearNumber = (input = new Date()) => {
+    const date = normalizeToDate(input);
+    try {
+        const fmt = new Intl.DateTimeFormat("he-IL-u-ca-hebrew-nu-latn", { year: "numeric" });
+        const yearPart = fmt.formatToParts(date).find((p) => p.type === "year")?.value;
+        const numeric = parseInt(String(yearPart || "").replace(/\D/g, ""), 10);
+        if (Number.isFinite(numeric)) return numeric;
+    } catch (_) {
+        // ignore and fall back
+    }
+    return date.getMonth() < 8 ? date.getFullYear() + 3760 : date.getFullYear() + 3761;
+};
+const HEB_SCHOOL_YEAR = (input = new Date()) => formatHebrewYear(getHebrewYearNumber(input));
+
 
 const initialNewStudent = (() => {
     const obj = Object.fromEntries(Object.values(fieldsDict).map((key) => [key, ""]));
@@ -221,6 +246,7 @@ const StudentsTable = () => {
     const [open, setOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [studentToEdit, setStudentToEdit] = useState(null);
+    const [editStudentId, setEditStudentId] = useState(null);
     const [filesDialogOpen, setFilesDialogOpen] = useState(false);
     const [studentForFiles, setStudentForFiles] = useState(null);
     const [selectedRegistrationYear, setSelectedRegistrationYear] = useState(null);
@@ -228,6 +254,8 @@ const StudentsTable = () => {
     const documentsByStudent = useSelector((state) => state.student.documentsByStudent);
     const documentsByClass = useSelector((state) => state.student.documentsByClass);
     const documentsByTrack = useSelector((state) => state.student.documentsByTrack);
+    const selectedStudent = useSelector((state) => state.student.selectedStudent);
+    const studentLoading = useSelector((state) => state.student.loading);
     const [activeDocs, setActiveDocs] = useState([]);
     const [docFilters, setDocFilters] = useState({ id_number: "", class_kodesh: "", track: "" });
     const [docsSource, setDocsSource] = useState(null); // 'id' | 'class' | 'track'
@@ -237,6 +265,14 @@ const StudentsTable = () => {
     const [sortConfig, setSortConfig] = useState({ field: null, direction: null });
 
     const toApiField = (f) => (f === 'photoUrl' ? 'photo_url' : f);
+
+    const normalizeStudentFromApi = (student) => {
+        if (!student) return null;
+        return {
+            ...student,
+            photoUrl: student.photoUrl ?? student.photo_url,
+        };
+    };
 
     useEffect(() => {
         const categoriesArr = selectedFields.map(toApiField);
@@ -345,6 +381,18 @@ const StudentsTable = () => {
         setNewStudent({ ...initialNewStudent, registration_year: year, serial_number: nextSerial });
         setOpen(true);
     };
+
+    useEffect(() => {
+        if (!editDialogOpen || !selectedStudent || !editStudentId) return;
+        const selectedId = selectedStudent.id_number ?? selectedStudent.id;
+        if (!selectedId || selectedId.toString() !== editStudentId.toString()) return;
+        const normalized = normalizeStudentFromApi(selectedStudent);
+        setStudentToEdit((prev) => ({
+            ...initialNewStudent,
+            ...(prev || {}),
+            ...(normalized || {}),
+        }));
+    }, [editDialogOpen, selectedStudent, editStudentId]);
 
     // עדכון מס׳ סידורי אוטומטי כששנת רישום משתנה (בדיאלוג הוספה)
     useEffect(() => {
@@ -523,7 +571,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR - 1 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR - 1}`}
                         >
-                            כיתות ו
+                            כיתות ו ({HEB_SCHOOL_YEAR(CURRENT_YEAR)})
                         </button>
                         <button
                             type="button"
@@ -531,7 +579,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR}`}
                         >
-                            כיתות ה
+                            כיתות ה ({HEB_SCHOOL_YEAR(CURRENT_YEAR)})
                         </button>
                         <button
                             type="button"
@@ -539,7 +587,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR + 1 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR + 1}`}
                         >
-                            נרשמות
+                            נרשמות ({HEB_SCHOOL_YEAR(CURRENT_YEAR + 1)})
                         </button>
                         <button
                             type="button"
@@ -574,7 +622,7 @@ const StudentsTable = () => {
                             </button>
                         )
                     ))}
-                     </motion.div>
+                </motion.div>
 
                 <motion.div className="flex gap-6 flex-wrap justify-center items-center"
                     initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -812,8 +860,13 @@ const StudentsTable = () => {
                                         <>
                                             <Cell style={{ width: "80px", minWidth: "80px" }}>
                                                 <IconButton onClick={() => {
+                                                    const id = student?.id_number ?? student?.id;
+                                                    setEditStudentId(id ?? null);
                                                     setStudentToEdit({ ...initialNewStudent, ...student });
                                                     setEditDialogOpen(true);
+                                                    if (id) {
+                                                        dispatch(getStudentByIdThunk(id));
+                                                    }
                                                 }}>
                                                     <UserPen size={24} />
                                                 </IconButton>
@@ -844,6 +897,9 @@ const StudentsTable = () => {
                 <DialogContent className="space-y-4 rtl text-right">
                     {studentToEdit && (
                         <div className="space-y-6">
+                            {studentLoading && (
+                                <div className="text-sm text-gray-500">טוען נתוני תלמידה מלאים...</div>
+                            )}
                             {Object.entries(formGroups).map(([groupKey, groupFields]) => (
                                 <div key={groupKey} className="space-y-3">
                                     <h3 className="text-base font-semibold text-gray-800">{formGroupTitles[groupKey]}</h3>
