@@ -11,6 +11,7 @@ import Kattendence from './pages/Kattendence.jsx';
 import Approvals from './pages/approvals.jsx';
 import CalendarModern from './pages/CalendarModern.jsx';
 import Schedule from './pages/schedule.jsx';
+import Managment from './pages/Managment.jsx';
 import WeeklyScheduleEditor from './pages/WeeklyScheduleEditor.jsx';
 
 export default function Routing() {
@@ -33,6 +34,7 @@ export default function Routing() {
         <Route path="/Approvals" element={<Approvals />} />
         <Route path="/StudentsData" element={<StudentsData />} />
         <Route path="/schedule" element={<Schedule />} />
+        <Route path="/Managment" element={<Managment />} />
         <Route path="/WeeklyScheduleEditor" element={<WeeklyScheduleEditor />} />
 
       </Routes>
