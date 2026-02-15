@@ -46,7 +46,7 @@ useEffect(() => {
 
   const mainFeatures = [
     { id: 1, title: "השאלת ציוד", description: "מעקב מלא אחרי ציוד והשאלות עם סטטוסים ברורים.", icon: User },
-    { id: 2, title: "מסד נתונים", description: "פרטי קשר, תיעוד, סינון מהיר ויצוא נתונים.", icon: Crowdfunding },
+    { id: 2, title: "נתוני תלמידות", description: "פרטי קשר, תיעוד, סינון מהיר ויצוא נתונים.", icon: Crowdfunding },
     { id: 3, title: "נוכחות חכמה", description: "מעקב בזמן אמת ודוחות חדשים בלחיצת כפתור.", icon: LicenseDraft },
     { id: 4, title: "הרשאות וגיבוי", description: "הגדרות משתמש מדויקות וגיבוי אוטומטי של כל המידע.", icon: SquareLock01 },
     { id: 5, title: "לוח שנה משותף", description: "כל הארועים, מבחנים והפסקות במבט אחד.", icon: calendar02 },
