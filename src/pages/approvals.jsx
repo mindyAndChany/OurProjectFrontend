@@ -531,6 +531,8 @@ export default function MultiCertificateGenerator() {
   const [showAddTemplate, setShowAddTemplate] = useState(false);
   const [newTemplateLabel, setNewTemplateLabel] = useState("");
   const [newTemplateText, setNewTemplateText] = useState("");
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
 
   useEffect(() => {
     dispatch(getStudentDataThunk("first_name,last_name,id_number,class_kodesh,track,birthdate_hebrew"));
@@ -591,11 +593,25 @@ export default function MultiCertificateGenerator() {
   const uniqueClasses = [...new Set(students.map((s) => s.class_kodesh || s.class_teaching).filter(Boolean))].sort();
 
   const selectAllStudents = () => {
-    setSelectedStudentsIds(filtered.map(s => s.id_number));
+    setSelectedStudentsIds(sorted.map(s => s.id_number));
   };
 
   const clearSelection = () => {
     setSelectedStudentsIds([]);
+  };
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) return '⇅';
+    return sortDirection === 'asc' ? '↑' : '↓';
   };
 
   const filtered = students.filter((s) =>
@@ -604,6 +620,14 @@ export default function MultiCertificateGenerator() {
     (!filterId || s.id_number?.includes(filterId)) &&
     (!filterName || `${s.first_name} ${s.last_name}`.toLowerCase().includes(filterName.toLowerCase()))
   );
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (!sortField) return 0;
+    const aVal = a[sortField] || '';
+    const bVal = b[sortField] || '';
+    const comparison = aVal.toString().localeCompare(bVal.toString(), 'he');
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
 
   const toggleStudent = (id) => {
     setSelectedStudentsIds((prev) =>
@@ -905,10 +929,10 @@ const generateMultiplePDFs = async () => {
         <div className="flex gap-3 justify-center">
           <button
             onClick={selectAllStudents}
-            disabled={filtered.length === 0}
+            disabled={sorted.length === 0}
             className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
           >
-            ✓ בחר הכל ({filtered.length})
+            ✓ בחר הכל ({sorted.length})
           </button>
           <button
             onClick={clearSelection}
@@ -919,8 +943,26 @@ const generateMultiplePDFs = async () => {
           </button>
         </div>
 
+        <div className="bg-gray-100 p-3 rounded mb-3 flex gap-3 justify-center flex-wrap">
+          <button onClick={() => handleSort('first_name')} className="bg-white px-3 py-1 rounded shadow hover:bg-gray-50 text-sm">
+            מיין לפי שם פרטי {getSortIcon('first_name')}
+          </button>
+          <button onClick={() => handleSort('last_name')} className="bg-white px-3 py-1 rounded shadow hover:bg-gray-50 text-sm">
+            מיין לפי שם משפחה {getSortIcon('last_name')}
+          </button>
+          <button onClick={() => handleSort('class_kodesh')} className="bg-white px-3 py-1 rounded shadow hover:bg-gray-50 text-sm">
+            מיין לפי כיתה {getSortIcon('class_kodesh')}
+          </button>
+          <button onClick={() => handleSort('track')} className="bg-white px-3 py-1 rounded shadow hover:bg-gray-50 text-sm">
+            מיין לפי התמחות {getSortIcon('track')}
+          </button>
+          <button onClick={() => handleSort('id_number')} className="bg-white px-3 py-1 rounded shadow hover:bg-gray-50 text-sm">
+            מיין לפי ת.ז. {getSortIcon('id_number')}
+          </button>
+        </div>
+
        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 bg-gray-50 p-4 rounded border max-h-[500px] overflow-y-auto">
-  {filtered.map((s) => (
+  {sorted.map((s) => (
     <div
       key={s.id_number}
       className="flex gap-3 items-start border p-3 rounded shadow-sm bg-white relative"
