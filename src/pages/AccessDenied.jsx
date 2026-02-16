@@ -59,10 +59,10 @@ export default function AccessDenied() {
           </p>
           <div className="space-y-2">
             <p className="text-gray-600">
-              📧 <span className="font-medium">דוא"ל:</span> admin@example.com
+              📧 <span className="font-medium">דוא"ל:</span> b0527160234@gmail.com 
             </p>
             <p className="text-gray-600">
-              📞 <span className="font-medium">טלפון:</span> 02-1234567
+              📞 <span className="font-medium">טלפון:</span> 0527160234
             </p>
           </div>
         </motion.div>
