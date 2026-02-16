@@ -131,7 +131,7 @@ const Managment = () => {
         {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">ניהול מערכת</h1>
-          <p className="text-gray-600">מוסד: {currentUser.institution_code}</p>
+          <p className="text-gray-600">קוד מוסד: {currentUser.institution_code}</p>
         </div>
 
         {/* Navigation Tabs */}
