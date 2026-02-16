@@ -262,6 +262,7 @@ const StudentsTable = () => {
     const [docMode, setDocMode] = useState('id');
     const [docsLoading, setDocsLoading] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
+    const [sortConfig, setSortConfig] = useState({ field: null, direction: null });
 
     const toApiField = (f) => (f === 'photoUrl' ? 'photo_url' : f);
 
@@ -284,7 +285,7 @@ const StudentsTable = () => {
 
     useEffect(() => {
         if (Array.isArray(allStudentData)) {
-            const filtered = allStudentData
+            let filtered = allStudentData
                 .filter((student) => {
                     const baseMatch = Object.entries(filters).every(([field, value]) => {
                         if (!value) return true;
@@ -294,7 +295,6 @@ const StudentsTable = () => {
                     if (selectedRegistrationYear) {
                         if (selectedRegistrationYear === 'graduates') {
                             const ry = parseInt(student['registration_year'] ?? student.registration_year, 10);
-                            // "More than a year ago" → earlier than last year
                             return !isNaN(ry) && ry <= (CURRENT_YEAR - 2);
                         }
                         return student['registration_year']?.toString() === selectedRegistrationYear.toString();
@@ -309,9 +309,19 @@ const StudentsTable = () => {
                     });
                     return result;
                 });
+            
+            if (sortConfig.field) {
+                filtered.sort((a, b) => {
+                    const aVal = (a[sortConfig.field] || '').toString();
+                    const bVal = (b[sortConfig.field] || '').toString();
+                    const cmp = aVal.localeCompare(bVal, 'he');
+                    return sortConfig.direction === 'asc' ? cmp : -cmp;
+                });
+            }
+            
             setStudents(filtered);
         }
-    }, [allStudentData, selectedFields, filters, selectedRegistrationYear]);
+    }, [allStudentData, selectedFields, filters, selectedRegistrationYear, sortConfig]);
 
     const handleGroupChange = (group) => {
         setSelectedGroup(group);
@@ -330,7 +340,21 @@ const StudentsTable = () => {
 
     const handleFilterChange = (field, value) => {
         setFilters((prev) => ({ ...prev, [field]: value }));
-        setGroup(value);
+    };
+
+    const handleSort = (field) => {
+        setSortConfig((prev) => {
+            if (prev.field === field) {
+                if (prev.direction === 'asc') return { field, direction: 'desc' };
+                if (prev.direction === 'desc') return { field: null, direction: null };
+            }
+            return { field, direction: 'asc' };
+        });
+    };
+
+    const getSortIcon = (field) => {
+        if (sortConfig.field !== field) return ' ⇅';
+        return sortConfig.direction === 'asc' ? ' ↑' : ' ↓';
     };
 
     const openSearch = () => {
@@ -823,8 +847,8 @@ const StudentsTable = () => {
                                     </>
                                 )}
                                 {selectedFields.map((field) => (
-                                    <th key={field} className="border border-gray-300 px-4 py-2">
-                                        {getHebrewLabel(field)}
+                                    <th key={field} className="border border-gray-300 px-4 py-2 cursor-pointer hover:bg-[#0d4a7a]" onClick={() => handleSort(field)}>
+                                        {getHebrewLabel(field)}{getSortIcon(field)}
                                     </th>
                                 ))}
                             </tr>
