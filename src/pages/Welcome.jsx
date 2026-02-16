@@ -48,6 +48,7 @@ export default function Frame() {
   const navigate = useNavigate();
 
   const mainFeatures = [
+
     { 
       id: 1, 
       title: "השאלת ציוד", 
@@ -96,7 +97,7 @@ export default function Frame() {
       color: "from-[#3b78b2] to-[#295f8b]",
       details: "מערכת שעות מתקדמת: בניית מערכת שעות אוטומטית, ניהול חדרי לימוד, שיבוץ מורות, מעקב אחר שינויים, התראות על התנגשויות, ותצוגה נוחה למורות ותלמידות."
     },
-  ];
+ ];
 
   const additionalFeatures = [
     { id: 1, title: "גיבוי ופרטיות", description: "אחסון מאובטח וגיבוי אוטומטי לחוסן נתונים", icon: SecurityCheck },

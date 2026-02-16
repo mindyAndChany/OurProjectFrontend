@@ -6,7 +6,7 @@ import Profil from "../components/profil";
 
 const navItems = [
   { to: "/home", label: "דף הבית" },
-  { to: "/StudentsData", label: "מסד נתונים" },
+  { to: "/StudentsData", label: "נתוני תלמידות" },
   { to: "/Kattendence", label: "נוכחות" },
   { to: "/Calendar", label: "לוח שנה" },
   { to: "/Equipments", label: "השאלת ציוד" },
