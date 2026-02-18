@@ -21,10 +21,16 @@ export default function Navbar() {
   const domainMenuMobileRef = useRef(null);
   const user = useSelector((state) => state.user);
   const isLoggedIn = !!user?.userDetails;
+  const isAdmin = user?.userDetails?.role === "admin";
   const location = useLocation();
   const pathParts = location.pathname.split("/").filter(Boolean);
   const domainFromPath = pathParts[0] === "Kattendence" ? pathParts[1] : "";
   const currentDomain = domainFromPath || new URLSearchParams(location.search).get("domain") || "";
+
+  // הוספת ניהול לניווט עבור אדמינים
+  const displayNavItems = isAdmin 
+    ? [...navItems, { to: "/Managment", label: "ניהול" }]
+    : navItems;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -75,7 +81,7 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center justify-center gap-0 lg:gap-0.5 xl:gap-1">
-            {navItems.map((item) => {
+            {displayNavItems.map((item) => {
               if (item.to === "/Kattendence") {
                 return (
                   <div key={item.to} ref={domainMenuRef} className="relative flex items-center gap-2">
@@ -188,7 +194,7 @@ export default function Navbar() {
           ${open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
         >
           <nav className="flex flex-col gap-1 pb-4">
-            {navItems.map((item) => {
+            {displayNavItems.map((item) => {
               if (item.to === "/Kattendence") {
                 return (
                   <div key={item.to} ref={domainMenuMobileRef} className="px-4">

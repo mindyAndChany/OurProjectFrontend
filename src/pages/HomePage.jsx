@@ -83,8 +83,8 @@ export default function Screen() {
   const navigate = useNavigate();
   const user = useSelector((state) => state.user);
   
-  // בדיקה אם המשתמש הוא admin
-  const isAdmin = user?.role === "admin" || user?.userDetails?.role === "admin";
+  // בדיקה אם המשתמש הוא admin - רק אם התחבר והגיעו פרטי משתמש
+  const isAdmin = user?.userDetails?.role === "admin";
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-[#f7f4f1] via-[#f0f6ff] to-[#fef7f2] [direction:rtl] pt-16 xs:pt-20 sm:pt-24 md:pt-28 lg:pt-32 xl:pt-36 pb-8 xs:pb-10 sm:pb-12 md:pb-16 lg:pb-20 relative overflow-hidden">
@@ -107,7 +107,7 @@ export default function Screen() {
 
       {/* Grid */}
       <section className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 md:px-8 lg:px-10 relative z-10">
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 xs:gap-4 sm:gap-5 md:gap-6 lg:gap-8">
+        <div className={`grid grid-cols-1 xs:grid-cols-2 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-3 lg:grid-cols-4'} gap-3 xs:gap-4 sm:gap-5 md:gap-6 lg:gap-8`}>
           {items
             .filter(item => !item.isAdminOnly || isAdmin)
             .map((item, i) => (
