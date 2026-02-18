@@ -58,7 +58,7 @@ export default function Routing() {
       {!shouldHideNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Welcome />} />
-        <Route path="/home" element={<ProtectedRoute screenOrPath="/home" element={<HomePage />} />} />
+        <Route path="/home" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/access-denied" element={<><Navbar /><AccessDenied /></>} />
         <Route path="/Equipments" element={<ProtectedRoute screenOrPath="/Equipments" element={<Equipments />} />} />
