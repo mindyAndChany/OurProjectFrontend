@@ -7,8 +7,10 @@ import mortarboard01 from "../icons/mortarboard-01.png";
 import payByCheck from "../icons/pay-by-check.png";
 import task01 from "../icons/task-01.png";
 import taskDone02 from "../icons/task-done-02.png";
+import securityCheck from "../icons/security-check.png";
 import { CalendarClock } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const items = [
   {
@@ -67,10 +69,22 @@ const items = [
     glow: "group-hover:shadow-[#bda39b]/50",
     to: "/Approvals",
   },
+  {
+    title: "ניהול",
+    icon: securityCheck,
+    gradient: "from-[#584041] via-[#6b5152] to-[#7d6264]",
+    glow: "group-hover:shadow-[#584041]/50",
+    to: "/Managment",
+    isAdminOnly: true,
+  },
 ];
 
 export default function Screen() {
   const navigate = useNavigate();
+  const user = useSelector((state) => state.user);
+  
+  // בדיקה אם המשתמש הוא admin
+  const isAdmin = user?.role === "admin" || user?.userDetails?.role === "admin";
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-[#f7f4f1] via-[#f0f6ff] to-[#fef7f2] [direction:rtl] pt-16 xs:pt-20 sm:pt-24 md:pt-28 lg:pt-32 xl:pt-36 pb-8 xs:pb-10 sm:pb-12 md:pb-16 lg:pb-20 relative overflow-hidden">
@@ -94,7 +108,9 @@ export default function Screen() {
       {/* Grid */}
       <section className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 md:px-8 lg:px-10 relative z-10">
         <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 xs:gap-4 sm:gap-5 md:gap-6 lg:gap-8">
-          {items.map((item, i) => (
+          {items
+            .filter(item => !item.isAdminOnly || isAdmin)
+            .map((item, i) => (
             <button
               key={i}
               onClick={() => item.to && navigate(item.to)}
