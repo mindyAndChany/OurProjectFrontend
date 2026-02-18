@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { NavLink, useLocation } from "react-router-dom";
 import { Edulink } from "../components/Edulink";
@@ -17,12 +17,33 @@ const navItems = [
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [showDomainMenu, setShowDomainMenu] = useState(false);
+  const domainMenuRef = useRef(null);
+  const domainMenuMobileRef = useRef(null);
   const user = useSelector((state) => state.user);
   const isLoggedIn = !!user?.userDetails;
   const location = useLocation();
   const pathParts = location.pathname.split("/").filter(Boolean);
   const domainFromPath = pathParts[0] === "Kattendence" ? pathParts[1] : "";
   const currentDomain = domainFromPath || new URLSearchParams(location.search).get("domain") || "";
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const isClickInsideDesktop = domainMenuRef.current && domainMenuRef.current.contains(event.target);
+      const isClickInsideMobile = domainMenuMobileRef.current && domainMenuMobileRef.current.contains(event.target);
+      
+      if (!isClickInsideDesktop && !isClickInsideMobile) {
+        setShowDomainMenu(false);
+      }
+    };
+
+    if (showDomainMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showDomainMenu]);
 
   const linkClass = ({ isActive }) =>
     `
@@ -57,7 +78,7 @@ export default function Navbar() {
             {navItems.map((item) => {
               if (item.to === "/Kattendence") {
                 return (
-                  <div key={item.to} className="relative flex items-center gap-2">
+                  <div key={item.to} ref={domainMenuRef} className="relative flex items-center gap-2">
                     <NavLink
                       to={item.to}
                       onClick={() => setShowDomainMenu((v) => !v)}
@@ -170,7 +191,7 @@ export default function Navbar() {
             {navItems.map((item) => {
               if (item.to === "/Kattendence") {
                 return (
-                  <div key={item.to} className="px-4">
+                  <div key={item.to} ref={domainMenuMobileRef} className="px-4">
                     <NavLink
                       to={item.to}
                       onClick={() => setShowDomainMenu((v) => !v)}
