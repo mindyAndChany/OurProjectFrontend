@@ -13,6 +13,10 @@ import { deleteRoleThunk } from '../redux/slices/ROLES/deleteRoleThunk';
 import { updatePermissionThunk } from '../redux/slices/PERMISSIONS/updatePermissionThunk';
 import { addRolePermissionThunk } from '../redux/slices/ROLE_PERMISSIONS/addRolePermissionThunk';
 import { updateRolePermissionThunk } from '../redux/slices/ROLE_PERMISSIONS/updateRolePermissionThunk';
+import { getRoomsThunk } from '../redux/slices/ROOMS/getRoomsThunk';
+import { addRoomThunk } from '../redux/slices/ROOMS/addRoomThunk';
+import { updateRoomThunk } from '../redux/slices/ROOMS/updateRoomThunk';
+import { deleteRoomThunk } from '../redux/slices/ROOMS/deleteRoomThunk';
 
 const Managment = () => {
   const dispatch = useDispatch();
@@ -20,6 +24,7 @@ const Managment = () => {
   const { roles, loading: rolesLoading } = useSelector((state) => state.roles);
   const { permissions } = useSelector((state) => state.permissions);
   const { rolePermissions } = useSelector((state) => state.rolePermissions);
+  const { data: rooms } = useSelector((state) => state.rooms);
   const currentUser = useSelector((state) => state.user);
 
   const [selectedSection, setSelectedSection] = useState('users');
@@ -30,7 +35,10 @@ const Managment = () => {
   const [showAddRoleModal, setShowAddRoleModal] = useState(false);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   const [showEditRolePermissionsModal, setShowEditRolePermissionsModal] = useState(false);
+  const [showAddRoomModal, setShowAddRoomModal] = useState(false);
+  const [showEditRoomModal, setShowEditRoomModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
+  const [editingRoom, setEditingRoom] = useState(null);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -44,12 +52,23 @@ const Managment = () => {
     description: '',
     institution_code: currentUser.institution_code
   });
+  const [newRoom, setNewRoom] = useState({
+    name: '',
+    number: '',
+    is_computer_lab: false,
+    has_makren: false,
+    floor: 0,
+    seat_count: 0,
+    is_available: true,
+    primary_use: ''
+  });
 
   useEffect(() => {
     dispatch(getUsersThunk());
     dispatch(getRolesThunk());
     dispatch(getPermissionsThunk());
     dispatch(getRolePermissionsThunk());
+    dispatch(getRoomsThunk());
   }, [dispatch]);
 
   const handleUpdateUserRole = async (userId, newRoleId) => {
@@ -208,6 +227,62 @@ const Managment = () => {
     );
   };
 
+  // Room Management Functions
+  const handleAddRoom = async (e) => {
+    e.preventDefault();
+    try {
+      await dispatch(addRoomThunk(newRoom)).unwrap();
+      alert('החדר נוסף בהצלחה');
+      setShowAddRoomModal(false);
+      setNewRoom({
+        name: '',
+        number: '',
+        is_computer_lab: false,
+        has_makren: false,
+        floor: 0,
+        seat_count: 0,
+        is_available: true,
+        primary_use: ''
+      });
+    } catch (error) {
+      alert('שגיאה בהוספת החדר');
+      console.error(error);
+    }
+  };
+
+  const handleEditRoom = (room) => {
+    setEditingRoom(room);
+    setShowEditRoomModal(true);
+  };
+
+  const handleUpdateRoom = async (e) => {
+    e.preventDefault();
+    try {
+      await dispatch(updateRoomThunk({
+        id: editingRoom.id,
+        roomData: editingRoom
+      })).unwrap();
+      alert('החדר עודכן בהצלחה');
+      setShowEditRoomModal(false);
+      setEditingRoom(null);
+    } catch (error) {
+      alert('שגיאה בעדכון החדר');
+      console.error(error);
+    }
+  };
+
+  const handleDeleteRoom = async (roomId) => {
+    if (window.confirm('האם אתה בטוח שברצונך למחוק חדר זה?')) {
+      try {
+        await dispatch(deleteRoomThunk(roomId)).unwrap();
+        alert('החדר נמחק בהצלחה');
+      } catch (error) {
+        alert('שגיאה במחיקת החדר');
+        console.error(error);
+      }
+    }
+  };
+
   if (usersLoading || rolesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -250,6 +325,16 @@ const Managment = () => {
               }`}
             >
               ניהול תפקידים
+            </button>
+            <button
+              onClick={() => setSelectedSection('rooms')}
+              className={`px-6 py-4 font-semibold transition-colors ${
+                selectedSection === 'rooms'
+                  ? 'border-b-2 border-indigo-600 text-indigo-600'
+                  : 'text-gray-600 hover:text-indigo-600'
+              }`}
+            >
+              ניהול חדרים
             </button>
           </div>
         </div>
@@ -536,6 +621,309 @@ const Managment = () => {
                       className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
                     >
                       הוסף
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rooms Management Section */}
+        {selectedSection === 'rooms' && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">רשימת חדרים</h2>
+              <button
+                onClick={() => setShowAddRoomModal(true)}
+                className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
+              >
+                + הוסף חדר חדש
+              </button>
+            </div>
+
+            {/* Rooms Table */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      שם החדר
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      מספר
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      קומה
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      מקומות
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      שימוש ראשי
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      פעולות
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {rooms && rooms.map((room) => (
+                    <tr key={room.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{room.name}</div>
+                        {room.is_computer_lab && <span className="text-xs text-blue-600">💻 חדר מחשבים</span>}
+                        {room.has_makren && <span className="text-xs text-green-600 mr-2">📽️ מקרן</span>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{room.number}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{room.floor}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{room.seat_count}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {room.primary_use || '-'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => handleEditRoom(room)}
+                          className="text-indigo-600 hover:text-indigo-900 ml-4"
+                        >
+                          ערוך
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRoom(room.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          מחק
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Add Room Modal */}
+        {showAddRoomModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" dir="rtl">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">הוסף חדר חדש</h3>
+                <form onSubmit={handleAddRoom}>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">שם החדר</label>
+                    <input
+                      type="text"
+                      required
+                      value={newRoom.name}
+                      onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">מספר חדר</label>
+                    <input
+                      type="text"
+                      required
+                      value={newRoom.number}
+                      onChange={(e) => setNewRoom({ ...newRoom, number: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">קומה</label>
+                    <input
+                      type="number"
+                      value={newRoom.floor}
+                      onChange={(e) => setNewRoom({ ...newRoom, floor: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">מספר מקומות</label>
+                    <input
+                      type="number"
+                      value={newRoom.seat_count}
+                      onChange={(e) => setNewRoom({ ...newRoom, seat_count: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">שימוש ראשי</label>
+                    <input
+                      type="text"
+                      value={newRoom.primary_use}
+                      onChange={(e) => setNewRoom({ ...newRoom, primary_use: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="כיתה, מעבדה, אולם, משרד..."
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={newRoom.is_computer_lab}
+                        onChange={(e) => setNewRoom({ ...newRoom, is_computer_lab: e.target.checked })}
+                        className="ml-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm font-medium text-gray-700">מעבדת מחשבים</span>
+                    </label>
+                  </div>
+                  <div className="mb-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={newRoom.has_makren}
+                        onChange={(e) => setNewRoom({ ...newRoom, has_makren: e.target.checked })}
+                        className="ml-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm font-medium text-gray-700">יש מקרן</span>
+                    </label>
+                  </div>
+                  <div className="mb-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={newRoom.is_available}
+                        onChange={(e) => setNewRoom({ ...newRoom, is_available: e.target.checked })}
+                        className="ml-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm font-medium text-gray-700">זמין לשימוש</span>
+                    </label>
+                  </div>
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddRoomModal(false)}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                    >
+                      ביטול
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                    >
+                      הוסף
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Room Modal */}
+        {showEditRoomModal && editingRoom && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" dir="rtl">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">ערוך חדר</h3>
+                <form onSubmit={handleUpdateRoom}>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">שם החדר</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingRoom.name}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, name: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">מספר חדר</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingRoom.number}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, number: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">קומה</label>
+                    <input
+                      type="number"
+                      value={editingRoom.floor}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, floor: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">מספר מקומות</label>
+                    <input
+                      type="number"
+                      value={editingRoom.seat_count}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, seat_count: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">שימוש ראשי</label>
+                    <input
+                      type="text"
+                      value={editingRoom.primary_use}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, primary_use: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="כיתה, מעבדה, אולם, משרד..."
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={editingRoom.is_computer_lab}
+                        onChange={(e) => setEditingRoom({ ...editingRoom, is_computer_lab: e.target.checked })}
+                        className="ml-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm font-medium text-gray-700">מעבדת מחשבים</span>
+                    </label>
+                  </div>
+                  <div className="mb-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={editingRoom.has_makren}
+                        onChange={(e) => setEditingRoom({ ...editingRoom, has_makren: e.target.checked })}
+                        className="ml-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm font-medium text-gray-700">יש מקרן</span>
+                    </label>
+                  </div>
+                  <div className="mb-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={editingRoom.is_available}
+                        onChange={(e) => setEditingRoom({ ...editingRoom, is_available: e.target.checked })}
+                        className="ml-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm font-medium text-gray-700">זמין לשימוש</span>
+                    </label>
+                  </div>
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditRoomModal(false);
+                        setEditingRoom(null);
+                      }}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                    >
+                      ביטול
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                    >
+                      עדכן
                     </button>
                   </div>
                 </form>
