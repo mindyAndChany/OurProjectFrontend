@@ -69,33 +69,33 @@ export const Screen = () => {
   return (
     <div
       dir="rtl"
-      className={`min-h-screen flex flex-col bg-white px-4 md:px-8 transition-all duration-400 overflow-x-hidden ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+      className={`min-h-screen flex flex-col bg-white px-3 xs:px-4 sm:px-6 md:px-8 lg:px-10 transition-all duration-400 overflow-x-hidden ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
     >
       {/* Header - LOGO on top */}
-      <header className="w-full flex items-center justify-center py-4">
+      <header className="w-full flex items-center justify-center py-3 xs:py-4 sm:py-5">
         <Edulink
-          EDULINKClassName="!text-[56px] md:!text-[90px] !leading-none"
-          className="!h-20 md:!h-32"
+          EDULINKClassName="!text-[42px] xs:!text-[56px] sm:!text-[70px] md:!text-[90px] !leading-none"
+          className="!h-16 xs:!h-20 sm:!h-24 md:!h-32"
           spanClassName="!text-[#295f8b]"
         />
       </header>
 
       {/* Main: center card; card limited to viewport height so page won't scroll */}
       <main className="flex-1 flex items-center justify-center w-full">
-        <div className="w-full max-w-4xl bg-white rounded-2xl border border-gray-200 shadow-lg p-6 md:p-10 mx-auto max-h-[calc(100vh-160px)] overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-start">
+        <div className="w-full max-w-4xl bg-white rounded-xl sm:rounded-2xl border border-gray-200 shadow-md sm:shadow-lg p-4 xs:p-5 sm:p-6 md:p-8 lg:p-10 mx-auto max-h-[calc(100vh-120px)] xs:max-h-[calc(100vh-140px)] sm:max-h-[calc(100vh-160px)] overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xs:gap-5 sm:gap-6 md:gap-8 items-start">
             {/* FORM */}
-            <div className="flex flex-col gap-4 md:gap-6">
-              <h1 className="[font-family:'Anomalia_ML_DemiBold_AAA-DemiBold',Helvetica] font-bold text-[26px] md:text-[40px] text-right">
+            <div className="flex flex-col gap-3 xs:gap-4 sm:gap-5 md:gap-6">
+              <h1 className="[font-family:'Anomalia_ML_DemiBold_AAA-DemiBold',Helvetica] font-bold text-xl xs:text-2xl sm:text-3xl md:text-4xl text-right">
                 כניסה למערכת
               </h1>
 
               <div>
-                <label htmlFor="email" className="block mb-2 font-medium text-right">
+                <label htmlFor="email" className="block mb-1.5 xs:mb-2 font-medium text-right text-sm xs:text-base">
                   מייל
                 </label>
-                <div className="w-full rounded-[28px] border-4 border-black bg-variable-collection-color-4 px-3 md:px-4 py-2 md:py-3 flex items-center transition focus-within:ring-2 focus-within:ring-blue-100">
+                <div className="w-full rounded-[20px] xs:rounded-[24px] sm:rounded-[28px] border-3 xs:border-4 border-black bg-variable-collection-color-4 px-3 xs:px-3.5 sm:px-4 py-2 xs:py-2.5 sm:py-3 flex items-center transition focus-within:ring-2 focus-within:ring-blue-100 touch-target">
                   <input
                     id="email"
                     type="email"
@@ -103,19 +103,19 @@ export const Screen = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyDown={onKeyDown}
-                    className="w-full bg-transparent text-black placeholder-gray-500 focus:outline-none text-base md:text-lg"
+                    className="w-full bg-transparent text-black placeholder-gray-500 focus:outline-none text-sm xs:text-base sm:text-lg"
                     aria-invalid={!!errors.email}
                     aria-describedby={errors.email ? "email-error" : undefined}
                   />
                 </div>
-                {errors.email && <p id="email-error" className="mt-2 text-right text-red-600 text-sm">{errors.email}</p>}
+                {errors.email && <p id="email-error" className="mt-1.5 xs:mt-2 text-right text-red-600 text-xs xs:text-sm">{errors.email}</p>}
               </div>
 
               <div>
-                <label htmlFor="password" className="block mb-2 font-medium text-right">
+                <label htmlFor="password" className="block mb-1.5 xs:mb-2 font-medium text-right text-sm xs:text-base">
                   סיסמא
                 </label>
-                <div className="w-full rounded-[28px] border-4 border-black bg-variable-collection-color-4 px-3 md:px-4 py-2 md:py-3 flex items-center transition focus-within:ring-2 focus-within:ring-blue-100">
+                <div className="w-full rounded-[20px] xs:rounded-[24px] sm:rounded-[28px] border-3 xs:border-4 border-black bg-variable-collection-color-4 px-3 xs:px-3.5 sm:px-4 py-2 xs:py-2.5 sm:py-3 flex items-center transition focus-within:ring-2 focus-within:ring-blue-100 touch-target">
                   <input
                     id="password"
                     type={showPassword ? "text" : "password"}
@@ -123,43 +123,43 @@ export const Screen = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyDown={onKeyDown}
-                    className="w-full bg-transparent text-black placeholder-gray-500 focus:outline-none text-base md:text-lg"
+                    className="w-full bg-transparent text-black placeholder-gray-500 focus:outline-none text-sm xs:text-base sm:text-lg"
                     aria-invalid={!!errors.password}
                     aria-describedby={errors.password ? "password-error" : undefined}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((s) => !s)}
-                    className="mr-2 md:mr-3 text-sm text-gray-700"
+                    className="mr-2 xs:mr-2.5 sm:mr-3 text-xs xs:text-sm text-gray-700 touch-target"
                     aria-label={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
                   >
                     {showPassword ? "הסתר" : "הצג"}
                   </button>
                 </div>
-                {errors.password && <p id="password-error" className="mt-2 text-right text-red-600 text-sm">{errors.password}</p>}
+                {errors.password && <p id="password-error" className="mt-1.5 xs:mt-2 text-right text-red-600 text-xs xs:text-sm">{errors.password}</p>}
               </div>
 
               <div>
                 <button
                   onClick={login}
-                  className="w-full bg-[#295f8b] text-white font-bold text-[16px] md:text-[28px] py-2 md:py-3 rounded-[20px] hover:scale-[1.02] active:scale-[0.98] transition-transform duration-150"
+                  className="w-full bg-[#295f8b] text-white font-bold text-base xs:text-lg sm:text-xl md:text-2xl lg:text-[28px] py-2.5 xs:py-3 sm:py-3.5 md:py-4 rounded-[16px] xs:rounded-[18px] sm:rounded-[20px] hover:scale-[1.02] active:scale-[0.98] transition-transform duration-150 touch-target shadow-md hover:shadow-lg"
                 >
                   התחברות
                 </button>
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-3">
-                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4 md:w-5 md:h-5 accent-black" />
-                  <span className="[font-family:'Anomalia_ML_DemiBold_AAA-DemiBold',Helvetica] font-bold text-black text-sm md:text-base">זכור אותי</span>
+              <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 xs:gap-0">
+                <label className="flex items-center gap-2 xs:gap-3 touch-target">
+                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4 xs:w-4.5 xs:h-4.5 sm:w-5 sm:h-5 accent-black" />
+                  <span className="[font-family:'Anomalia_ML_DemiBold_AAA-DemiBold',Helvetica] font-bold text-black text-xs xs:text-sm sm:text-base">זכור אותי</span>
                 </label>
-                <button onClick={() => navigate("/register")} className="underline text-[#295f8b] text-sm md:text-base">הרשמה</button>
+                <button onClick={() => navigate("/register")} className="underline text-[#295f8b] text-xs xs:text-sm sm:text-base touch-target hover:text-[#1e4a6b] transition-colors">הרשמה</button>
               </div>
             </div>
 
             {/* BRAND / DECORATION */}
-            <div className="flex flex-col items-center md:items-end justify-start gap-4 md:gap-6">
-              <div className="w-full md:w-auto bg-variable-collection-color-2 rounded-[20px] h-16 md:h-36" />
+            <div className="flex flex-col items-center md:items-end justify-start gap-3 xs:gap-4 sm:gap-5 md:gap-6">
+              <div className="w-full md:w-auto bg-variable-collection-color-2 rounded-[16px] xs:rounded-[18px] sm:rounded-[20px] h-12 xs:h-16 sm:h-24 md:h-36" />
             </div>
           </div>
         </div>
