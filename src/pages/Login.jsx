@@ -38,7 +38,7 @@ export const Screen = () => {
     if (!email) e.email = "מייל דרוש";
     else if (!/^\S+@\S+\.\S+$/.test(email)) e.email = "פורמט מייל לא תקין";
     if (!password) e.password = "סיסמא דרושה";
-    else if (password.length < 6) e.password = "הסיסמא קצרה מדי";
+    else if (password.length < 4) e.password = "הסיסמא קצרה מדי";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
