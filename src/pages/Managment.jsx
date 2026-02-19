@@ -13,6 +13,7 @@ import { deleteRoleThunk } from '../redux/slices/ROLES/deleteRoleThunk';
 import { updatePermissionThunk } from '../redux/slices/PERMISSIONS/updatePermissionThunk';
 import { addRolePermissionThunk } from '../redux/slices/ROLE_PERMISSIONS/addRolePermissionThunk';
 import { updateRolePermissionThunk } from '../redux/slices/ROLE_PERMISSIONS/updateRolePermissionThunk';
+import { deleteRolePermissionThunk } from '../redux/slices/ROLE_PERMISSIONS/deleteRolePermissionThunk';
 import { getRoomsThunk } from '../redux/slices/ROOMS/getRoomsThunk';
 import { addRoomThunk } from '../redux/slices/ROOMS/addRoomThunk';
 import { updateRoomThunk } from '../redux/slices/ROOMS/updateRoomThunk';
@@ -179,6 +180,7 @@ const Managment = () => {
   const handleEditRolePermissions = (role) => {
     setSelectedRoleForEdit(role);
     setShowEditRolePermissionsModal(true);
+    dispatch(getRolePermissionsThunk());
   };
 
   const handleTogglePermission = async (permission, field) => {
@@ -190,31 +192,36 @@ const Managment = () => {
       );
 
       if (existingRolePermission) {
-        // Update existing role permission
-        const newValue = field === 'can_view' 
-          ? !existingRolePermission.can_view 
-          : !existingRolePermission.can_edit;
-
-        await dispatch(updateRolePermissionThunk({
-          roleId: selectedRoleForEdit.id,
-          permissionId: permission.id,
-          rolePermissionData: {
-            ...existingRolePermission,
-            [field]: newValue
-          }
-        })).unwrap();
+        const currentCanView = existingRolePermission.permission?.can_view ?? false;
+        const currentCanEdit = existingRolePermission.permission?.can_edit ?? false;
+        
+        const newCanView = field === 'can_view' ? !currentCanView : currentCanView;
+        const newCanEdit = field === 'can_edit' ? !currentCanEdit : currentCanEdit;
+        
+        // אם שני השדות false, מוחקים את ההרשאה
+        if (!newCanView && !newCanEdit) {
+          await dispatch(deleteRolePermissionThunk({
+            roleId: selectedRoleForEdit.id,
+            permissionId: permission.id
+          })).unwrap();
+        } else {
+          await dispatch(updateRolePermissionThunk({
+            roleId: selectedRoleForEdit.id,
+            permissionId: permission.id,
+            rolePermissionData: {
+              can_view: newCanView,
+              can_edit: newCanEdit
+            }
+          })).unwrap();
+        }
       } else {
-        // Create new role permission
         await dispatch(addRolePermissionThunk({
           role_id: selectedRoleForEdit.id,
           permission_id: permission.id,
-          can_view: field === 'can_view' ? true : false,
-          can_edit: field === 'can_edit' ? true : false
+          can_view: field === 'can_view',
+          can_edit: field === 'can_edit'
         })).unwrap();
       }
-      
-      // Refresh role permissions
-      await dispatch(getRolePermissionsThunk());
     } catch (error) {
       alert('שגיאה בעדכון ההרשאה');
       console.error(error);
@@ -225,6 +232,26 @@ const Managment = () => {
     return rolePermissions.find(
       rp => rp.role_id === roleId && rp.permission_id === permissionId
     );
+  };
+
+  const getHebrewScreenName = (screenName) => {
+    const hebrewNames = {
+      'home': 'דף הבית',
+      'homepage': 'דף הבית',
+      'studentsdata': 'נתוני תלמידות',
+      'students': 'נתוני תלמידות',
+      'kattendence': 'נוכחות',
+      'attendance': 'נוכחות',
+      'calendar': 'לוח שנה',
+      'equipments': 'השאלת ציוד',
+      'approvals': 'אישורים',
+      'WeeklyScheduleEditor':'עריכת מערכת שעות',
+      'schedule': 'מערכת',
+      'management': 'ניהול',
+      'managment': 'ניהול',
+      
+    };
+    return hebrewNames[screenName?.toLowerCase()] || screenName;
   };
 
   // Room Management Functions
@@ -633,7 +660,7 @@ const Managment = () => {
         {selectedSection === 'rooms' && (
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">רשימת חדרים</h2>
+              <h2 className="text-2xl font-bold text-gray-800">מפת חדרים סמינר בית יעקוב גור ירושלים</h2>
               <button
                 onClick={() => setShowAddRoomModal(true)}
                 className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
@@ -642,72 +669,260 @@ const Managment = () => {
               </button>
             </div>
 
-            {/* Rooms Table */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      שם החדר
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      מספר
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      קומה
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      מקומות
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      שימוש ראשי
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      פעולות
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {rooms && rooms.map((room) => (
-                    <tr key={room.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{room.name}</div>
-                        {room.is_computer_lab && <span className="text-xs text-blue-600">💻 חדר מחשבים</span>}
-                        {room.has_makren && <span className="text-xs text-green-600 mr-2">📽️ מקרן</span>}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{room.number}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{room.floor}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{room.seat_count}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {room.primary_use || '-'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => handleEditRoom(room)}
-                          className="text-indigo-600 hover:text-indigo-900 ml-4"
-                        >
-                          ערוך
-                        </button>
-                        <button
-                          onClick={() => handleDeleteRoom(room.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          מחק
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Rooms Map by Floor */}
+            <div className="space-y-6">
+              {[...new Set(rooms?.map(r => r.floor) || [])].sort((a, b) => b - a).map(floor => {
+                const floorRooms = rooms?.filter(r => r.floor === floor) || [];
+                
+                // חדרים מרכזיים (מסתיימים ב-00)
+                const centerRooms = floorRooms.filter(r => r.number.endsWith('00'))
+                  .sort((a, b) => parseInt(b.number) - parseInt(a.number));
+                
+                // חלוקה לזוגי ואי-זוגי (ללא המרכזיים)
+                const evenRooms = floorRooms.filter(r => !r.number.endsWith('00') && parseInt(r.number) % 2 === 0)
+                  .sort((a, b) => parseInt(b.number) - parseInt(a.number));
+                const oddRooms = floorRooms.filter(r => !r.number.endsWith('00') && parseInt(r.number) % 2 !== 0)
+                  .sort((a, b) => parseInt(b.number) - parseInt(a.number));
+
+                const maxRows = Math.max(evenRooms.length, oddRooms.length, centerRooms.length);
+
+                return (
+                  <div key={floor} className="border-2 border-gray-300 rounded-lg overflow-hidden">
+                    {/* Floor Header */}
+                    <div className="bg-indigo-600 text-white px-4 py-3 text-center">
+                      <h3 className="text-xl font-bold">קומה {floor}</h3>
+                    </div>
+
+                    {/* Three Column Layout */}
+                    <div className="grid grid-cols-3 gap-0">
+                      {/* Right Side Table - Even Numbers */}
+                      <div className="border-l border-gray-300">
+                        <table className="min-w-full border-collapse">
+                          <thead className="bg-indigo-50">
+                            <tr>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-indigo-900">מס' חדר</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-indigo-900">מקום</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-indigo-900">שיבוץ</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-indigo-900">מס' מקומות</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-indigo-900">פעולות</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {evenRooms.map((room, index) => (
+                              <tr key={room.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                <td className="border border-gray-300 px-2 py-2 text-center font-bold text-indigo-600 text-sm">
+                                  {room.number}
+                                </td>
+                                <td className="border border-gray-300 px-2 py-2 text-center text-xs">
+                                  {room.primary_use || '-'}
+                                </td>
+                                <td className="border border-gray-300 px-2 py-2 text-center text-xs">
+                                  <div className="flex flex-col items-center">
+                                    <span>{room.name}</span>
+                                    <div className="flex gap-1 mt-1">
+                                      {room.is_computer_lab && (
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                      )}
+                                      {room.has_makren && (
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="border border-gray-300 px-2 py-2 text-center text-sm">
+                                  {room.seat_count}
+                                </td>
+                                <td className="border border-gray-300 px-2 py-2 text-center">
+                                  <div className="flex gap-1 justify-center">
+                                    <button
+                                      onClick={() => handleEditRoom(room)}
+                                      className="bg-indigo-500 text-white text-xs px-2 py-1 rounded hover:bg-indigo-600"
+                                      title="עריכה"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteRoom(room.id)}
+                                      className="bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600"
+                                      title="מחיקה"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Center Column - Rooms ending with 00 */}
+                      <div className="border-l border-gray-300">
+                        <table className="min-w-full border-collapse">
+                          <thead className="bg-blue-50">
+                            <tr>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-blue-900">מס' חדר</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-blue-900">מקום</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-blue-900">שיבוץ</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-blue-900">מס' מקומות</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-blue-900">פעולות</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {centerRooms.map((room, index) => (
+                              <tr key={room.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                <td className="border border-gray-300 px-2 py-2 text-center font-bold text-blue-600 text-sm">
+                                  {room.number}
+                                </td>
+                                <td className="border border-gray-300 px-2 py-2 text-center text-xs">
+                                  {room.primary_use || '-'}
+                                </td>
+                                <td className="border border-gray-300 px-2 py-2 text-center text-xs">
+                                  <div className="flex flex-col items-center">
+                                    <span>{room.name}</span>
+                                    <div className="flex gap-1 mt-1">
+                                      {room.is_computer_lab && (
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                      )}
+                                      {room.has_makren && (
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="border border-gray-300 px-2 py-2 text-center text-sm">
+                                  {room.seat_count}
+                                </td>
+                                <td className="border border-gray-300 px-2 py-2 text-center">
+                                  <div className="flex gap-1 justify-center">
+                                    <button
+                                      onClick={() => handleEditRoom(room)}
+                                      className="bg-indigo-500 text-white text-xs px-2 py-1 rounded hover:bg-indigo-600"
+                                      title="עריכה"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteRoom(room.id)}
+                                      className="bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600"
+                                      title="מחיקה"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Left Side Table - Odd Numbers */}
+                      <div>
+                        <table className="min-w-full border-collapse">
+                          <thead className="bg-indigo-50">
+                            <tr>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-indigo-900">מס' חדר</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-indigo-900">מקום</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-indigo-900">שיבוץ</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-indigo-900">מס' מקומות</th>
+                              <th className="border border-gray-300 px-2 py-2 text-xs font-bold text-indigo-900">פעולות</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {oddRooms.map((room, index) => (
+                              <tr key={room.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                <td className="border border-gray-300 px-2 py-2 text-center font-bold text-indigo-600 text-sm">
+                                  {room.number}
+                                </td>
+                                <td className="border border-gray-400 px-2 py-2 text-center text-xs">
+                                  {room.primary_use || '-'}
+                                </td>
+                                <td className="border border-gray-400 px-2 py-2 text-center text-xs">
+                                  <div className="flex flex-col items-center">
+                                    <span>{room.name}</span>
+                                    <div className="flex gap-1 mt-1">
+                                      {room.is_computer_lab && (
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                      )}
+                                      {room.has_makren && (
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="border border-gray-400 px-2 py-2 text-center text-sm">
+                                  {room.seat_count}
+                                </td>
+                                <td className="border border-gray-400 px-2 py-2 text-center">
+                                  <div className="flex gap-1 justify-center">
+                                    <button
+                                      onClick={() => handleEditRoom(room)}
+                                      className="bg-blue-500 text-white text-xs px-2 py-1 rounded hover:bg-blue-600"
+                                      title="עריכה"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteRoom(room.id)}
+                                      className="bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600"
+                                      title="מחיקה"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+
+            {/* Empty State */}
+            {(!rooms || rooms.length === 0) && (
+              <div className="text-center py-12">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <h3 className="text-xl font-bold text-gray-700 mb-2">אין חדרים במערכת</h3>
+                <p className="text-gray-500 mb-4">התחל בהוספת חדר ראשון</p>
+                <button
+                  onClick={() => setShowAddRoomModal(true)}
+                  className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  + הוסף חדר
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -772,19 +987,25 @@ const Managment = () => {
                         type="checkbox"
                         checked={newRoom.is_computer_lab}
                         onChange={(e) => setNewRoom({ ...newRoom, is_computer_lab: e.target.checked })}
-                        className="ml-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        // className="ml-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                       />
                       <span className="text-sm font-medium text-gray-700">מעבדת מחשבים</span>
                     </label>
                   </div>
                   <div className="mb-4">
                     <label className="flex items-center">
-                      <input
+                      {/* <input
                         type="checkbox"
                         checked={newRoom.has_makren}
                         onChange={(e) => setNewRoom({ ...newRoom, has_makren: e.target.checked })}
                         className="ml-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
+                      /> */}
+                       <input
+        type="checkbox"
+        checked={newRoom.has_makren}
+        onChange={(e) => setNewRoom({ ...newRoom, has_makren: e.target.checked })}
+        className="mt-1 appearance-auto"
+      />
                       <span className="text-sm font-medium text-gray-700">יש מקרן</span>
                     </label>
                   </div>
@@ -941,7 +1162,7 @@ const Managment = () => {
                   עריכת הרשאות לתפקיד: {selectedRoleForEdit.name}
                 </h3>
                 <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                  <table key={rolePermissions.length} className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 sticky top-0">
                       <tr>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
@@ -961,20 +1182,21 @@ const Managment = () => {
                           selectedRoleForEdit.id,
                           permission.id
                         );
-                        const canView = rolePermission?.can_view || false;
-                        const canEdit = rolePermission?.can_edit || false;
+                        const canView = rolePermission?.permission?.can_view ?? false;
+                        const canEdit = rolePermission?.permission?.can_edit ?? false;
 
                         return (
                           <tr key={permission.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {permission.screen_name}
+                              {getHebrewScreenName(permission.screen_name)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <input
                                 type="checkbox"
                                 checked={canView}
                                 onChange={() => handleTogglePermission(permission, 'can_view')}
-                                className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
+                                style={{ appearance: 'auto', WebkitAppearance: 'checkbox' }}
+                                className="w-5 h-5 cursor-pointer"
                               />
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -982,7 +1204,8 @@ const Managment = () => {
                                 type="checkbox"
                                 checked={canEdit}
                                 onChange={() => handleTogglePermission(permission, 'can_edit')}
-                                className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
+                                style={{ appearance: 'auto', WebkitAppearance: 'checkbox' }}
+                                className="w-5 h-5 cursor-pointer"
                               />
                             </td>
                           </tr>
@@ -1033,7 +1256,7 @@ const Managment = () => {
                         return permission ? (
                           <tr key={rp.permission_id}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {permission.screen_name}
+                              {getHebrewScreenName(permission.screen_name)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               {permission.can_view ? (

@@ -6,7 +6,6 @@ export const updateRolePermissionThunk = createAsyncThunk(
   'rolePermissions/updateRolePermission',
   async ({ roleId, permissionId, rolePermissionData }) => {
     const url = `${BACKEND_URL}/api/role-permissions/${roleId}/${permissionId}`;
-    console.log("Updating URL:", url);
     
     const res = await fetch(url, {
       method: 'PUT',
@@ -18,8 +17,14 @@ export const updateRolePermissionThunk = createAsyncThunk(
 
     if (res.ok) {
       const data = await res.json();
-      console.log("update role permission success");
-      return data;
+      return {
+        ...data,
+        permission: {
+          ...data.permission,
+          can_view: rolePermissionData.can_view,
+          can_edit: rolePermissionData.can_edit
+        }
+      };
     } else {
       throw new Error('failed to update role permission');
     }
