@@ -25,14 +25,17 @@ function StatusInput({ value, onChange, disabled }) {
     "1": "absent",
     "2": "late",
     "3": "approved absent",
+    "4": "internship absence",
     "נוכחת": "present",
     "חסרה": "absent",
     "מאחרת": "late",
     "חסרה באישור": "approved absent",
+    "התמחות": "internship absence",
     "נ": "present",
     "ח": "absent",
     "מ": "late",
-    "א": "approved absent"
+    "א": "approved absent",
+    "ה": "internship absence"
   };
 
   const displayValue = {
@@ -40,6 +43,7 @@ function StatusInput({ value, onChange, disabled }) {
     absent: "חסרה",
     late: "מאחרת",
     "approved absent": "חסרה באישור",
+    "internship absence": "התמחות",
   }[value] || "";
 
   // סנכרון ערך ראשוני מה־props
@@ -96,6 +100,7 @@ function StatusInput({ value, onChange, disabled }) {
     late: "bg-yellow-50 text-yellow-800 border-yellow-300",
     absent: "bg-red-50 text-red-800 border-red-300",
     "approved absent": "bg-blue-50 text-blue-800 border-blue-300",
+    "internship absence": "bg-purple-50 text-purple-800 border-purple-300",
     default: "bg-white text-gray-900 border-gray-300",
   };
 
@@ -625,10 +630,13 @@ export const Screen = () => {
         {/* הסבר מתחת לכותרת */}
         <div className="bg-white rounded-xl shadow p-4 text-sm text-gray-700 leading-relaxed">
           <p>
-            בתחילת היום לא מסומן סטטוס נוכחות לאף תלמידה. סמני רק <strong>חריגות</strong> (חסרה, באישור או מאחרת).
+            בתחילת היום לא מסומן סטטוס נוכחות לאף תלמידה. סמני רק <strong>חריגות</strong> (חסרה, באישור, מאחרת או התמחות).
           </p>
           <p>
             בלחיצה על "שמרי ושלחי נוכחות" תסומן נוכחות אוטומטית לכל מי שלא עודכנה ידנית.
+          </p>
+          <p className="mt-2 text-xs text-gray-600">
+            <strong>קיצורי דרך:</strong> 0=נוכחת, 1=חסרה, 2=מאחרת, 3=באישור, 4=התמחות
           </p>
         </div>
 
@@ -699,12 +707,12 @@ export const Screen = () => {
             <thead>
               <tr className="bg-[#0A3960] text-white">
                 <th className="sticky right-0 bg-[#0A3960] px-4 py-3">שם התלמידה</th>
+                <th className="px-4 py-3 border border-gray-300">אחוז חיסורים</th>
                 {filteredLessons.map((lesson, index) => (
                   <th key={index} className="px-4 py-3 border border-gray-300">
                     {getHebrewDateText(lesson.date)}
                   </th>
                 ))}
-                <th className="px-4 py-3 border border-gray-300">אחוז נוכחות</th>
               </tr>
             </thead>
             <tbody>
@@ -712,6 +720,25 @@ export const Screen = () => {
                 <tr key={student.id ?? idx} className="odd:bg-white even:bg-gray-50">
                   <td className="sticky right-0 bg-white font-medium px-4 py-2 border border-gray-300">
                     {student.name}
+                  </td>
+                  <td className="font-semibold text-center border border-gray-300">
+                    {(() => {
+                      let totalLessons = 0;
+                      let absencePoints = 0;
+                      
+                      for (const les of filteredLessons) {
+                        const st = getStatusFor(les.id, student.id);
+                        if (st === "internship absence") continue;
+                        totalLessons++;
+                        if (st === "absent") absencePoints += 1;
+                        else if (st === "late") absencePoints += 0.5;
+                      }
+                      
+                      if (!totalLessons) return "—";
+                      const absencePercent = Math.round((absencePoints / totalLessons) * 100);
+                      const colorClass = absencePercent <= 10 ? "text-green-600" : absencePercent <= 15 ? "text-yellow-600" : "text-red-600";
+                      return <span className={colorClass}>{absencePercent}%</span>;
+                    })()}
                   </td>
                   {filteredLessons.map((lesson) => {
                     const current = getStatusFor(lesson.id, student.id);
@@ -726,18 +753,6 @@ export const Screen = () => {
                       </td>
                     );
                   })}
-                  <td className="font-semibold text-center border border-gray-300">
-                    {(() => {
-                      const total = filteredLessons.length;
-                      if (!total) return "—";
-                      let presentCount = 0;
-                      for (const les of filteredLessons) {
-                        const st = getStatusFor(les.id, student.id);
-                        if (st === "present" || st === "late") presentCount++;
-                      }
-                      return `${Math.round((presentCount / total) * 100)}%`;
-                    })()}
-                  </td>
                 </tr>
               ))}
             </tbody>

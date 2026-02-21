@@ -693,7 +693,7 @@ export default function ScheduleViewer() {
                                     </div>
                                   ) : lesson ? (
                                     <div
-                                      className="text-gray-800 font-medium cursor-pointer hover:text-indigo-700"
+                                      className="text-gray-800 font-medium cursor-pointer hover:bg-blue-50 px-2 py-1 rounded inline-block border border-gray-200"
                                       onClick={() => openLessonModal(lesson, day, cls.id)}
                                       title="לחץ לאישור/ביטול שיעור"
                                     >
@@ -715,6 +715,68 @@ export default function ScheduleViewer() {
             })}
           </div>
         </div>
+        {/* מודל אישור/ביטול שיעור */}
+        {modalOpen && modalLesson && (
+          <div
+            className="fixed inset-0 z-[80] bg-black/40 flex items-center justify-center px-4"
+            dir="rtl"
+            style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmLessonModal();
+              }
+            }}
+            tabIndex={0}
+          >
+            <div className="w-full max-w-xl bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
+              <h3 className="text-xl font-bold text-[#0A3960] mb-4">אישור שיעור לתאריך נבחר</h3>
+              <div className="space-y-2 text-sm text-gray-700">
+                <div><span className="font-semibold">כיתה:</span> {getClassName(Number(modalLesson.class_id))}</div>
+                <div><span className="font-semibold">תאריך:</span> {formatHebrewDateFromISO(modalLesson.date)} ({modalLesson.date})</div>
+                <div><span className="font-semibold">שעה:</span> {formatTime(modalLesson.start_time)} - {formatTime(modalLesson.end_time)}</div>
+                <div><span className="font-semibold">נושא:</span> {modalLesson.topic || 'ללא נושא'}</div>
+              </div>
+
+              <div className="mt-4 p-3 border rounded-lg bg-gray-50">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="scale-110"
+                    checked={modalCancelled}
+                    onChange={(e) => setModalCancelled(e.target.checked)}
+                  />
+                  <span className="font-semibold">סמן אם השיעור מבוטל</span>
+                </label>
+                {modalCancelled && (
+                  <textarea
+                    className="mt-3 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                    placeholder="סיבת ביטול (חובה)"
+                    value={modalReason}
+                    onChange={(e) => setModalReason(e.target.value)}
+                  />
+                )}
+              </div>
+
+              <div className="mt-5 flex gap-2">
+                <button
+                  onClick={confirmLessonModal}
+                  className="bg-[#0A3960] text-white font-semibold rounded-xl px-5 py-2 text-sm shadow hover:opacity-90"
+                >
+                  אשר (ENTER)
+                </button>
+                <button
+                  onClick={closeLessonModal}
+                  className="border border-gray-300 text-gray-700 font-semibold rounded-xl px-5 py-2 text-sm hover:bg-gray-50"
+                >
+                  סגור
+                </button>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">בברירת מחדל (ENTER) השיעור מאושר לתאריך זה.</div>
+            </div>
+          </div>
+        )}
         {/* מודל הוספת שיעור ידני */}
         {addModalOpen && (
           <div className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center px-4" dir="rtl">
