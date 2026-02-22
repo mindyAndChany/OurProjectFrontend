@@ -8,6 +8,7 @@ import { updateEvent } from "../redux/slices/calendar/calendarThunk.js";
 import { removeEvent } from "../redux/slices/calendar/calendarThunk.js";
 import { addRealyLessonThunk } from "../redux/slices/LESSONS/addRealyLessonThunk.js";
 import { useNavigate } from "react-router-dom";
+import HebrewDateSelector from "../components/HebrewDateSelector.jsx";
 /** =========================
  *  הגדרות סוגי אירועים (עברית + צבעים בסגנון האתר)
  *  ========================= */
@@ -112,155 +113,6 @@ function EventEditorModal({ open, editing, onChange, onClose, onSave, onDelete, 
 
   const typeColor = getTypeColor(editing.type);
 
-  // return (
-  //   <div className="fixed inset-0 z-[70] bg-black/40 flex items-center justify-center px-4" dir="rtl">
-  //     <div className="w-full max-w-lg bg-white rounded-3xl border border-gray-200 shadow-xl p-6">
-  //       <div className="flex items-start justify-between gap-4">
-  //         <div>
-  //           <h3 className="text-2xl font-bold text-gray-900">
-  //             {editing.id ? "עריכת אירוע" : "הוספת אירוע"}
-  //           </h3>
-  //           <p className="mt-1 text-gray-600 font-semibold">{editing.date}</p>
-  //         </div>
-
-  //         <button
-  //           onClick={onClose}
-  //           className="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 transition font-bold"
-  //         >
-  //           סגור
-  //         </button>
-  //         <button
-  //           onClick={onBack}
-  //           className="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 transition font-bold"
-  //         >
-  //           חזור
-  //         </button>
-  //       </div>
-
-  //       <div className="mt-6 space-y-4">
-  //         <div>
-  //           <label className="block text-sm font-bold text-gray-800 mb-2">כותרת</label>
-  //           <input
-  //             value={editing.title}
-  //             onChange={(e) => onChange({ ...editing, title: e.target.value })}
-  //             className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
-  //             placeholder="שם האירוע"
-  //           />
-  //         </div>
-
-  //         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-  //           <div className="md:col-span-1">
-  //             <label className="block text-sm font-bold text-gray-800 mb-2">סוג</label>
-  //             <select
-  //               value={editing.type}
-  //               onChange={(e) => onChange({ ...editing, type: e.target.value })}
-  //               className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
-  //             >
-  //               {Object.keys(TYPE_META).map((t) => (
-  //                 <option key={t} value={t}>
-  //                   {getTypeLabel(t)}
-  //                 </option>
-  //               ))}
-  //             </select>
-  //           </div>
-
-  //           <div className="md:col-span-1">
-  //             <label
-  //               className="block text-sm font-bold text-gray-800 mb-2">שעת התחלה</label>
-  //             <input
-  //               type="time"
-  //               value={editing.time_start}
-  //               onChange={(e) => onChange({ ...editing, time_start: e.target.value })}
-  //               className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
-  //               placeholder="HH:mm"
-  //             />
-  //           </div>
-
-  //           <div className="md:col-span-1">
-  //             <label
-  //               className="block text-sm font-bold text-gray-800 mb-2">שעת סיום</label>
-  //             <input
-  //               type="time"
-  //               value={editing.time_end}
-  //               onChange={(e) => onChange({ ...editing, time_end: e.target.value })}
-  //               className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
-  //               placeholder="HH:mm"
-  //             />
-  //           </div>
-  //         </div>
-
-  //         <div>
-  //           <label className="block text-sm font-bold text-gray-800 mb-2">הערות</label>
-  //           <textarea
-  //             value={editing.notes}
-  //             onChange={(e) => onChange({ ...editing, notes: e.target.value })}
-  //             className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b] min-h-[110px]"
-  //             placeholder="פרטים נוספים..."
-  //           />
-  //         </div>
-  //       </div>
-  //       {editing.type === "attendance" && (
-  //         <div>
-  //           <label className="block text-sm font-bold text-gray-800 mb-2">בחר כיתות</label>
-  //           <div className="grid grid-cols-2 gap-3 max-h-52 overflow-y-auto border rounded-2xl px-4 py-3">
-  //             {classes.map((cls) => {
-  //               const checked = (editing.class_ids || []).includes(cls.id);
-  //               return (
-  //                 <label
-  //                   key={cls.id}
-  //                   className="flex items-center space-x-2 cursor-pointer"
-  //                   dir="rtl"
-  //                 >
-  //                   <input
-  //                     type="checkbox"
-  //                     className="form-checkbox rounded text-blue-600"
-  //                     style={{ appearance: "auto" }}
-
-  //                     checked={checked}
-  //                     onChange={(e) => {
-  //                       const current = editing.class_ids || [];
-  //                       const updated = e.target.checked
-  //                         ? [...current, cls.id]
-  //                         : current.filter((id) => id !== cls.id);
-  //                       onChange({ ...editing, class_ids: updated });
-  //                     }}
-  //                   />
-  //                   <span className="text-sm font-semibold text-gray-800">{cls.name}</span>
-  //                 </label>
-  //               );
-  //             })}
-  //           </div>
-  //         </div>
-  //       )}
-
-
-  //       <div className="mt-6 flex items-center justify-between gap-3">
-  //         <div className="flex items-center gap-3">
-  //           <button
-  //             onClick={onSave}
-  //             className="px-6 py-3 rounded-full bg-[#295f8b] text-white font-bold shadow-md hover:bg-[#1e4a6b] transition"
-  //           >
-  //             שמירה
-  //           </button>
-
-  //           {editing.id ? (
-  //             <button
-  //               onClick={onDelete}
-  //               className="px-6 py-3 rounded-full border border-red-200 text-red-700 font-bold hover:bg-red-50 transition"
-  //             >
-  //               מחיקה
-  //             </button>
-  //           ) : null}
-  //         </div>
-
-  //         <div className="text-sm font-bold text-gray-600 flex items-center gap-2">
-  //           <span>צבע:</span>
-  //           <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: typeColor }} />
-  //         </div>
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
   return (
     <div className="fixed inset-0 z-[70] bg-black/40 flex items-center justify-center px-4" dir="rtl">
       <div className="w-full max-w-lg bg-white rounded-3xl border border-gray-200 shadow-xl p-6
@@ -536,6 +388,11 @@ export default function CalendarModern() {
   const [editing, setEditing] = useState(null);
   const [viewMode, setViewMode] = useState("month"); // אפשרויות: month | week | day
 
+  // מודאל מעבר לתאריך
+  const [dateNavModalOpen, setDateNavModalOpen] = useState(false);
+  const [dateNavTab, setDateNavTab] = useState("hebrew"); // "hebrew" | "gregorian"
+  const [tempGregorianDate, setTempGregorianDate] = useState("");
+
   const monthStart = useMemo(() => startOfMonth(viewYear, viewMonth), [viewYear, viewMonth]);
   const monthEnd = useMemo(() => endOfMonth(viewYear, viewMonth), [viewYear, viewMonth]);
   const gridDays = useMemo(() => buildMonthGrid(viewYear, viewMonth), [viewYear, viewMonth]);
@@ -570,14 +427,7 @@ export default function CalendarModern() {
 
   const selectedEvents = useMemo(() => eventsByDate.get(selectedDateISO) || [], [eventsByDate, selectedDateISO]);
 
-  //   // תאריך עליון לפי hovered אם קיים אחרת selected
-  //   const topDate = useMemo(() => {
-  //     const iso = hoveredISO || selectedDateISO;
-  //     const [y, m, d] = iso.split("-").map(Number);
-  //     const dateObj = new Date(y, m - 1, d);
-  //     const { heb, iso: isoOut } = formatTopDate(dateObj);
-  //     return { heb, iso: isoOut };
-  //   }, [hoveredISO, selectedDateISO]);
+
   const selectedHebText = useMemo(() => {
     return hebrewDateTextFromISO(selectedDateISO, numberToHebrewLetters, formatHebrewYear, hebFullFormatter);
   }, [selectedDateISO]);
@@ -761,7 +611,6 @@ export default function CalendarModern() {
     } else {
       const { id, ...data } = payload;
       dispatch(updateEvent({ id, data }));
-      // dispatch(updateEvent(payload));
     }
 
     setSelectedDateISO(payload.date);
@@ -786,7 +635,6 @@ export default function CalendarModern() {
   function deleteEvent() {
     if (!editing?.id) return;
     dispatch(removeEvent(editing.id));
-    // dispatch(removeEvent(editing.id));
     closeEditor();
   }
 
@@ -797,6 +645,77 @@ export default function CalendarModern() {
 
   function closeDayModal() {
     setDayModalOpen(false);
+  }
+
+  function openDateNavModal() {
+    setDateNavModalOpen(true);
+    setTempGregorianDate("");
+  }
+
+  function closeDateNavModal() {
+    setDateNavModalOpen(false);
+  }
+
+  function handleHebrewDateCommit(hebDateStr, context) {
+    // The context contains the raw date object from flexcal
+    // We need to extract the Gregorian date from it
+    try {
+      // The raw object should contain the actual date information
+      // flexcal stores dates with year, month, day properties
+      if (context && context.raw) {
+        const raw = context.raw;
+        // Try to construct a Gregorian date from the raw data
+        // The raw object might have different properties depending on flexcal version
+        // Common properties: year, month, day, date
+        
+        let targetDate;
+        if (raw.date && raw.date instanceof Date) {
+          // If there's a direct Date object, use it
+          targetDate = raw.date;
+        } else if (raw.year && raw.month && raw.day) {
+          // Construct from year/month/day
+          // Note: flexcal Hebrew months are 1-based
+          targetDate = new Date(raw.year, raw.month - 1, raw.day);
+        } else {
+          console.warn("Unable to extract date from flexcal raw data:", raw);
+          closeDateNavModal();
+          return;
+        }
+        
+        const iso = toISODate(targetDate);
+        setViewYear(targetDate.getFullYear());
+        setViewMonth(targetDate.getMonth());
+        setSelectedDateISO(iso);
+        setHoveredISO(null);
+        
+        closeDateNavModal();
+      } else {
+        console.warn("No context provided for Hebrew date:", hebDateStr);
+        closeDateNavModal();
+      }
+    } catch (err) {
+      console.error("Error navigating to Hebrew date:", err);
+      closeDateNavModal();
+    }
+  }
+
+  function handleGregorianDateNavigate() {
+    if (!tempGregorianDate) return;
+    
+    try {
+      const [y, m, d] = tempGregorianDate.split("-").map(Number);
+      const targetDate = new Date(y, m - 1, d);
+      const iso = toISODate(targetDate);
+      
+      setViewYear(targetDate.getFullYear());
+      setViewMonth(targetDate.getMonth());
+      setSelectedDateISO(iso);
+      setHoveredISO(null);
+      
+      closeDateNavModal();
+    } catch (err) {
+      console.error("Error navigating to date:", err);
+    }
   }
 
   const dayModalEvents = useMemo(() => eventsByDate.get(selectedDateISO) || [], [eventsByDate, selectedDateISO]);
@@ -850,6 +769,12 @@ export default function CalendarModern() {
               <button onClick={prev} className="px-4 py-2 rounded-full border">הקודם</button>
               <button onClick={goToToday} className="px-4 py-2 rounded-full border">היום</button>
               <button onClick={next} className="px-4 py-2 rounded-full border">הבא</button>
+              <button 
+                onClick={openDateNavModal} 
+                className="px-4 py-2 rounded-full border border-[#295f8b] text-[#295f8b] hover:bg-[#295f8b] hover:text-white transition font-bold"
+              >
+                מעבר לתאריך
+              </button>
             </div>
           </div>
 
@@ -997,16 +922,7 @@ export default function CalendarModern() {
               </>
             )}
 
-            {/* {viewMode === "week" && (
-              <WeeklyView
-                selectedDateISO={selectedDateISO}
-                eventsByDate={eventsByDate}
-                onSelectDate={setSelectedDateISO}
-                onOpenAdd={openAdd}
-                onOpenEdit={openEdit}
-              />
-            )} */}
-            {viewMode === "week" && (
+                   {viewMode === "week" && (
               <WeekGridView
                 weekDates={daysInWeek(selectedDateISO)}
                 eventsByDate={eventsByDate}
@@ -1058,7 +974,6 @@ export default function CalendarModern() {
                       {hebrewDateTextFromISO(selectedDateISO, numberToHebrewLetters, formatHebrewYear, hebFullFormatter)}
                     </p>
 
-                    {/* <p className="mt-1 text-gray-600 font-semibold">{selectedDateISO}</p> */}
                   </div>
 
                   <button
@@ -1147,31 +1062,95 @@ export default function CalendarModern() {
           setDayModalOpen(true);   // פותח את מודאל האירועים של היום
         }}
       />
+
+      {/* Date Navigation Modal */}
+      {dateNavModalOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/40 flex items-center justify-center px-4" dir="rtl">
+          <div className="w-full max-w-lg bg-white rounded-3xl border border-gray-200 shadow-xl p-6">
+            {/* כותרת */}
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">מעבר לתאריך</h3>
+              <button
+                onClick={closeDateNavModal}
+                className="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 transition font-bold"
+              >
+                סגור
+              </button>
+            </div>
+
+            {/* לשוניות */}
+            <div className="flex gap-2 mb-6 border-b border-gray-200">
+              <button
+                onClick={() => setDateNavTab("hebrew")}
+                className={classNames(
+                  "px-6 py-3 font-bold transition-colors border-b-2",
+                  dateNavTab === "hebrew"
+                    ? "border-[#295f8b] text-[#295f8b]"
+                    : "border-transparent text-gray-600 hover:text-gray-900"
+                )}
+              >
+                תאריך עברי
+              </button>
+              <button
+                onClick={() => setDateNavTab("gregorian")}
+                className={classNames(
+                  "px-6 py-3 font-bold transition-colors border-b-2",
+                  dateNavTab === "gregorian"
+                    ? "border-[#295f8b] text-[#295f8b]"
+                    : "border-transparent text-gray-600 hover:text-gray-900"
+                )}
+              >
+                תאריך לועזי
+              </button>
+            </div>
+
+            {/* תוכן */}
+            <div className="space-y-4">
+              {dateNavTab === "hebrew" ? (
+                <div>
+                  <label className="block text-sm font-bold text-gray-800 mb-2">בחר תאריך עברי</label>
+                  <div className="flex items-center gap-3">
+                    <HebrewDateSelector
+                      onCommit={handleHebrewDateCommit}
+                      placeholder="בחר תאריך עברי"
+                    />
+                    <span className="text-sm text-gray-600">לחץ לבחירת תאריך</span>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-bold text-gray-800 mb-2">בחר תאריך לועזי</label>
+                  <div className="flex flex-col gap-3">
+                    <input
+                      type="date"
+                      value={tempGregorianDate}
+                      onChange={(e) => setTempGregorianDate(e.target.value)}
+                      className="w-full rounded-2xl border border-gray-200 px-4 py-3 font-semibold outline-none focus:ring-2 focus:ring-[#295f8b]"
+                    />
+                    <button
+                      onClick={handleGregorianDateNavigate}
+                      disabled={!tempGregorianDate}
+                      className={classNames(
+                        "px-6 py-3 rounded-2xl font-bold shadow-md transition",
+                        tempGregorianDate
+                          ? "bg-[#295f8b] text-white hover:bg-[#1e4a6b]"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      )}
+                    >
+                      עבור לתאריך
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
-/** =========================
-return (
-<div className="text-right">
-<div className="mb-4">
-<h2 className="text-2xl font-bold text-gray-900">
-{numberToHebrewLetters(Number(hebDayFormatter.format(dateObj)))} ({d})
-</h2>
-<div className="text-sm text-gray-500">{selectedDateISO}</div>
-<button
-onClick={() => onOpenAdd(selectedDateISO)}
-className="mt-2 text-sm text-blue-600 underline"
->
-הוסף אירוע
-</button>
-</div>
 
-
-<DayTimeline events={dayEvents} onEdit={onOpenEdit} />
-</div>
-);
-}
 
 
 /** =========================
