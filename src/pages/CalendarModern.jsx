@@ -660,21 +660,18 @@ export default function CalendarModern() {
     // The context contains the raw date object from flexcal
     // We need to extract the Gregorian date from it
     try {
-      // The raw object should contain the actual date information
-      // flexcal stores dates with year, month, day properties
       if (context && context.raw) {
         const raw = context.raw;
-        // Try to construct a Gregorian date from the raw data
-        // The raw object might have different properties depending on flexcal version
-        // Common properties: year, month, day, date
         
         let targetDate;
-        if (raw.date && raw.date instanceof Date) {
-          // If there's a direct Date object, use it
+        // Check if raw itself is a Date object
+        if (raw instanceof Date) {
+          targetDate = raw;
+        } else if (raw.date && raw.date instanceof Date) {
+          // If there's a direct Date object in raw.date, use it
           targetDate = raw.date;
         } else if (raw.year && raw.month && raw.day) {
           // Construct from year/month/day
-          // Note: flexcal Hebrew months are 1-based
           targetDate = new Date(raw.year, raw.month - 1, raw.day);
         } else {
           console.warn("Unable to extract date from flexcal raw data:", raw);
