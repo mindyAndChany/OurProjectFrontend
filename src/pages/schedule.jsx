@@ -4,6 +4,7 @@ import { format, startOfWeek, addDays } from "date-fns";
 import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
 import { getweeklySchedulesThunk } from "../redux/slices/SCHEDULE/getScheduleThunk";
 import { addRealyLessonThunk } from "../redux/slices/LESSONS/addRealyLessonThunk";
+import { updateLessonThunk } from "../redux/slices/LESSONS/updateLessonThunk";
 import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
 import { useNavigate } from "react-router-dom";
 import { getTopicsThunk } from "../redux/slices/TOPIC/getTopicsThunk";
@@ -234,6 +235,11 @@ export default function ScheduleViewer() {
   const openLessonModal = (lesson, date, classIdOverride) => {
     const classId = classIdOverride ?? lesson.class_id;
     const { id: topicIdResolved, name: topicNameResolved } = resolveTopicInfo(lesson);
+    
+    // בדיקה אם השיעור כבר קיים ומבוטל - לאפשר שחזור
+    const isCancelled = lesson.is_cancelled ?? false;
+    const cancellationReason = lesson.cancellation_reason ?? "";
+    
     const payload = {
       class_id: classId,
       date: format(date, "yyyy-MM-dd"),
@@ -241,13 +247,14 @@ export default function ScheduleViewer() {
       end_time: lesson.end_time || "",
       topic: topicNameResolved || "",
       topic_id: topicIdResolved ?? "",
-      is_cancelled: false,
-      cancellation_reason: "",
+      is_cancelled: isCancelled,
+      cancellation_reason: cancellationReason,
+      id: lesson.id || null, // שמירת ה-ID למקרה של עדכון
     };
     console.log("Setting modal with payload:", payload);
     setModalLesson(payload);
-    setModalCancelled(false);
-    setModalReason("");
+    setModalCancelled(isCancelled);
+    setModalReason(cancellationReason);
     setModalOpen(true);
   };
 
@@ -261,24 +268,33 @@ export default function ScheduleViewer() {
 
   const confirmLessonModal = () => {
     if (!modalLesson) return;
-    // הימנעות מכפילות: בדיקה אם כבר קיים שיעור זהה (כיתה+תאריך+שעת התחלה)
-    const exists = lessons.find(
-      (l) =>
-        String(l.class_id) === String(modalLesson.class_id) &&
-        l.date === modalLesson.date &&
-        l.start_time === modalLesson.start_time
-    );
-    if (exists) {
-      alert("שיעור זה כבר קיים ב-LESSONS עבור תאריך ושעה אלו.");
-      closeLessonModal();
-      return;
-    }
+    
     const finalPayload = {
       ...modalLesson,
       is_cancelled: modalCancelled,
       cancellation_reason: modalCancelled ? (modalReason || "התקבל ביטול ללא סיבה") : "",
     };
-    dispatch(addRealyLessonThunk(finalPayload));
+    
+    // בדיקה אם זה שיעור קיים (יש לו ID או כבר קיים במערכת)
+    const existingLesson = lessons.find(
+      (l) =>
+        String(l.class_id) === String(modalLesson.class_id) &&
+        l.date === modalLesson.date &&
+        l.start_time === modalLesson.start_time
+    );
+    
+    if (modalLesson.id || existingLesson) {
+      // עדכון שיעור קיים - כולל שחזור מביטול
+      const lessonToUpdate = {
+        ...finalPayload,
+        id: modalLesson.id || existingLesson.id,
+      };
+      dispatch(updateLessonThunk(lessonToUpdate));
+    } else {
+      // הוספת שיעור חדש
+      dispatch(addRealyLessonThunk(finalPayload));
+    }
+    
     closeLessonModal();
   };
 
@@ -381,6 +397,64 @@ export default function ScheduleViewer() {
     }
     dispatch(addRealyLessonThunk(payload));
     setAddModalOpen(false);
+  };
+
+  // פונקציה לעדכון אוטומטי של שיעורים שעבר תאריכם ולא סומנו כמבוטלים
+  const autoConfirmPastLessons = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // התחלת היום
+    
+    let confirmed = 0;
+    
+    // עובר על כל השיעורים במערכת השבועית
+    schedule.forEach((weeklyLesson) => {
+      // מחשב את התאריך האחרון שעבר לשיעור זה
+      // נבדוק עבור כל יום בשבועות האחרונים
+      const daysToCheck = 30; // בודק 30 ימים אחורה
+      
+      for (let daysAgo = 1; daysAgo <= daysToCheck; daysAgo++) {
+        const pastDate = new Date(today);
+        pastDate.setDate(pastDate.getDate() - daysAgo);
+        
+        // בודק אם התאריך תואם ליום בשבוע של השיעור
+        if (pastDate.getDay() === weeklyLesson.day_of_week && weeklyLesson.year === selectedYear) {
+          const dateStr = format(pastDate, "yyyy-MM-dd");
+          
+          // בודק אם השיעור כבר קיים ב-LESSONS
+          const existingLesson = lessons.find(
+            (l) =>
+              String(l.class_id) === String(weeklyLesson.class_id) &&
+              l.date === dateStr &&
+              l.start_time === weeklyLesson.start_time
+          );
+          
+          // אם השיעור לא קיים, מוסיף אותו כ"התקיים"
+          if (!existingLesson) {
+            const { id: topicIdResolved, name: topicNameResolved } = resolveTopicInfo(weeklyLesson);
+            const payload = {
+              class_id: weeklyLesson.class_id,
+              date: dateStr,
+              start_time: weeklyLesson.start_time || "",
+              end_time: weeklyLesson.end_time || "",
+              topic: topicNameResolved || "",
+              topic_id: topicIdResolved ?? "",
+              is_cancelled: false,
+              cancellation_reason: "",
+            };
+            dispatch(addRealyLessonThunk(payload));
+            confirmed++;
+          }
+        }
+      }
+    });
+    
+    if (confirmed > 0) {
+      alert(`אושרו ${confirmed} שיעורים שהתקיימו בעבר`);
+      // רענון נתוני השיעורים
+      setTimeout(() => dispatch(getLessonsThunk()), 500);
+    } else {
+      alert("לא נמצאו שיעורים מהעבר שצריך לאשר");
+    }
   };
 
   // יצירת מערך של 6 ימים (ראשון עד שישי, ללא שבת)
@@ -559,6 +633,13 @@ export default function ScheduleViewer() {
                 אשר כל השיעורים ביום
               </button>
               <button
+                className="bg-purple-600 text-white font-semibold rounded-xl px-5 py-2 text-sm shadow hover:opacity-90"
+                onClick={autoConfirmPastLessons}
+                title="מאשר אוטומטית שיעורים שהתקיימו בעבר ולא סומנו כמבוטלים"
+              >
+                אשר שיעורים מהעבר
+              </button>
+              <button
                 className="bg-[#0A3960] text-white font-semibold rounded-xl px-5 py-2 text-sm shadow hover:opacity-90"
                 onClick={openAddLessonModal}
               >
@@ -730,7 +811,14 @@ export default function ScheduleViewer() {
             tabIndex={0}
           >
             <div className="w-full max-w-xl bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
-              <h3 className="text-xl font-bold text-[#0A3960] mb-4">אישור שיעור לתאריך נבחר</h3>
+              <h3 className="text-xl font-bold text-[#0A3960] mb-4">
+                {modalLesson.id ? 'עדכון שיעור קיים' : 'אישור שיעור לתאריך נבחר'}
+              </h3>
+              {modalLesson.id && modalLesson.is_cancelled && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                  <strong>שיעור זה מבוטל.</strong> ניתן להסיר את הסימון כדי לשחזר את השיעור.
+                </div>
+              )}
               <div className="space-y-2 text-sm text-gray-700">
                 <div><span className="font-semibold">כיתה:</span> {getClassName(Number(modalLesson.class_id))}</div>
                 <div><span className="font-semibold">תאריך:</span> {formatHebrewDateFromISO(modalLesson.date)} ({modalLesson.date})</div>
@@ -764,7 +852,7 @@ export default function ScheduleViewer() {
                   onClick={confirmLessonModal}
                   className="bg-[#0A3960] text-white font-semibold rounded-xl px-5 py-2 text-sm shadow hover:opacity-90"
                 >
-                  אשר (ENTER)
+                  {modalLesson.id ? 'עדכן' : 'אשר'} (ENTER)
                 </button>
                 <button
                   onClick={closeLessonModal}
@@ -773,7 +861,11 @@ export default function ScheduleViewer() {
                   סגור
                 </button>
               </div>
-              <div className="mt-2 text-xs text-gray-500">בברירת מחדל (ENTER) השיעור מאושר לתאריך זה.</div>
+              <div className="mt-2 text-xs text-gray-500">
+                {modalLesson.id 
+                  ? 'שיעור זה כבר קיים במערכת. ניתן לעדכן את סטטוס הביטול.' 
+                  : 'בברירת מחדל (ENTER) השיעור מאושר לתאריך זה.'}
+              </div>
             </div>
           </div>
         )}
@@ -914,6 +1006,13 @@ export default function ScheduleViewer() {
               onClick={confirmAllLessonsForDate}
             >
               אשר כל השיעורים ביום
+            </button>
+            <button
+              className="bg-purple-600 text-white font-semibold rounded-xl px-5 py-2 text-sm shadow hover:opacity-90"
+              onClick={autoConfirmPastLessons}
+              title="מאשר אוטומטית שיעורים שהתקיימו בעבר ולא סומנו כמבוטלים"
+            >
+              אשר שיעורים מהעבר
             </button>
             <button
               className="bg-[#0A3960] text-white font-semibold rounded-xl px-5 py-2 text-sm shadow hover:opacity-90"
@@ -1084,7 +1183,14 @@ export default function ScheduleViewer() {
             tabIndex={0}
           >
             <div className="w-full max-w-xl bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
-              <h3 className="text-xl font-bold text-[#0A3960] mb-4">אישור שיעור לתאריך נבחר</h3>
+              <h3 className="text-xl font-bold text-[#0A3960] mb-4">
+                {modalLesson.id ? 'עדכון שיעור קיים' : 'אישור שיעור לתאריך נבחר'}
+              </h3>
+              {modalLesson.id && modalLesson.is_cancelled && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                  <strong>שיעור זה מבוטל.</strong> ניתן להסיר את הסימון כדי לשחזר את השיעור.
+                </div>
+              )}
               <div className="space-y-2 text-sm text-gray-700">
                 <div><span className="font-semibold">כיתה:</span> {getClassName(Number(modalLesson.class_id))}</div>
                 <div><span className="font-semibold">תאריך:</span> {formatHebrewDateFromISO(modalLesson.date)} ({modalLesson.date})</div>
@@ -1119,7 +1225,7 @@ export default function ScheduleViewer() {
                   onClick={confirmLessonModal}
                   className="bg-[#0A3960] text-white font-semibold rounded-xl px-5 py-2 text-sm shadow hover:opacity-90"
                 >
-                  אשר (ENTER)
+                  {modalLesson.id ? 'עדכן' : 'אשר'} (ENTER)
                 </button>
                 <button
                   onClick={closeLessonModal}
@@ -1128,7 +1234,11 @@ export default function ScheduleViewer() {
                   סגור
                 </button>
               </div>
-              <div className="mt-2 text-xs text-gray-500">בברירת מחדל (ENTER) השיעור מאושר לתאריך זה.</div>
+              <div className="mt-2 text-xs text-gray-500">
+                {modalLesson.id 
+                  ? 'שיעור זה כבר קיים במערכת. ניתן לעדכן את סטטוס הביטול.' 
+                  : 'בברירת מחדל (ENTER) השיעור מאושר לתאריך זה.'}
+              </div>
             </div>
           </div>
         )
