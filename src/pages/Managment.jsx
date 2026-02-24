@@ -237,6 +237,9 @@ const Managment = () => {
         })).unwrap();
       }
       
+      // רענון נתוני ההרשאות מהשרת
+      await dispatch(getRolePermissionsThunk()).unwrap();
+      
       // עדכון ה-key כדי לגרום לטבלה להתרענן
       setPermissionsUpdateKey(prev => prev + 1);
     } catch (error) {
@@ -262,7 +265,7 @@ const Managment = () => {
       'calendar': 'לוח שנה',
       'equipments': 'השאלת ציוד',
       'approvals': 'אישורים',
-      'WeeklyScheduleEditor':'עריכת מערכת שעות',
+      'WeeklyScheduleEditor':'ניהול מערכת',
       'schedule': 'מערכת',
       'management': 'ניהול',
       'managment': 'ניהול',
@@ -1194,40 +1197,51 @@ const Managment = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {permissions.map((permission) => {
-                        const rolePermission = getRolePermissionForPermission(
-                          selectedRoleForEdit.id,
-                          permission.id
-                        );
-                        const canView = rolePermission?.permission?.can_view ?? false;
-                        const canEdit = rolePermission?.permission?.can_edit ?? false;
+                      {(() => {
+                        // סינון הרשאות כפולות - מציג כל מסך פעם אחת בלבד
+                        const uniquePermissions = permissions.reduce((acc, permission) => {
+                          const screenKey = permission.screen_name?.toLowerCase();
+                          if (!acc.find(p => p.screen_name?.toLowerCase() === screenKey)) {
+                            acc.push(permission);
+                          }
+                          return acc;
+                        }, []);
 
-                        return (
-                          <tr key={permission.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {getHebrewScreenName(permission.screen_name)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                              <input
-                                type="checkbox"
-                                checked={canView}
-                                onChange={() => handleTogglePermission(permission, 'can_view')}
-                                style={{ appearance: 'auto', WebkitAppearance: 'checkbox' }}
-                                className="w-5 h-5 cursor-pointer"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                              <input
-                                type="checkbox"
-                                checked={canEdit}
-                                onChange={() => handleTogglePermission(permission, 'can_edit')}
-                                style={{ appearance: 'auto', WebkitAppearance: 'checkbox' }}
-                                className="w-5 h-5 cursor-pointer"
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
+                        return uniquePermissions.map((permission) => {
+                          const rolePermission = getRolePermissionForPermission(
+                            selectedRoleForEdit.id,
+                            permission.id
+                          );
+                          const canView = rolePermission?.permission?.can_view ?? false;
+                          const canEdit = rolePermission?.permission?.can_edit ?? false;
+
+                          return (
+                            <tr key={permission.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {getHebrewScreenName(permission.screen_name)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={canView}
+                                  onChange={() => handleTogglePermission(permission, 'can_view')}
+                                  style={{ appearance: 'auto', WebkitAppearance: 'checkbox' }}
+                                  className="w-5 h-5 cursor-pointer"
+                                />
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={canEdit}
+                                  onChange={() => handleTogglePermission(permission, 'can_edit')}
+                                  style={{ appearance: 'auto', WebkitAppearance: 'checkbox' }}
+                                  className="w-5 h-5 cursor-pointer"
+                                />
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </div>
