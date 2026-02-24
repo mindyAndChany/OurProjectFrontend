@@ -32,6 +32,7 @@ const Managment = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedRole, setSelectedRole] = useState(null);
   const [selectedRoleForEdit, setSelectedRoleForEdit] = useState(null);
+  const [permissionsUpdateKey, setPermissionsUpdateKey] = useState(0);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showAddRoleModal, setShowAddRoleModal] = useState(false);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
@@ -191,12 +192,24 @@ const Managment = () => {
         rp => rp.role_id === selectedRoleForEdit.id && rp.permission_id === permission.id
       );
 
+      console.log('🔍 handleTogglePermission called:', {
+        permissionId: permission.id,
+        field,
+        existingRolePermission,
+        currentValues: existingRolePermission?.permission
+      });
+
       if (existingRolePermission) {
         const currentCanView = existingRolePermission.permission?.can_view ?? false;
         const currentCanEdit = existingRolePermission.permission?.can_edit ?? false;
         
         const newCanView = field === 'can_view' ? !currentCanView : currentCanView;
         const newCanEdit = field === 'can_edit' ? !currentCanEdit : currentCanEdit;
+        
+        console.log('📝 Updating permission:', {
+          current: { can_view: currentCanView, can_edit: currentCanEdit },
+          new: { can_view: newCanView, can_edit: newCanEdit }
+        });
         
         // אם שני השדות false, מוחקים את ההרשאה
         if (!newCanView && !newCanEdit) {
@@ -215,6 +228,7 @@ const Managment = () => {
           })).unwrap();
         }
       } else {
+        console.log('➕ Adding new permission');
         await dispatch(addRolePermissionThunk({
           role_id: selectedRoleForEdit.id,
           permission_id: permission.id,
@@ -222,6 +236,9 @@ const Managment = () => {
           can_edit: field === 'can_edit'
         })).unwrap();
       }
+      
+      // עדכון ה-key כדי לגרום לטבלה להתרענן
+      setPermissionsUpdateKey(prev => prev + 1);
     } catch (error) {
       alert('שגיאה בעדכון ההרשאה');
       console.error(error);
@@ -1162,7 +1179,7 @@ const Managment = () => {
                   עריכת הרשאות לתפקיד: {selectedRoleForEdit.name}
                 </h3>
                 <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
-                  <table key={rolePermissions.length} className="min-w-full divide-y divide-gray-200">
+                  <table key={permissionsUpdateKey} className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 sticky top-0">
                       <tr>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">

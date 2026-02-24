@@ -84,7 +84,12 @@ export const rolePermissionsSlice = createSlice({
                 rp.permission_id === updatedRolePermission.permission_id
         );
         if (index !== -1) {
-          state.rolePermissions[index] = updatedRolePermission;
+          // יצירת מערך חדש כדי ל-React יזהה את השינוי
+          state.rolePermissions = [
+            ...state.rolePermissions.slice(0, index),
+            updatedRolePermission,
+            ...state.rolePermissions.slice(index + 1)
+          ];
         }
         console.log("updateRolePermission success:", updatedRolePermission);
       })

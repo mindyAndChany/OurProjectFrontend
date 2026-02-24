@@ -3,30 +3,22 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
 
 export const updateRolePermissionThunk = createAsyncThunk(
-  'rolePermissions/updateRolePermission',
-  async ({ roleId, permissionId, rolePermissionData }) => {
+  "rolePermissions/updateRolePermission",
+  async ({ roleId, permissionId, rolePermissionData }, { rejectWithValue }) => {
     const url = `${BACKEND_URL}/api/role-permissions/${roleId}/${permissionId}`;
-    
+
     const res = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(rolePermissionData),
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(rolePermissionData), // { can_view:true, can_edit:false } למשל
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      return {
-        ...data,
-        permission: {
-          ...data.permission,
-          can_view: rolePermissionData.can_view,
-          can_edit: rolePermissionData.can_edit
-        }
-      };
-    } else {
-      throw new Error('failed to update role permission');
+    const payload = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      return rejectWithValue(payload?.details || payload?.error || `HTTP ${res.status}`);
     }
+
+    return { ...payload, roleId, oldPermissionId: permissionId };
   }
 );
