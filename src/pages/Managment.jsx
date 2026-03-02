@@ -395,6 +395,59 @@ const Managment = () => {
     }
   };
 
+  const handleCheckAvailabilityNow = async () => {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM
+    const endTime = new Date(now.getTime() + 60 * 60 * 1000).toTimeString().slice(0, 5); // +1 hour
+    
+    // עדכון ה-state עם הערכים הנוכחיים
+    setAvailabilityDate(today);
+    setAvailabilityStartTime(currentTime);
+    setAvailabilityEndTime(endTime);
+    
+    // ביצוע בדיקת הזמינות
+    try {
+      setAvailabilityLoading(true);
+      console.log('📅 Checking availability now for:', {
+        date: today,
+        start_time: currentTime,
+        end_time: endTime
+      });
+
+      const result = await dispatch(checkAvailabilityThunk({
+        date: today,
+        start_time: currentTime,
+        end_time: endTime
+      })).unwrap();
+
+      console.log('📋 API Response:', result);
+
+      if (!Array.isArray(result)) {
+        console.warn('⚠️ Result is not an array:', result);
+        alert('תשובה לא חוקית מהשרת');
+        return;
+      }
+
+      const occupiedRoomIds = new Set(result.map(lesson => lesson.room_id));
+      console.log('🚫 Occupied rooms:', Array.from(occupiedRoomIds));
+      
+      const free = rooms.filter(room => !occupiedRoomIds.has(room.id));
+      console.log('✅ Available rooms:', free);
+      
+      setHighlightedRoomIds(free.map(room => room.id));
+      
+      if (free.length === 0) {
+        alert('אין חדרים פנויים כעת');
+      }
+    } catch (error) {
+      console.error('❌ Availability check failed:', error);
+      alert(`שגיאה בבדיקת הזמינות:\n${error}`);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
   const handleResetAvailability = () => {
     setHighlightedRoomIds([]);
     setAvailabilityDate('');
@@ -520,6 +573,7 @@ const Managment = () => {
             highlightedRoomIds={highlightedRoomIds}
             availabilityLoading={availabilityLoading}
             handleCheckAvailability={handleCheckAvailability}
+            handleCheckAvailabilityNow={handleCheckAvailabilityNow}
             handleResetAvailability={handleResetAvailability}
           />
         )}

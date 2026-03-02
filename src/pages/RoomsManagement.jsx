@@ -23,6 +23,7 @@ const RoomsManagement = ({
   highlightedRoomIds,
   availabilityLoading,
   handleCheckAvailability,
+  handleCheckAvailabilityNow,
   handleResetAvailability
 }) => {
   return (
@@ -48,7 +49,7 @@ const RoomsManagement = ({
                     type="date"
                     value={availabilityDate}
                     onChange={(e) => setAvailabilityDate(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full md:w-44 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -58,7 +59,7 @@ const RoomsManagement = ({
                     type="time"
                     value={availabilityStartTime}
                     onChange={(e) => setAvailabilityStartTime(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full md:w-32 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -68,25 +69,34 @@ const RoomsManagement = ({
                     type="time"
                     value={availabilityEndTime}
                     onChange={(e) => setAvailabilityEndTime(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full md:w-32 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
-                <div className="flex items-end gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-end gap-2">
                   <button
                     type="submit"
                     disabled={availabilityLoading}
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                    className="w-full sm:w-40 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400"
                   >
                     {availabilityLoading ? 'בדיקה...' : 'בדוק זמינות'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCheckAvailabilityNow}
+                    disabled={availabilityLoading}
+                    className="w-full sm:w-36 bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-400 whitespace-nowrap"
+                    title="בדוק חדרים פנויים כעת בשעה הנוכחית"
+                  >
+                    {availabilityLoading ? 'בדיקה...' : '⚡ עכשיו'}
                   </button>
                   {highlightedRoomIds.length > 0 && (
                     <button
                       type="button"
                       onClick={handleResetAvailability}
-                      className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+                      className="w-full sm:w-28 bg-red-600 text-white px-3 py-2 rounded-md hover:bg-red-700 transition-colors"
                     >
-                      ╳ ביטול 
+                      ╳ ביטול
                     </button>
                   )}
                 </div>
