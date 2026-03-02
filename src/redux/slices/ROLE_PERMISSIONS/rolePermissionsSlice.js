@@ -79,6 +79,26 @@ export const rolePermissionsSlice = createSlice({
       .addCase(updateRolePermissionThunk.fulfilled, (state, action) => {
         state.loading = false;
         const updatedRolePermission = action.payload;
+
+        if (updatedRolePermission?.deleted) {
+          const roleId = updatedRolePermission.role_id ?? updatedRolePermission.roleId;
+          const permissionId = updatedRolePermission.permission_id ?? updatedRolePermission.oldPermissionId;
+
+          state.rolePermissions = state.rolePermissions.filter(
+            rp => !(rp.role_id === roleId && rp.permission_id === permissionId)
+          );
+
+          if (
+            state.selectedRolePermission?.role_id === roleId &&
+            state.selectedRolePermission?.permission_id === permissionId
+          ) {
+            state.selectedRolePermission = null;
+          }
+
+          console.log("updateRolePermission deleted:", updatedRolePermission);
+          return;
+        }
+
         const index = state.rolePermissions.findIndex(
           rp => rp.role_id === updatedRolePermission.role_id && 
                 rp.permission_id === updatedRolePermission.permission_id
