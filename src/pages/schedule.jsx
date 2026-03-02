@@ -9,6 +9,7 @@ import { getLessonsThunk } from "../redux/slices/LESSONS/getLessonsThunk";
 import { useNavigate } from "react-router-dom";
 import { getTopicsThunk } from "../redux/slices/TOPIC/getTopicsThunk";
 import { getCoursesThunk } from "../redux/slices/COURSES/getCoursesThunk";
+import { getRoomsThunk } from "../redux/slices/ROOMS/getRoomsThunk";
 import HebrewDateSelector from "../components/HebrewDateSelector.jsx";
 import HebrewDateShow from "../components/HebrewDateShow.jsx";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
@@ -69,8 +70,9 @@ export default function ScheduleViewer() {
   const lessons = useSelector((state) => state.lessons?.data ?? []); // שיעורים ספציפיים לתאריך
   const schedule = useSelector((state) => state.weekly_schedule?.data ?? []); // מערכת שבועית קבועה
   const classes = useSelector((state) => state.classes?.data ?? []); // רשימת כיתות
-  const teachers = useSelector((state) => state.teacher?.data ?? []); // רשימת מקצועות/מורים
+  const teachers = useSelector((state) => state.topics?.data ?? []); // רשימת מקצועות/מורים
   const courses = useSelector((state) => state.courses?.data ?? []); // רשימת קורסים
+  const rooms = useSelector((state) => state.rooms?.data ?? []); // רשימת חדרים
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -150,6 +152,7 @@ export default function ScheduleViewer() {
     dispatch(getweeklySchedulesThunk());
     dispatch(getLessonsThunk());
     dispatch(getTopicsThunk());
+    dispatch(getRoomsThunk());
   }, [dispatch]);
 
   useEffect(() => {
@@ -573,6 +576,11 @@ export default function ScheduleViewer() {
     const cls = classes.find((c) => c.id === classId);
     return cls ? cls.name : "לא ידוע";
   };
+  const getRoomName = (roomId) => {
+    if (!roomId) return "-";
+    const room = rooms.find((r) => r.id === roomId);
+    return room ? `${room.name} (קומה ${room.floor})` : "לא ידוע";
+  };
   const selectedClassName = selectedClassId ? getClassName(Number(selectedClassId)) : domainTitle;
 
   /**
@@ -830,9 +838,28 @@ export default function ScheduleViewer() {
                 <div><span className="font-semibold">תאריך:</span> {formatHebrewDateFromISO(modalLesson.date)} ({modalLesson.date})</div>
                 <div><span className="font-semibold">שעה:</span> {formatTime(modalLesson.start_time)} - {formatTime(modalLesson.end_time)}</div>
                 <div><span className="font-semibold">נושא:</span> {modalLesson.topic || 'ללא נושא'}</div>
+                <div><span className="font-semibold">חדר:</span> {getRoomName(modalLesson.room_id)}</div>
               </div>
 
-              <div className="mt-4 p-3 border rounded-lg bg-gray-50">
+              <div className="mt-4 p-3 border rounded-lg bg-gray-50 space-y-3">
+                <div>
+                  <label className="font-semibold text-sm block mb-2">חדר (אופציונלי)</label>
+                  <select
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    value={modalLesson.room_id || ""}
+                    onChange={(e) => setModalLesson({
+                      ...modalLesson,
+                      room_id: e.target.value ? Number(e.target.value) : null
+                    })}
+                  >
+                    <option value="">ללא חדר</option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.name} (קומה {room.floor})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -956,6 +983,21 @@ export default function ScheduleViewer() {
                     value={newLessonData.topic}
                     onChange={(e) => setNewLessonData({ ...newLessonData, topic: e.target.value })}
                   />
+                </label>
+                <label className="flex flex-col">
+                  <span className="font-semibold mb-1">חדר (אופציונלי)</span>
+                  <select
+                    className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    value={newLessonData.room_id || ""}
+                    onChange={(e) => setNewLessonData({ ...newLessonData, room_id: e.target.value ? Number(e.target.value) : "" })}
+                  >
+                    <option value="">בחר חדר</option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.name} ({room.floor})
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
               <div className="mt-5 flex gap-2">
@@ -1202,10 +1244,29 @@ export default function ScheduleViewer() {
                 <div><span className="font-semibold">תאריך:</span> {formatHebrewDateFromISO(modalLesson.date)} ({modalLesson.date})</div>
                 <div><span className="font-semibold">שעה:</span> {formatTime(modalLesson.start_time)} - {formatTime(modalLesson.end_time)}</div>
                 <div><span className="font-semibold">נושא:</span> {modalLesson.topic || 'ללא נושא'}</div>
+                <div><span className="font-semibold">חדר:</span> {getRoomName(modalLesson.room_id)}</div>
 
               </div>
 
-              <div className="mt-4 p-3 border rounded-lg bg-gray-50">
+              <div className="mt-4 p-3 border rounded-lg bg-gray-50 space-y-3">
+                <div>
+                  <label className="font-semibold text-sm block mb-2">חדר (אופציונלי)</label>
+                  <select
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    value={modalLesson.room_id || ""}
+                    onChange={(e) => setModalLesson({
+                      ...modalLesson,
+                      room_id: e.target.value ? Number(e.target.value) : null
+                    })}
+                  >
+                    <option value="">ללא חדר</option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.name} (קומה {room.floor})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -1300,7 +1361,7 @@ export default function ScheduleViewer() {
                   onChange={(e) => setNewLessonData({ ...newLessonData, end_time: e.target.value })}
                 />
               </label>
-              <label className="flex flex-col col-span-2">
+              <label className="flex flex-col">
                 <span className="font-semibold mb-1">נושא (אופציונלי)</span>
                 <input
                   type="text"
@@ -1309,6 +1370,21 @@ export default function ScheduleViewer() {
                   value={newLessonData.topic}
                   onChange={(e) => setNewLessonData({ ...newLessonData, topic: e.target.value })}
                 />
+              </label>
+              <label className="flex flex-col">
+                <span className="font-semibold mb-1">חדר (אופציונלי)</span>
+                <select
+                  className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                  value={newLessonData.room_id || ""}
+                  onChange={(e) => setNewLessonData({ ...newLessonData, room_id: e.target.value ? Number(e.target.value) : "" })}
+                >
+                  <option value="">בחר חדר</option>
+                  {rooms.map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.name} ({room.floor})
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
             <div className="mt-5 flex gap-2">
