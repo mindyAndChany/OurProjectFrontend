@@ -18,6 +18,7 @@ import { getRoomsThunk } from '../redux/slices/ROOMS/getRoomsThunk';
 import { addRoomThunk } from '../redux/slices/ROOMS/addRoomThunk';
 import { updateRoomThunk } from '../redux/slices/ROOMS/updateRoomThunk';
 import { deleteRoomThunk } from '../redux/slices/ROOMS/deleteRoomThunk';
+import { checkAvailabilityThunk } from '../redux/slices/ROOMS/checkAvailabilityThunk';
 import UsersManagement from './UsersManagement';
 import RolesManagement from './RolesManagement';
 import RoomsManagement from './RoomsManagement';
@@ -44,6 +45,11 @@ const Managment = () => {
   const [showEditRoomModal, setShowEditRoomModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
   const [editingRoom, setEditingRoom] = useState(null);
+  const [availabilityDate, setAvailabilityDate] = useState('');
+  const [availabilityStartTime, setAvailabilityStartTime] = useState('');
+  const [availabilityEndTime, setAvailabilityEndTime] = useState('');
+  const [highlightedRoomIds, setHighlightedRoomIds] = useState([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -333,6 +339,69 @@ const Managment = () => {
     }
   };
 
+  const handleCheckAvailability = async (e) => {
+    e.preventDefault();
+    
+
+    if (!availabilityDate || !availabilityStartTime || !availabilityEndTime) {
+      alert('אנא מלא את כל השדות');
+      return;
+    }
+
+    setAvailabilityLoading(true);
+    try {
+      console.log('📅 Checking availability for:', {
+        date: availabilityDate,
+        start_time: availabilityStartTime,
+        end_time: availabilityEndTime
+      });
+
+      const result = await dispatch(checkAvailabilityThunk({
+        date: availabilityDate,
+        start_time: availabilityStartTime,
+        end_time: availabilityEndTime
+      })).unwrap();
+
+      console.log('📋 API Response:', result);
+
+      // בדיקה האם התשובה היא מערך
+      if (!Array.isArray(result)) {
+        console.warn('⚠️ Result is not an array:', result);
+        alert('תשובה לא חוקית מהשרת');
+        return;
+      }
+
+      // חישוב חדרים שנימצאים בשימוש
+      const occupiedRoomIds = new Set(result.map(lesson => lesson.room_id));
+      
+      console.log('🚫 Occupied rooms:', Array.from(occupiedRoomIds));
+      
+      // סינון חדרים פנויים
+      const free = rooms.filter(room => !occupiedRoomIds.has(room.id));
+      
+      console.log('✅ Available rooms:', free);
+      
+      // הצהת החדרים הפנויים בצהוב
+      setHighlightedRoomIds(free.map(room => room.id));
+      
+      if (free.length === 0) {
+        alert('אין חדרים פנויים בזמן הנבחר');
+      }
+    } catch (error) {
+      console.error('❌ Availability check failed:', error);
+      alert(`שגיאה בבדיקת הזמינות:\n${error}`);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
+  const handleResetAvailability = () => {
+    setHighlightedRoomIds([]);
+    setAvailabilityDate('');
+    setAvailabilityStartTime('');
+    setAvailabilityEndTime('');
+  };
+
   if (usersLoading || rolesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -442,6 +511,16 @@ const Managment = () => {
             editingRoom={editingRoom}
             setEditingRoom={setEditingRoom}
             handleUpdateRoom={handleUpdateRoom}
+            availabilityDate={availabilityDate}
+            setAvailabilityDate={setAvailabilityDate}
+            availabilityStartTime={availabilityStartTime}
+            setAvailabilityStartTime={setAvailabilityStartTime}
+            availabilityEndTime={availabilityEndTime}
+            setAvailabilityEndTime={setAvailabilityEndTime}
+            highlightedRoomIds={highlightedRoomIds}
+            availabilityLoading={availabilityLoading}
+            handleCheckAvailability={handleCheckAvailability}
+            handleResetAvailability={handleResetAvailability}
           />
         )}
 

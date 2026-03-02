@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const RoomsManagement = ({
   rooms,
@@ -13,7 +13,17 @@ const RoomsManagement = ({
   setShowEditRoomModal,
   editingRoom,
   setEditingRoom,
-  handleUpdateRoom
+  handleUpdateRoom,
+  availabilityDate,
+  setAvailabilityDate,
+  availabilityStartTime,
+  setAvailabilityStartTime,
+  availabilityEndTime,
+  setAvailabilityEndTime,
+  highlightedRoomIds,
+  availabilityLoading,
+  handleCheckAvailability,
+  handleResetAvailability
 }) => {
   return (
     <>
@@ -28,7 +38,60 @@ const RoomsManagement = ({
               </button>
             </div>
 
-            {/* Rooms Map by Floor */}
+            {/* בדיקת זמינות חדרים */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-6 border border-blue-200">
+              <h3 className="text-lg font-bold text-gray-800 mb-4">בדוק זמינות חדרים</h3>
+              <form onSubmit={handleCheckAvailability} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">תאריך</label>
+                  <input
+                    type="date"
+                    value={availabilityDate}
+                    onChange={(e) => setAvailabilityDate(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">שעת התחלה</label>
+                  <input
+                    type="time"
+                    value={availabilityStartTime}
+                    onChange={(e) => setAvailabilityStartTime(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">שעת סיום</label>
+                  <input
+                    type="time"
+                    value={availabilityEndTime}
+                    onChange={(e) => setAvailabilityEndTime(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <button
+                    type="submit"
+                    disabled={availabilityLoading}
+                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                  >
+                    {availabilityLoading ? 'בדיקה...' : 'בדוק זמינות'}
+                  </button>
+                  {highlightedRoomIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleResetAvailability}
+                      className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+                    >
+                      ╳ ריסט
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
             <div className="space-y-6">
               {[...new Set(rooms?.map(r => r.floor) || [])].sort((a, b) => b - a).map(floor => {
                 const floorRooms = rooms?.filter(r => r.floor === floor) || [];
@@ -68,7 +131,14 @@ const RoomsManagement = ({
                           </thead>
                           <tbody>
                             {evenRooms.map((room, index) => (
-                              <tr key={room.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <tr 
+                                key={room.id} 
+                                className={
+                                  highlightedRoomIds.includes(room.id) 
+                                    ? 'bg-yellow-200' 
+                                    : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                                }
+                              >
                                 <td className="border border-gray-300 px-2 py-2 text-center font-bold text-indigo-600 text-sm">
                                   {room.number}
                                 </td>
@@ -137,7 +207,14 @@ const RoomsManagement = ({
                           </thead>
                           <tbody>
                             {centerRooms.map((room, index) => (
-                              <tr key={room.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <tr 
+                                key={room.id} 
+                                className={
+                                  highlightedRoomIds.includes(room.id) 
+                                    ? 'bg-yellow-200' 
+                                    : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                                }
+                              >
                                 <td className="border border-gray-300 px-2 py-2 text-center font-bold text-blue-600 text-sm">
                                   {room.number}
                                 </td>
@@ -206,7 +283,14 @@ const RoomsManagement = ({
                           </thead>
                           <tbody>
                             {oddRooms.map((room, index) => (
-                              <tr key={room.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <tr 
+                                key={room.id} 
+                                className={
+                                  highlightedRoomIds.includes(room.id) 
+                                    ? 'bg-yellow-200' 
+                                    : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                                }
+                              >
                                 <td className="border border-gray-300 px-2 py-2 text-center font-bold text-indigo-600 text-sm">
                                   {room.number}
                                 </td>
