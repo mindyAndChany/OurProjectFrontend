@@ -250,6 +250,7 @@ export default function ScheduleViewer() {
       is_cancelled: isCancelled,
       cancellation_reason: cancellationReason,
       id: lesson.id || null, // שמירת ה-ID למקרה של עדכון
+      room_id: lesson.room_id ?? null, // חדר השיעור
     };
     console.log("Setting modal with payload:", payload);
     setModalLesson(payload);
@@ -341,6 +342,7 @@ export default function ScheduleViewer() {
           topic_id: topicIdResolved ?? "",
           is_cancelled: false,
           cancellation_reason: "",
+          room_id: lesson.room_id ?? null, // חדר מהמערכת השבועית
         };
         dispatch(addRealyLessonThunk(payload));
       }
@@ -365,6 +367,7 @@ export default function ScheduleViewer() {
       topic_id: "",
       is_cancelled: false,
       cancellation_reason: "",
+      room_id: "", // חדר - אופציונלי
     });
     setAddModalOpen(true);
   };
@@ -395,6 +398,8 @@ export default function ScheduleViewer() {
       const t = (teachers || []).find((x) => String(x.id) === String(payload.topic_id));
       if (t?.name) payload.topic = t.name;
     }
+    // Ensure room_id is null if empty
+    if (!payload.room_id) payload.room_id = null;
     dispatch(addRealyLessonThunk(payload));
     setAddModalOpen(false);
   };
@@ -440,6 +445,7 @@ export default function ScheduleViewer() {
               topic_id: topicIdResolved ?? "",
               is_cancelled: false,
               cancellation_reason: "",
+              room_id: weeklyLesson.room_id ?? null, // חדר מהמערכת השבועית
             };
             dispatch(addRealyLessonThunk(payload));
             confirmed++;
