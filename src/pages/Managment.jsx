@@ -19,6 +19,7 @@ import { addRoomThunk } from '../redux/slices/ROOMS/addRoomThunk';
 import { updateRoomThunk } from '../redux/slices/ROOMS/updateRoomThunk';
 import { deleteRoomThunk } from '../redux/slices/ROOMS/deleteRoomThunk';
 import { checkAvailabilityThunk } from '../redux/slices/ROOMS/checkAvailabilityThunk';
+import { getweeklySchedulesThunk } from '../redux/slices/SCHEDULE/getScheduleThunk';
 import UsersManagement from './UsersManagement';
 import RolesManagement from './RolesManagement';
 import RoomsManagement from './RoomsManagement';
@@ -30,6 +31,7 @@ const Managment = () => {
   const { permissions } = useSelector((state) => state.permissions);
   const { rolePermissions } = useSelector((state) => state.rolePermissions);
   const { data: rooms } = useSelector((state) => state.rooms);
+  const weeklySchedule = useSelector((state) => state.weekly_schedule?.data || []);
   const currentUser = useSelector((state) => state.user);
 
   const [selectedSection, setSelectedSection] = useState('users');
@@ -80,6 +82,7 @@ const Managment = () => {
     dispatch(getPermissionsThunk());
     dispatch(getRolePermissionsThunk());
     dispatch(getRoomsThunk());
+    dispatch(getweeklySchedulesThunk()); // load weekly schedule so availability check can use it
   }, [dispatch]);
 
   const handleUpdateUserRole = async (userId, newRoleId) => {
@@ -339,9 +342,17 @@ const Managment = () => {
     }
   };
 
+  // helper for comparing time ranges (HH:MM strings)
+  const timesOverlap = (start1, end1, start2, end2) => {
+    const toMinutes = (t) => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    };
+    return !(toMinutes(end1) <= toMinutes(start2) || toMinutes(end2) <= toMinutes(start1));
+  };
+
   const handleCheckAvailability = async (e) => {
     e.preventDefault();
-    
 
     if (!availabilityDate || !availabilityStartTime || !availabilityEndTime) {
       alert('אנא מלא את כל השדות');
@@ -362,7 +373,7 @@ const Managment = () => {
         end_time: availabilityEndTime
       })).unwrap();
 
-      console.log('📋 API Response:', result);
+      console.log('📋 API + weekly Response:', result);
 
       // בדיקה האם התשובה היא מערך
       if (!Array.isArray(result)) {
@@ -371,17 +382,23 @@ const Managment = () => {
         return;
       }
 
-      // חישוב חדרים שנימצאים בשימוש
-      const occupiedRoomIds = new Set(result.map(lesson => lesson.room_id));
-      
-      console.log('🚫 Occupied rooms:', Array.from(occupiedRoomIds));
-      
+      // חישוב חדרים שנמצאים בשימוש על פי שיעורים אמיתיים (ושיעורים שבועיים עם room_id)
+      const occupiedRoomIds = new Set(result.map(lesson => lesson.room_id).filter(id => id != null));
+      console.log('🚫 Occupied rooms (including weekly):', Array.from(occupiedRoomIds));
+
+      // if we have weekly entries without room, inform user
+      const weeklyOnly = result.filter(r => r.fromWeekly && r.room_id == null);
+      if (weeklyOnly.length) {
+        console.log('📘 Weekly lessons lacking room assignments:', weeklyOnly);
+        alert(`יש ${weeklyOnly.length} שיעורים שבועיים ללא חדר משוייך, אנא בצע/י שיבוץ`);
+      }
+
       // סינון חדרים פנויים
       const free = rooms.filter(room => !occupiedRoomIds.has(room.id));
       
       console.log('✅ Available rooms:', free);
       
-      // הצהת החדרים הפנויים בצהוב
+      // הצגת החדרים הפנויים בצהוב
       setHighlightedRoomIds(free.map(room => room.id));
       
       if (free.length === 0) {
@@ -430,7 +447,7 @@ const Managment = () => {
       }
 
       const occupiedRoomIds = new Set(result.map(lesson => lesson.room_id));
-      console.log('🚫 Occupied rooms:', Array.from(occupiedRoomIds));
+      console.log('🚫 Occupied rooms (including weekly):', Array.from(occupiedRoomIds));
       
       const free = rooms.filter(room => !occupiedRoomIds.has(room.id));
       console.log('✅ Available rooms:', free);
