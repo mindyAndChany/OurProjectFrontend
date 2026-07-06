@@ -142,3 +142,57 @@
     transform: translateY(calc(-100% - var(--gap)));
   }
 }
+/* עיצוב חדש לפופאפ של flexcal */
+
+.ui-flexcal,
+.ui-widget-content {
+  border-radius: 1rem !important;
+  border: 1px solid #e5e7eb !important; /* גבול אפור בהיר */
+  background-color: #fff !important;
+  font-family: "Heebo", sans-serif !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+  padding: 1rem !important;
+  z-index: 9999 !important;
+}
+
+/* כותרת חודש */
+.ui-flexcal .ui-tabs-nav {
+  background-color: #f3f4f6 !important;
+  font-weight: 700  !important;
+  font-size: 1rem !important;
+  color: #1f2937 !important;
+  padding: 0.5rem !important;
+  border-radius: 0.75rem    !important;
+}
+
+/* ימי השבוע */
+.ui-flexcal .ui-flexcal-week td {
+  background-color: #f9fafb !important;
+  font-weight: 600 !important;
+  color: #6b7280 !important;
+  text-align: center !important;
+}
+
+/* תאי תאריכים */
+.ui-flexcal .ui-flexcal-day {
+  padding: 0.5rem 0.75rem !important;
+  text-align: center !important;
+  border-radius: 0.5rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+
+.ui-flexcal .ui-flexcal-day:hover {
+  background-color: #f0f4f8 !important;
+}
+
+.ui-flexcal .ui-flexcal-selected {
+  background-color: #295f8b !important;
+  color: #fff !important;
+}
+
+.ui-flexcal .ui-flexcal-today {
+  border: 2px solid #295f8b !important;
+  border-radius: 0.5rem;
+}
