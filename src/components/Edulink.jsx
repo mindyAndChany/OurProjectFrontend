@@ -1,36 +1,56 @@
-// import React from "react";
-
-// export const Edulink = ({ className, EDULINKClassName, spanClassName }) => {
-//   return (
-//     <div
-//       className={`relative top-[29px] left-[1666px] w-[231px] h-[59px] flex ${className}`}
-//     >
-//       <p
-//         className={`flex-1 w-[231px] [font-family:'Anomalia_ML_DemiBold_AAA-Bold',Helvetica] font-bold text-transparent text-5xl text-center tracking-[0] leading-[normal] ${EDULINKClassName}`}
-//       >
-//         <span className="text-black">EDU</span>
-
-//         <span className={`text-[#54f0af] ${spanClassName}`}>LINK</span>
-//       </p>
-//     </div>
-//   );
-// };
 import React from "react";
 
 export const Edulink = ({ className = "", spanClassName = "" }) => {
   return (
-    <div className={`flex items-center ${className}`}>
-      <p
-        className="
-          font-bold text-4xl
-          [font-family:'Anomalia_ML_DemiBold_AAA-Bold',Helvetica]
-          leading-none
-          whitespace-nowrap
-        "
-      >
-        <span className="text-black">EDU</span>
-        <span className={`text-[#295f8b] ${spanClassName}`}>LINK</span>
-      </p>
+    <div className={`flex items-center group ${className}`} dir="ltr">
+      <div className="relative">
+        {/* Background glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+        
+        <p
+          className="
+            relative
+            font-bold text-5xl
+            leading-none
+            whitespace-nowrap
+            drop-shadow-2xl
+            transform group-hover:scale-105
+            transition-transform duration-300
+          "
+          style={{ fontFamily: "'Orbitron', 'Space Grotesk', sans-serif" }}
+        >
+          <span className="
+            bg-gradient-to-r from-gray-800 via-gray-900 to-black
+            bg-clip-text text-transparent
+            animate-gradient-x
+            tracking-wider
+            inline-block
+            transform group-hover:rotate-2
+            transition-transform duration-300
+          ">
+            EDU
+          </span>
+          <span className={`
+            bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-500
+            bg-clip-text text-transparent
+            animate-gradient-x
+            tracking-widest
+            inline-block
+            transform group-hover:-rotate-2
+            transition-transform duration-300
+            ${spanClassName}
+          `}>
+            LINK
+          </span>
+        </p>
+
+        {/* Decorative underline */}
+        <div className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+        
+        {/* Sparkle effects */}
+        <div className="absolute top-0 left-0 w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 animate-ping"></div>
+        <div className="absolute bottom-0 right-0 w-2 h-2 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 animate-ping animation-delay-500"></div>
+      </div>
     </div>
   );
 };

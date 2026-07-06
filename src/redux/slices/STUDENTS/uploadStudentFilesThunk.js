@@ -1,7 +1,9 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
+
 // Upload profile photo and documents for a specific student by id_number
-// Expects backend at: POST http://localhost:4000/api/studentsData/uploadFiles/:id
+// Expects backend at: POST ${BACKEND_URL}/api/studentsData/uploadFiles/:id
 // Body: multipart/form-data with fields: profilePhoto (single), documents (multiple)
 // Response: { id_number, photoUrl, documents: [{ name, url }] }
 export const uploadStudentFilesThunk = createAsyncThunk(
@@ -26,7 +28,7 @@ export const uploadStudentFilesThunk = createAsyncThunk(
       }
       console.log('uploadStudentFiles formData entries:', debugEntries);
 
-      const res = await fetch(`http://localhost:4000/api/studentsData/uploadFiles/${id_number}`, {
+      const res = await fetch(`${BACKEND_URL}/api/studentsData/uploadFiles/${id_number}`, {
         method: 'POST',
         body: formData,
       });

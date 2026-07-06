@@ -1,9 +1,11 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
+
 export const addWeeklyLessonThunk = createAsyncThunk(
   'WeeklySchedule/addLesson',
   async (lessonData) => {
-    const res = await fetch('http://localhost:4000/api/weekly-schedules', {
+    const res = await fetch(`${BACKEND_URL}/api/weekly-schedules`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(lessonData),

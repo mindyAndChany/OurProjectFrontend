@@ -4,6 +4,7 @@ import { Button } from "@mui/material";
 import { uploadStudentFilesThunk } from "../redux/slices/STUDENTS/uploadStudentFilesThunk";
 
 export const StudentFilesManager = ({ student, onUpdated }) => {
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
   const dispatch = useDispatch();
   const [photoFile, setPhotoFile] = useState(null);
   const [docFiles, setDocFiles] = useState([]);
@@ -77,7 +78,7 @@ export const StudentFilesManager = ({ student, onUpdated }) => {
     let isMounted = true;
     const fetchPhoto = async () => {
       try {
-        const res = await fetch(`http://localhost:4000/api/studentsData/${id_number}/photo`);
+        const res = await fetch(`${BACKEND_URL}/api/studentsData/${id_number}/photo`);
         if (res.ok) {
           const data = await res.json();
           const url = data.photoUrl || data.photo_url || data.url || null;
@@ -87,7 +88,7 @@ export const StudentFilesManager = ({ student, onUpdated }) => {
     };
     const fetchDocs = async () => {
       try {
-        const res = await fetch(`http://localhost:4000/api/studentsData/${id_number}/documents`);
+        const res = await fetch(`${BACKEND_URL}/api/studentsData/${id_number}/documents`);
         if (res.ok) {
           const data = await res.json();
           if (isMounted && Array.isArray(data)) setCurrentDocuments(data);
@@ -100,7 +101,7 @@ export const StudentFilesManager = ({ student, onUpdated }) => {
     return () => { isMounted = false; };
   }, [id_number]);
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:4000';
+const API_BASE = BACKEND_URL;
 
 const resolveFileUrl = (url) => {
   if (!url) return '';

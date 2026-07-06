@@ -1,14 +1,16 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
+
 // Fetch documents by track (מסלול)
-// Endpoint expectation: GET http://localhost:4000/api/studentsData/getDocumentsByTrack/:track
+// Endpoint expectation: GET ${BACKEND_URL}/api/studentsData/getDocumentsByTrack/:track
 // Returns: [{ id_number, name, url, type, uploadedAt, track }]
 export const getDocumentsByTrackThunk = createAsyncThunk(
   'students/getDocumentsByTrack',
   async (track, { rejectWithValue }) => {
     try {
       const encodedTrack = encodeURIComponent(track);
-      const res = await fetch(`http://localhost:4000/api/studentsData/track/${encodedTrack}/documents`);
+      const res = await fetch(`${BACKEND_URL}/api/studentsData/track/${encodedTrack}/documents`);
 
       if (!res.ok) {
         let error;

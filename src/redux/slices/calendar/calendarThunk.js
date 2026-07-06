@@ -1,9 +1,11 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
+
 export const getCalendarEventsThunk = createAsyncThunk(
   'calendar/getCalendarEvents',
   async () => {
-    const res = await fetch(`http://localhost:4000/api/calendar-events`);
+    const res = await fetch(`${BACKEND_URL}/api/calendar-events`);
     
     if (res.ok) {
       const data = await res.json();
@@ -26,7 +28,7 @@ export const addEvent = createAsyncThunk(
       time_end: rest.time_end?.trim() || null,
     };
 
-    const res = await fetch(`http://localhost:4000/api/calendar-events`, {
+    const res = await fetch(`${BACKEND_URL}/api/calendar-events`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(cleanedEvent)
@@ -46,7 +48,7 @@ export const updateEvent = createAsyncThunk(
   'calendar/updateEvent',
   async ({ id, data }) => {
     const res = await fetch(
-      `http://localhost:4000/api/calendar-events/${id}`,
+      `${BACKEND_URL}/api/calendar-events/${id}`,
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -66,7 +68,7 @@ export const removeEvent = createAsyncThunk(
   'calendar/removeEvent',
   async (id) => {
     const res = await fetch(
-      `http://localhost:4000/api/calendar-events/${id}`,
+      `${BACKEND_URL}/api/calendar-events/${id}`,
       { method: 'DELETE' }
     );
 

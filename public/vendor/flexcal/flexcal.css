@@ -108,3 +108,153 @@ button.fa:before {
 	left: 1px;
 	right: auto;
 }
+
+/* ===== Modern UI tweaks ===== */
+.ui-flexcal {
+	background: #ffffff;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+	padding: 0.6em !important;
+	font-family: "Varela Round", "Segoe UI", Arial, sans-serif;
+}
+
+.ui-flexcal .ui-widget-header,
+.ui-flexcal .ui-datepicker-header {
+	background: #f8fafc;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+	color: #0f172a;
+	font-weight: 600;
+	padding: 0.35em 0.6em;
+}
+
+.ui-flexcal .ui-datepicker-title {
+	font-size: 0.95em;
+}
+
+.ui-flexcal table {
+	border-collapse: separate;
+	border-spacing: 6px 6px;
+}
+
+.ui-flexcal th {
+	color: #64748b;
+	font-weight: 600;
+}
+
+.ui-flexcal td a,
+.ui-flexcal td span {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.1em;
+	height: 2.1em;
+	border-radius: 999px;
+	border: 1px solid transparent;
+	color: #0f172a;
+	background: #ffffff;
+	transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.ui-flexcal td a:hover {
+	background: #f1f5f9;
+	border-color: #e2e8f0;
+}
+
+.ui-flexcal td a.ui-state-active,
+.ui-flexcal td a.ui-state-highlight {
+	background: #2563eb;
+	color: #ffffff !important;
+	border-color: #1d4ed8;
+	box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.ui-flexcal td a.ui-state-disabled {
+	color: #cbd5e1;
+}
+
+.ui-flexcal .ui-datepicker-buttonpane button {
+	border-radius: 10px;
+	border: 1px solid #e5e7eb;
+	background: #ffffff;
+	color: #0f172a;
+	padding: 0.25em 0.6em;
+	transition: background 120ms ease, border-color 120ms ease;
+}
+
+.ui-flexcal .ui-datepicker-buttonpane button:hover {
+	background: #f8fafc;
+	border-color: #cbd5e1;
+}
+
+.ui-flexcal .go {
+	border-radius: 999px;
+	border: 1px solid #e5e7eb;
+	background: #ffffff;
+	color: #0f172a;
+}
+
+.ui-flexcal .go.ui-state-hover {
+	background: #f1f5f9;
+}
+
+/* Override jQuery UI theme defaults for Flexcal */
+.ui-flexcal.ui-widget,
+.ui-flexcal.ui-widget-content {
+	background: #ffffff !important;
+	border: 1px solid #e5e7eb !important;
+	color: #0f172a !important;
+}
+
+.ui-flexcal .ui-widget-header {
+	background: #f8fafc !important;
+	border-color: #e5e7eb !important;
+	color: #0f172a !important;
+}
+
+.ui-flexcal .ui-tabs-nav .ui-tabs-anchor {
+	border-radius: 8px 8px 0 0;
+	background: #f1f5f9 !important;
+	border: 1px solid #e2e8f0 !important;
+	color: #0f172a !important;
+	padding: 0.35em 0.9em !important;
+}
+
+.ui-flexcal .ui-tabs-nav .ui-tabs-active .ui-tabs-anchor {
+	background: #ffffff !important;
+	border-bottom-color: #ffffff !important;
+	color: #1d4ed8 !important;
+}
+
+.ui-flexcal .ui-state-default,
+.ui-flexcal .ui-widget-content .ui-state-default,
+.ui-flexcal .ui-widget-header .ui-state-default {
+	background: #ffffff !important;
+	border: 1px solid transparent !important;
+	color: #0f172a !important;
+}
+
+.ui-flexcal .ui-state-hover,
+.ui-flexcal .ui-widget-content .ui-state-hover,
+.ui-flexcal .ui-widget-header .ui-state-hover,
+.ui-flexcal .ui-state-focus,
+.ui-flexcal .ui-widget-content .ui-state-focus,
+.ui-flexcal .ui-widget-header .ui-state-focus {
+	background: #f1f5f9 !important;
+	border-color: #e2e8f0 !important;
+	color: #0f172a !important;
+}
+
+.ui-flexcal .ui-state-active,
+.ui-flexcal .ui-widget-content .ui-state-active,
+.ui-flexcal .ui-widget-header .ui-state-active {
+	background: #2563eb !important;
+	border-color: #1d4ed8 !important;
+	color: #ffffff !important;
+}
+
+.ui-flexcal td a,
+.ui-flexcal td span {
+	text-align: center !important;
+}

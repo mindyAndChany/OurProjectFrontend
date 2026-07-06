@@ -1,6 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { getRoomsThunk } from './getRoomsThunk.js';
 import { addRoomThunk } from './addRoomThunk.js';
+import { updateRoomThunk } from './updateRoomThunk.js';
+import { deleteRoomThunk } from './deleteRoomThunk.js';
 
 const roomsSlice = createSlice({
   name: 'rooms',
@@ -34,7 +36,30 @@ const roomsSlice = createSlice({
         })
         .addCase(addRoomThunk.rejected, (state, action) => {
             console.log('addRoom error:', action.error);
-        });
+        })
+      .addCase(updateRoomThunk.pending, (state) => {
+        console.log('updateRoom start');
+      })
+      .addCase(updateRoomThunk.fulfilled, (state, action) => {
+        const index = state.data.findIndex(room => room.id === action.payload.id);
+        if (index !== -1) {
+          state.data[index] = action.payload;
+        }
+        console.log('updateRoom success:', action.payload);
+      })
+      .addCase(updateRoomThunk.rejected, (state, action) => {
+        console.log('updateRoom error:', action.error);
+      })
+      .addCase(deleteRoomThunk.pending, (state) => {
+        console.log('deleteRoom start');
+      })
+      .addCase(deleteRoomThunk.fulfilled, (state, action) => {
+        state.data = state.data.filter(room => room.id !== action.payload);
+        console.log('deleteRoom success');
+      })
+      .addCase(deleteRoomThunk.rejected, (state, action) => {
+        console.log('deleteRoom error:', action.error);
+      });
   },
 });
 

@@ -1,5 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
+
 export const updateStudentThunk = createAsyncThunk(
   'students/updateStudent',
   async (editedStudent, { rejectWithValue }) => {
@@ -9,7 +11,7 @@ export const updateStudentThunk = createAsyncThunk(
       
       console.log("updatethunk trying");
       
-      const res = await fetch(`http://localhost:4000/api/studentsData/updateStudent/${id}`, {
+      const res = await fetch(`${BACKEND_URL}/api/studentsData/updateStudent/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
