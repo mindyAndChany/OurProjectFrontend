@@ -68,7 +68,6 @@
   border: 2px solid #295f8b;
   border-radius: 0.5rem;
 }
-=======
 
   /* Animated Blob */
   .animate-blob {
@@ -174,4 +173,3 @@
     @apply min-h-[44px] min-w-[44px];
   }
 }
->>>>>>> ca846d61a180c8b7015046f4fb6a48739bbab57f
