@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { logInThunk } from "./logInThunk.js";
+import { loginWithFirebaseThunk, loginWithGoogleThunk } from "./firebaseThunks.js";
 
 // Load user from sessionStorage if exists
 const loadUserFromSession = () => {
@@ -74,9 +75,42 @@ export const userSlice = createSlice({
                 console.error('Error saving user to sessionStorage:', error);
             }
         });
-        // הוספת מקרה שהט'נק נכשל 
+        // הוספת מקרה שהט'נק נכשל
         builder.addCase(logInThunk.rejected, (state, action) => {
             console.log("action: ", action);
+        });
+
+        // ===== Firebase Thunks =====
+        // loginWithFirebase
+        builder.addCase(loginWithFirebaseThunk.pending, (state) => {
+            console.log("firebase login start");
+        });
+        builder.addCase(loginWithFirebaseThunk.fulfilled, (state, action) => {
+            state.userDetails = action.payload;
+            try {
+                sessionStorage.setItem('userDetails', JSON.stringify(action.payload));
+            } catch (error) {
+                console.error('Error saving user to sessionStorage:', error);
+            }
+        });
+        builder.addCase(loginWithFirebaseThunk.rejected, (state, action) => {
+            console.log("firebase login failed: ", action.error);
+        });
+
+        // loginWithGoogle
+        builder.addCase(loginWithGoogleThunk.pending, (state) => {
+            console.log("google login start");
+        });
+        builder.addCase(loginWithGoogleThunk.fulfilled, (state, action) => {
+            state.userDetails = action.payload;
+            try {
+                sessionStorage.setItem('userDetails', JSON.stringify(action.payload));
+            } catch (error) {
+                console.error('Error saving user to sessionStorage:', error);
+            }
+        });
+        builder.addCase(loginWithGoogleThunk.rejected, (state, action) => {
+            console.log("google login failed: ", action.error);
         });
 
     }
