@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { loginWithEmail, loginWithGoogle } from '../../utils/firebaseAuth.js';
+import { loginWithEmail, loginWithGoogle } from '../../../utils/firebaseAuth.js';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_URL;
 
