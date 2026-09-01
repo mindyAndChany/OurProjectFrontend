@@ -14,6 +14,7 @@ import { usersSlice } from "./slices/USERS/usersSlice.js";
 import { rolesSlice } from "./slices/ROLES/rolesSlice.js";
 import { permissionsSlice } from "./slices/PERMISSIONS/permissionsSlice.js";
 import { rolePermissionsSlice } from "./slices/ROLE_PERMISSIONS/rolePermissionsSlice.js";
+import equipmentReducer from "./slices/EQUIPMENTS/equipmentSlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -32,5 +33,6 @@ export const store = configureStore({
     roles: rolesSlice.reducer,
     permissions: permissionsSlice.reducer,
     rolePermissions: rolePermissionsSlice.reducer,
+    equipment: equipmentReducer,
   },
 });
