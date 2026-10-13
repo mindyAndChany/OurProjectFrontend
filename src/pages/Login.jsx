@@ -60,7 +60,7 @@ export const Screen = () => {
       navigate("/home");
     } catch (err) {
       console.error("Google login error:", err);
-      setErrors({ google: "התחברות עם Google נכשלה" });
+      setErrors({ google: err?.message || "התחברות עם Google נכשלה" });
     } finally {
       setLoading(false);
     }
@@ -187,7 +187,6 @@ export const Screen = () => {
                   <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4 xs:w-4.5 xs:h-4.5 sm:w-5 sm:h-5 accent-black" />
                   <span className="[font-family:'Anomalia_ML_DemiBold_AAA-DemiBold',Helvetica] font-bold text-black text-xs xs:text-sm sm:text-base">זכור אותי</span>
                 </label>
-                <button onClick={() => navigate("/register")} className="underline text-[#295f8b] text-xs xs:text-sm sm:text-base touch-target hover:text-[#1e4a6b] transition-colors">הרשמה</button>
               </div>
             </div>
 

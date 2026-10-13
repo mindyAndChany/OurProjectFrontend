@@ -21,7 +21,10 @@ export const loginWithFirebaseThunk = createAsyncThunk(
       }),
     });
 
-    if (!res.ok) throw new Error('התחברות נכשלה');
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.error || 'התחברות נכשלה');
+    }
 
     return await res.json();
   }
@@ -45,7 +48,10 @@ export const loginWithGoogleThunk = createAsyncThunk(
       }),
     });
 
-    if (!res.ok) throw new Error('התחברות Google נכשלה');
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.error || 'התחברות Google נכשלה');
+    }
 
     return await res.json();
   }
