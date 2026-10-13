@@ -188,31 +188,19 @@ const Cell = ({ children }) => (
     <td className="border border-gray-300 px-4 py-2 text-center text-sm">{children || "-"}</td>
 );
 
-// ברירת מחדל: שנת הרישום היא השנה הבאה
-const CURRENT_YEAR = new Date().getFullYear();
-const DEFAULT_REG_YEAR = CURRENT_YEAR + 1;
-// מחזיר שנת לימודים עברית (אותיות) לפי הלוח העברי
-const normalizeToDate = (input) => {
-    if (input instanceof Date) return input;
-    if (Number.isFinite(input)) {
-        const now = new Date();
-        return new Date(input, now.getMonth(), now.getDate());
-    }
-    return new Date();
-};
-const getHebrewYearNumber = (input = new Date()) => {
-    const date = normalizeToDate(input);
-    try {
-        const fmt = new Intl.DateTimeFormat("he-IL-u-ca-hebrew-nu-latn", { year: "numeric" });
-        const yearPart = fmt.formatToParts(date).find((p) => p.type === "year")?.value;
-        const numeric = parseInt(String(yearPart || "").replace(/\D/g, ""), 10);
-        if (Number.isFinite(numeric)) return numeric;
-    } catch (_) {
-        // ignore and fall back
-    }
-    return date.getMonth() < 8 ? date.getFullYear() + 3760 : date.getFullYear() + 3761;
-};
-const HEB_SCHOOL_YEAR = (input = new Date()) => formatHebrewYear(getHebrewYearNumber(input));
+// שנת המערכת — לעדכן ידנית פעם בשנה, בפתיחת שנת הלימודים.
+// זו השנה של מחזור "כיתות ו׳" (כלומר ו׳ = SYSTEM_YEAR - 1, ה׳ = SYSTEM_YEAR, נרשמות = SYSTEM_YEAR + 1).
+// דוגמה: בשנת הלימודים תשפ״ז — כיתות ו׳ נרשמו ב-2026, כיתות ה׳ נרשמו ב-2027.
+const SYSTEM_YEAR = 2027;
+const CURRENT_YEAR = SYSTEM_YEAR;
+const DEFAULT_REG_YEAR = SYSTEM_YEAR + 1;
+
+// מספר השנה העברית של שנת המערכת. קבוע ויציב — לא תלוי בתאריך של היום.
+// 2027 -> 5787 (תשפ״ז). ההפרש הקבוע הוא 3760.
+const SYSTEM_HEBREW_YEAR = SYSTEM_YEAR + 3760;
+
+// מחזיר תווית שנה עברית (אותיות). offset=0 -> שנת המערכת, offset=1 -> השנה הבאה.
+const HEB_SCHOOL_YEAR = (offset = 0) => formatHebrewYear(SYSTEM_HEBREW_YEAR + offset);
 
 
 const initialNewStudent = (() => {
@@ -571,7 +559,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR - 1 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR - 1}`}
                         >
-                            כיתות ו ({HEB_SCHOOL_YEAR(CURRENT_YEAR)})
+                            כיתות ו ({HEB_SCHOOL_YEAR()})
                         </button>
                         <button
                             type="button"
@@ -579,7 +567,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR}`}
                         >
-                            כיתות ה ({HEB_SCHOOL_YEAR(CURRENT_YEAR)})
+                            כיתות ה ({HEB_SCHOOL_YEAR()})
                         </button>
                         <button
                             type="button"
@@ -587,7 +575,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR + 1 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR + 1}`}
                         >
-                            נרשמות ({HEB_SCHOOL_YEAR(CURRENT_YEAR + 1)})
+                            נרשמות ({HEB_SCHOOL_YEAR(1)})
                         </button>
                         <button
                             type="button"
