@@ -16,51 +16,9 @@ import { getDocumentsByStudentThunk } from "../redux/slices/STUDENTS/getDocument
 import { getDocumentsByClassThunk } from "../redux/slices/STUDENTS/getDocumentsByClassThunk";
 import { getDocumentsByTrackThunk } from "../redux/slices/STUDENTS/getDocumentsByTrackThunk";
 import { formatHebrewYear } from "../utils/hebrewGematria";
-
-// רשימת כל השדות
-const fieldsDict = {
-    "ת. זהות": "id_number",
-    "סכום ששלמה": "paid_amount",
-    "מס' סידורי": "serial_number",
-    "כיתה": "class_kodesh",
-    "הוראה": "is_graduate",
-    "משפחה": "last_name",
-    "שם פרטי": "first_name",
-    "שם חיבה": "nickname",
-    "ת.לידה עברי": "birthdate_hebrew",
-    "ת.לידה לועזי": "birthdate_gregorian",
-    "כתובת": "address",
-    "מיקוד": "zipcode",
-    "שם האב": "father_name_he",
-    "נייד אבא": "father_mobile_he",
-    "שם האם": "mother_name_he",
-    "נייד אמא": "mother_m_he",
-    "התמחות": "track",
-    "התמתחות נוספת": "track2",
-    "אופציה ב": "track3",
-    " מצב אישי": "marital_status",
-    "מדפית": "bookshelf",
-    "הערות": "notes",
-    "פרח": "perach",
-    "אמא חוץ": "external_mother",
-    "אבא חוץ": "external_father",
-    "ארץ לידה": "birth_country",
-    "תאריך חתונה": "married_date",
-    "שם אחרי החתונה": "married_name",
-    "נייד אישי": "personal_mobile",
-    "מגמה": "trend",
-    "חץ": "chetz",
-    "טלפון": "phone",
-    "א. תשלום": "Payment method",
-    "תמונה": "photoUrl",
-    "שנת הרישום": "registration_year"
-}
+import { fieldsDict, fieldsDictHeb } from "../utils/fieldsDict";
 
 // const fieldOptions = [...new Set(Object.values(fieldsDict))];
-
-const fieldsDictHeb = Object.fromEntries(
-    Object.entries(fieldsDict).map(([he, en]) => [en, he])
-);
 
 // קונפיגורציה אחידה לקבוצות כדי לחסוך כפילויות
 const GROUPS = [
@@ -614,7 +572,7 @@ const StudentsTable = () => {
 
                 <motion.div className="flex gap-6 flex-wrap justify-center items-center"
                     initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-                    <ExportToExcel data={students} />
+                    <ExportToExcel data={students} selectedFields={selectedFields} />
                     <ExcelImport onData={handleImport} columns={fieldsDict} />
                     <button
                         onClick={printTable}
