@@ -16,12 +16,18 @@ export const INITIAL_STATE_STUDENTS = {
   documentsByStudent: [],
   documentsByTrack: [],
   documentsByClass: [],
+  // תוצאת הייבוא האחרון מאקסל (או null אם אין)
+  lastImportResult: null,
 };
 
 export const studentSlice = createSlice({
   name: 'student',
   initialState: INITIAL_STATE_STUDENTS,
-  reducers: {},
+  reducers: {
+    clearImportResult(state) {
+      state.lastImportResult = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(getStudentDataThunk.pending, (state) => {
@@ -51,11 +57,18 @@ export const studentSlice = createSlice({
         console.log("addStudents start");
       })
       .addCase(addStudentsThunk.fulfilled, (state, action) => {
-        state.studentsData.push(...action.payload);
+        const { added = [], failures = [] } = action.payload || {};
+        state.studentsData.push(...added);
+        state.lastImportResult = { addedCount: added.length, failures };
         console.log("addStudents success:", action.payload);
       })
       .addCase(addStudentsThunk.rejected, (state, action) => {
-        console.log("addStudents error:", action.error);
+        state.lastImportResult = {
+          addedCount: 0,
+          failures: [],
+          error: String(action.payload ?? action.error?.message ?? 'שגיאה בייבוא'),
+        };
+        console.log("addStudents error:", action.payload || action.error);
       })
       .addCase(updateStudentThunk.pending, (state) => {
         console.log("updateStudents start");
