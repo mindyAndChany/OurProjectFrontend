@@ -16,51 +16,9 @@ import { getDocumentsByStudentThunk } from "../redux/slices/STUDENTS/getDocument
 import { getDocumentsByClassThunk } from "../redux/slices/STUDENTS/getDocumentsByClassThunk";
 import { getDocumentsByTrackThunk } from "../redux/slices/STUDENTS/getDocumentsByTrackThunk";
 import { formatHebrewYear } from "../utils/hebrewGematria";
-
-// רשימת כל השדות
-const fieldsDict = {
-    "ת. זהות": "id_number",
-    "סכום ששלמה": "paid_amount",
-    "מס' סידורי": "serial_number",
-    "כיתה": "class_kodesh",
-    "הוראה": "is_graduate",
-    "משפחה": "last_name",
-    "שם פרטי": "first_name",
-    "שם חיבה": "nickname",
-    "ת.לידה עברי": "birthdate_hebrew",
-    "ת.לידה לועזי": "birthdate_gregorian",
-    "כתובת": "address",
-    "מיקוד": "zipcode",
-    "שם האב": "father_name_he",
-    "נייד אבא": "father_mobile_he",
-    "שם האם": "mother_name_he",
-    "נייד אמא": "mother_m_he",
-    "התמחות": "track",
-    "התמתחות נוספת": "track2",
-    "אופציה ב": "track3",
-    " מצב אישי": "marital_status",
-    "מדפית": "bookshelf",
-    "הערות": "notes",
-    "פרח": "perach",
-    "אמא חוץ": "external_mother",
-    "אבא חוץ": "external_father",
-    "ארץ לידה": "birth_country",
-    "תאריך חתונה": "married_date",
-    "שם אחרי החתונה": "married_name",
-    "נייד אישי": "personal_mobile",
-    "מגמה": "trend",
-    "חץ": "chetz",
-    "טלפון": "phone",
-    "א. תשלום": "Payment method",
-    "תמונה": "photoUrl",
-    "שנת הרישום": "registration_year"
-}
+import { fieldsDict, fieldsDictHeb } from "../utils/fieldsDict";
 
 // const fieldOptions = [...new Set(Object.values(fieldsDict))];
-
-const fieldsDictHeb = Object.fromEntries(
-    Object.entries(fieldsDict).map(([he, en]) => [en, he])
-);
 
 // קונפיגורציה אחידה לקבוצות כדי לחסוך כפילויות
 const GROUPS = [
@@ -188,31 +146,19 @@ const Cell = ({ children }) => (
     <td className="border border-gray-300 px-4 py-2 text-center text-sm">{children || "-"}</td>
 );
 
-// ברירת מחדל: שנת הרישום היא השנה הבאה
-const CURRENT_YEAR = new Date().getFullYear();
-const DEFAULT_REG_YEAR = CURRENT_YEAR + 1;
-// מחזיר שנת לימודים עברית (אותיות) לפי הלוח העברי
-const normalizeToDate = (input) => {
-    if (input instanceof Date) return input;
-    if (Number.isFinite(input)) {
-        const now = new Date();
-        return new Date(input, now.getMonth(), now.getDate());
-    }
-    return new Date();
-};
-const getHebrewYearNumber = (input = new Date()) => {
-    const date = normalizeToDate(input);
-    try {
-        const fmt = new Intl.DateTimeFormat("he-IL-u-ca-hebrew-nu-latn", { year: "numeric" });
-        const yearPart = fmt.formatToParts(date).find((p) => p.type === "year")?.value;
-        const numeric = parseInt(String(yearPart || "").replace(/\D/g, ""), 10);
-        if (Number.isFinite(numeric)) return numeric;
-    } catch (_) {
-        // ignore and fall back
-    }
-    return date.getMonth() < 8 ? date.getFullYear() + 3760 : date.getFullYear() + 3761;
-};
-const HEB_SCHOOL_YEAR = (input = new Date()) => formatHebrewYear(getHebrewYearNumber(input));
+// שנת המערכת — לעדכן ידנית פעם בשנה, בפתיחת שנת הלימודים.
+// זו השנה של מחזור "כיתות ו׳" (כלומר ו׳ = SYSTEM_YEAR - 1, ה׳ = SYSTEM_YEAR, נרשמות = SYSTEM_YEAR + 1).
+// דוגמה: בשנת הלימודים תשפ״ז — כיתות ו׳ נרשמו ב-2026, כיתות ה׳ נרשמו ב-2027.
+const SYSTEM_YEAR = 2027;
+const CURRENT_YEAR = SYSTEM_YEAR;
+const DEFAULT_REG_YEAR = SYSTEM_YEAR + 1;
+
+// מספר השנה העברית של שנת המערכת. קבוע ויציב — לא תלוי בתאריך של היום.
+// 2027 -> 5787 (תשפ״ז). ההפרש הקבוע הוא 3760.
+const SYSTEM_HEBREW_YEAR = SYSTEM_YEAR + 3760;
+
+// מחזיר תווית שנה עברית (אותיות). offset=0 -> שנת המערכת, offset=1 -> השנה הבאה.
+const HEB_SCHOOL_YEAR = (offset = 0) => formatHebrewYear(SYSTEM_HEBREW_YEAR + offset);
 
 
 const initialNewStudent = (() => {
@@ -571,7 +517,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR - 1 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR - 1}`}
                         >
-                            כיתות ו ({HEB_SCHOOL_YEAR(CURRENT_YEAR)})
+                            כיתות ו ({HEB_SCHOOL_YEAR()})
                         </button>
                         <button
                             type="button"
@@ -579,7 +525,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR}`}
                         >
-                            כיתות ה ({HEB_SCHOOL_YEAR(CURRENT_YEAR)})
+                            כיתות ה ({HEB_SCHOOL_YEAR()})
                         </button>
                         <button
                             type="button"
@@ -587,7 +533,7 @@ const StudentsTable = () => {
                             className={`w-full rounded-full px-4 py-2 text-sm font-semibold shadow transition ${selectedRegistrationYear === CURRENT_YEAR + 1 ? 'bg-[#0A3960] text-white' : 'bg-white/70 text-[#0A3960]'}`}
                             title={`סנן לפי שנת רישום ${CURRENT_YEAR + 1}`}
                         >
-                            נרשמות ({HEB_SCHOOL_YEAR(CURRENT_YEAR + 1)})
+                            נרשמות ({HEB_SCHOOL_YEAR(1)})
                         </button>
                         <button
                             type="button"
@@ -626,7 +572,7 @@ const StudentsTable = () => {
 
                 <motion.div className="flex gap-6 flex-wrap justify-center items-center"
                     initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-                    <ExportToExcel data={students} />
+                    <ExportToExcel data={students} selectedFields={selectedFields} />
                     <ExcelImport onData={handleImport} columns={fieldsDict} />
                     <button
                         onClick={printTable}
