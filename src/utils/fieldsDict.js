@@ -15,11 +15,11 @@ export const fieldsDict = {
     "שם האב": "father_name_he",
     "נייד אבא": "father_mobile_he",
     "שם האם": "mother_name_he",
-    "נייד אמא": "mother_m_he",
+    "נייד אמא": "mother_mobile_he",
     "התמחות": "track",
     "התמתחות נוספת": "track2",
     "אופציה ב": "track3",
-    " מצב אישי": "marital_status",
+    "מצב אישי": "marital_status",
     "מדפית": "bookshelf",
     "הערות": "notes",
     "פרח": "perach",
@@ -32,8 +32,8 @@ export const fieldsDict = {
     "מגמה": "trend",
     "חץ": "chetz",
     "טלפון": "phone",
-    "א. תשלום": "Payment method",
-    "תמונה": "photoUrl",
+    "א. תשלום": "payment_method",
+    "תמונה": "photo_url",
     "שנת הרישום": "registration_year"
 };
 
