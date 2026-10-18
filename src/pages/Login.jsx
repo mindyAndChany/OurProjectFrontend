@@ -99,7 +99,7 @@ export const Screen = () => {
 
       {/* Main: center card; card limited to viewport height so page won't scroll */}
       <main className="flex-1 flex items-center justify-center w-full">
-        <div className="w-full max-w-4xl bg-white rounded-xl sm:rounded-2xl border border-gray-200 shadow-md sm:shadow-lg p-4 xs:p-5 sm:p-6 md:p-8 lg:p-10 mx-auto max-h-[calc(100vh-120px)] xs:max-h-[calc(100vh-140px)] sm:max-h-[calc(100vh-160px)] overflow-y-auto">
+        <div className="w-full max-w-4xl bg-white rounded-xl sm:rounded-2xl border border-gray-200 shadow-md sm:shadow-lg p-4 xs:p-5 sm:p-6 md:p-8 lg:p-10 mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xs:gap-5 sm:gap-6 md:gap-8 items-start">
             {/* FORM */}
             <div className="flex flex-col gap-3 xs:gap-4 sm:gap-5 md:gap-6">
