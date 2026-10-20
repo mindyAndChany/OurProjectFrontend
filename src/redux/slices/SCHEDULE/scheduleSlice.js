@@ -42,11 +42,12 @@ const scheduleSlice = createSlice({
             console.log("deleteWeeklyLesson start");
           })
           .addCase(deleteWeeklyLessonThunk.fulfilled, (state, action) => {
-            const deletedId = action.payload?.id ?? action.payload;
-            if (deletedId !== undefined && deletedId !== null) {
-              state.data = state.data.filter(l => String(l.id) !== String(deletedId));
+            const deletedIds = action.payload?.deletedIds || [];
+            if (deletedIds.length > 0) {
+              const idSet = new Set(deletedIds.map(String));
+              state.data = state.data.filter(l => !idSet.has(String(l.id)));
             }
-            console.log("deleteWeeklyLesson success:", deletedId);
+            console.log("deleteWeeklyLesson success:", action.payload);
           })
           .addCase(deleteWeeklyLessonThunk.rejected, (state, action) => {
             console.log("deleteWeeklyLesson error:", action.error);

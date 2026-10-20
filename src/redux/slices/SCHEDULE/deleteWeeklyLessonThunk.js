@@ -4,20 +4,33 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.BACKEND_
 
 export const deleteWeeklyLessonThunk = createAsyncThunk(
   'deleteWeeklyLesson',
-  async (lessonId) => {
-    const res = await fetch(`${BACKEND_URL}/api/weekly-schedules/${lessonId}`, {
-      method: 'DELETE',
-    });
+  // מקבל מזהה יחיד או מערך מזהים. תמיד מחזיר { deletedIds: [...], failedIds: [...] }
+  async (lessonIds) => {
+    const ids = (Array.isArray(lessonIds) ? lessonIds : [lessonIds]).filter(
+      (id) => id !== undefined && id !== null
+    );
 
-    if (res.ok) {
-      const contentType = res.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        const data = await res.json();
-        return data?.id ?? lessonId;
-      }
-      return lessonId;
-    } else {
-      throw new Error('failed to delete');
-    }
+    const results = await Promise.all(
+      ids.map(async (lessonId) => {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/weekly-schedules/${lessonId}`, {
+            method: 'DELETE',
+          });
+          if (!res.ok) return { id: lessonId, ok: false, status: res.status };
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await res.json();
+            return { id: data?.id ?? lessonId, ok: true };
+          }
+          return { id: lessonId, ok: true };
+        } catch {
+          return { id: lessonId, ok: false, status: 0 };
+        }
+      })
+    );
+
+    const deletedIds = results.filter((r) => r.ok).map((r) => r.id);
+    const failedIds = results.filter((r) => !r.ok).map((r) => r.id);
+    return { deletedIds, failedIds };
   }
 );

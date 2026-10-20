@@ -34,6 +34,9 @@ export default function WeeklyScheduleEditor() {
   const [newTopicDialog, setNewTopicDialog] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
   const [contextMenu, setContextMenu] = useState(null);
+  // מחיקה מרובה: בחירת שיעורים (מזהי שורות) + מצב בחירה
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
 
   // קורסים לפי תחום
   const getDomainKey = (type) => {
@@ -130,6 +133,59 @@ export default function WeeklyScheduleEditor() {
     }
   }, [selectedClassId, dispatch]);
 
+
+  // השורות הנראות כרגע במסך (אחרי סינון תחום/כיתה/שנה) — לחירה במצב בחירה
+  const visibleLessons = useMemo(
+    () => filteredSchedule.filter((l) => l.id !== undefined && l.id !== null),
+    [filteredSchedule]
+  );
+  const visibleLessonIds = useMemo(() => visibleLessons.map((l) => l.id), [visibleLessons]);
+  const allVisibleSelected =
+    visibleLessonIds.length > 0 && visibleLessonIds.every((id) => selectedIds.has(id));
+
+  const toggleSelected = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        visibleLessonIds.forEach((id) => next.delete(id));
+      } else {
+        visibleLessonIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  // מחיקה מרובה — בקשה אחת לכל מזהה, במקביל; מדווח רק על מה שנכשל בפועל
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    if (!window.confirm(`האם למחוק ${ids.length} שיעורים? הפעולה אינה ניתנת לביטול.`)) return;
+
+    const result = await dispatch(deleteWeeklyLessonThunk(ids));
+    if (deleteWeeklyLessonThunk.fulfilled.match(result)) {
+      const { failedIds } = result.payload;
+      if (failedIds.length > 0) {
+        alert(`נמחקו ${result.payload.deletedIds.length} שיעורים, ${failedIds.length} לא נמחקו. נסי לרענן ולמחוק שוב.`);
+      }
+      exitSelectionMode();
+    } else {
+      alert('המחיקה נכשלה. בדקי את החיבור לשרת ונסי שוב.');
+    }
+  };
 
   // מערכת מסוננת לפי תחום/כיתה
   const filteredSchedule = useMemo(() => {
@@ -257,6 +313,21 @@ export default function WeeklyScheduleEditor() {
     dispatch(deleteWeeklyLessonThunk(lesson.id));
   };
 
+  // תיבת סימון מוצגת בכל שורת שיעור כאשר מצב הבחירה פעיל
+  const renderSelectBox = (lesson) => {
+    if (!selectionMode || lesson?.id === undefined || lesson?.id === null) return null;
+    return (
+      <label className="flex items-center gap-1 cursor-pointer mb-1 text-xs text-blue-700">
+        <input
+          type="checkbox"
+          checked={selectedIds.has(lesson.id)}
+          onChange={() => toggleSelected(lesson.id)}
+        />
+        בחר
+      </label>
+    );
+  };
+
   const handleOpenContextMenu = (event, lesson) => {
     event.preventDefault();
     setContextMenu(
@@ -374,6 +445,7 @@ export default function WeeklyScheduleEditor() {
                           onContextMenu={(e) => handleOpenContextMenu(e, lesson)}
                           title="לחיצה ימנית לפעולות"
                         >
+                          {renderSelectBox(lesson)}
                           <div className="flex items-center gap-1"><Clock size={14} /> {formatTime(lesson.start_time)}-{formatTime(lesson.end_time)}</div>
                           {lesson.roomRef && (
                             <div className="flex items-center gap-2 text-sm">
@@ -454,6 +526,7 @@ export default function WeeklyScheduleEditor() {
                           onContextMenu={(e) => handleOpenContextMenu(e, lesson)}
                           title="לחיצה ימנית לפעולות"
                         >
+                          {renderSelectBox(lesson)}
                           <div className="flex items-center gap-1"><Clock size={14} /> {formatTime(lesson.start_time)}-{formatTime(lesson.end_time)}</div>
                           {lesson.roomRef && (
                             <div className="flex items-center gap-2 text-sm">
@@ -507,6 +580,7 @@ export default function WeeklyScheduleEditor() {
                 onContextMenu={(e) => handleOpenContextMenu(e, l)}
                 title="לחיצה ימנית לפעולות"
               >
+                {renderSelectBox(l)}
                 <div className="flex items-center gap-2 text-sm"><Clock size={16} />{formatTime(l.start_time)}-{formatTime(l.end_time)}</div>
                 {l.roomRef && (
                   <div className="flex items-center gap-2 text-sm">
@@ -543,7 +617,15 @@ export default function WeeklyScheduleEditor() {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-[#0A3960] mb-6">עריכת מערכת שבועית</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h1 className="text-3xl font-bold text-[#0A3960]">עריכת מערכת שבועית</h1>
+        <button
+          onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
+          className={`text-sm px-3 py-1 rounded border ${selectionMode ? 'border-red-600 text-red-700 bg-red-50' : 'border-[#0A3960] text-[#0A3960]'}`}
+        >
+          {selectionMode ? 'יציאה מבחירה' : 'בחירה מרובה / מחיקה'}
+        </button>
+      </div>
       {/* בחירת תחום */}
       <div className="flex gap-4 mb-6 items-end">
         <div>
@@ -602,6 +684,33 @@ export default function WeeklyScheduleEditor() {
           </div>
         )}
       </div>
+
+      {/* סרגל מחיקה מרובה — מוצג רק במצב בחירה */}
+      {selectionMode && (
+        <div className="flex flex-wrap items-center gap-3 mb-6 p-3 rounded-lg border border-blue-200 bg-blue-50" dir="rtl">
+          <span className="font-semibold text-[#0A3960]">נבחרו {selectedIds.size} שיעורים</span>
+          <button
+            onClick={toggleSelectAllVisible}
+            className="text-sm text-blue-700 hover:underline disabled:opacity-50"
+            disabled={visibleLessonIds.length === 0}
+          >
+            {allVisibleSelected ? 'בטל בחירת הכל' : `בחר הכל (${visibleLessonIds.length})`}
+          </button>
+          <button
+            onClick={handleBulkDelete}
+            disabled={selectedIds.size === 0}
+            className="text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed px-3 py-1 rounded"
+          >
+            מחק נבחרים
+          </button>
+          <button onClick={exitSelectionMode} className="text-sm text-gray-600 hover:underline">
+            ביטול
+          </button>
+          <span className="text-xs text-gray-500">
+            המחיקה חלה על השיעורים המסומנים בכל התצוגה, כולל כיתות אחרות במידה וסומנו.
+          </span>
+        </div>
+      )}
 
       {renderDayGrid()}
 
