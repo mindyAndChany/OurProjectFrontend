@@ -57,8 +57,16 @@ export default function WeeklyScheduleEditor() {
   }, [courses, selectedDomain]);
 
   // כיתות מסוננות לפי תחום + שנה (רק בהתמחויות)
+  // טווח הכיתות של לימודי קודש — מקור אמת יחיד לכל התצוגות
+  const KODESH_CLASS_MIN = 14;
+  const KODESH_CLASS_MAX = 22;
+  const getKodeshClasses = () =>
+    (classes || []).filter((c) => Number(c.id) >= KODESH_CLASS_MIN && Number(c.id) <= KODESH_CLASS_MAX);
+
   const filteredClasses = useMemo(() => {
     if (!selectedDomain) return [];
+    // קודש: אותה רשימה שהטבלה מציגה, כדי שהבורר והתצוגה לא ייפרדו
+    if (selectedDomain === 'kodesh') return getKodeshClasses();
     if (domainCourseIds.size === 0) return [];
     let filtered = (classes || []).filter((cls) => domainCourseIds.has(String(cls.course_id ?? cls.courseId)));
     if (selectedDomain === 'hitmachuyot' && selectedYearLevel !== 'all') {
@@ -134,15 +142,6 @@ export default function WeeklyScheduleEditor() {
   }, [selectedClassId, dispatch]);
 
 
-  // השורות הנראות כרגע במסך (אחרי סינון תחום/כיתה/שנה) — לחירה במצב בחירה
-  const visibleLessons = useMemo(
-    () => filteredSchedule.filter((l) => l.id !== undefined && l.id !== null),
-    [filteredSchedule]
-  );
-  const visibleLessonIds = useMemo(() => visibleLessons.map((l) => l.id), [visibleLessons]);
-  const allVisibleSelected =
-    visibleLessonIds.length > 0 && visibleLessonIds.every((id) => selectedIds.has(id));
-
   const toggleSelected = (id) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -197,6 +196,16 @@ export default function WeeklyScheduleEditor() {
     return schedule.filter(lesson => lesson.class_id?.toString() === selectedClassId && lesson.year === selectedYear);
   }, [schedule, selectedClassId, selectedYear, domainCourseIds, classes]);
 
+  // השורות הנראות כרגע במסך (אחרי סינון תחום/כיתה/שנה) — לחירה במצב בחירה
+  // מוגדר אחרי filteredSchedule — אין להעביר אותו למעלה
+  const visibleLessons = useMemo(
+    () => filteredSchedule.filter((l) => l.id !== undefined && l.id !== null),
+    [filteredSchedule]
+  );
+  const visibleLessonIds = useMemo(() => visibleLessons.map((l) => l.id), [visibleLessons]);
+  const allVisibleSelected =
+    visibleLessonIds.length > 0 && visibleLessonIds.every((id) => selectedIds.has(id));
+
   const openModal = (day, class_id, options = {}) => {
     if (selectedClassId === 'kodesh') {
       updateCourseForKodesh();
@@ -219,10 +228,6 @@ export default function WeeklyScheduleEditor() {
   };
 
 
-  // כיתות קודש (קבוע)
-  const getKodeshClasses = () => classes.filter(c => c.id >= 14 && c.id <= 22);
-
-
   const getGroupClassIds = (group) => {
     const kodeshClasses = getKodeshClasses();
     if (group === 'heh') return kodeshClasses.filter(c => c.name?.includes('ה')).map(c => c.id);
@@ -230,7 +235,7 @@ export default function WeeklyScheduleEditor() {
     return kodeshClasses.map(c => c.id);
   };
 
-  const saveLesson = () => {
+  const saveLesson = async () => {
     const { id, class_id, day_of_week, start_time, end_time, topic_id, room_id, group } = modalData;
     if ((day_of_week === null || day_of_week === undefined) || !start_time || !end_time || !topic_id || !room_id) {
       alert('נא למלא את כל השדות');
@@ -267,12 +272,34 @@ export default function WeeklyScheduleEditor() {
       };
       dispatch(updateWeeklyLessonThunk(payload));
     } else if (selectedClassId === 'kodesh') {
-      const classIds = getGroupClassIds(group || 'all');
-      if (!classIds.length) {
+      // ברירת מחדל: הכיתה של התא שנלחץ. רק בחירה מפורשת ("כל הכיתות"/קבוצה) מרחיבה
+      const classIds = group === 'single' || group == null
+        ? [class_id]
+        : getGroupClassIds(group);
+      if (!classIds.length || classIds.some((cid) => cid === null || cid === undefined)) {
         alert('לא נמצאו כיתות לקבוצה שנבחרה');
         return;
       }
-      classIds.forEach(cid => {
+
+      // בדיקת התנגשות חדר פר-כיתה: החדר חייב להיות פנוי בכולן לפני שמירה
+      const conflict = classIds.find((cid) =>
+        schedule.some(l =>
+          String(l.class_id) === String(cid) &&
+          l.day_of_week === day_of_week &&
+          String(l.room_id) === String(room_id) &&
+          l.year === selectedYear &&
+          start_time < l.end_time && end_time > l.start_time
+        )
+      );
+      if (conflict) {
+        const cls = classes.find(c => String(c.id) === String(conflict));
+        alert(`⚠️ החדר תפוס בכיתה ${cls?.name || conflict} בשעה הזו`);
+        return;
+      }
+
+      // הבקשות נשלחות זו אחר זו, כדי ש-failure של אחת לא יעבור בשקט
+      const failed = [];
+      for (const cid of classIds) {
         const payload = {
           id: 0,
           class_id: cid,
@@ -284,8 +311,12 @@ export default function WeeklyScheduleEditor() {
           room_id,
           year: selectedYear,
         };
-        dispatch(addWeeklyLessonThunk(payload));
-      });
+        const result = await dispatch(addWeeklyLessonThunk(payload));
+        if (!addWeeklyLessonThunk.fulfilled.match(result)) failed.push(cid);
+      }
+      if (failed.length > 0) {
+        alert(`נוספו ${classIds.length - failed.length} שיעורים, ${failed.length} נכשלו. נסי לרענן ולבדוק.`);
+      }
     } else {
       const payload = {
         id: 0,
@@ -489,7 +520,7 @@ export default function WeeklyScheduleEditor() {
         if (!grouped[day][l.class_id]) grouped[day][l.class_id] = [];
         grouped[day][l.class_id].push(l);
       });
-      const filteredKodesh = classes.filter(c => c.id >= 14 && c.id <= 22);
+      const filteredKodesh = getKodeshClasses();
       const classIds = filteredKodesh.map(c => c.id);
       const classNames = classIds.map(cid => {
         const cls = classes.find(c => c.id === cid);
