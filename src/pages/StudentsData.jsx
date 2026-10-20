@@ -4,13 +4,14 @@ import { getStudentDataThunk } from "../redux/slices/STUDENTS/getStudentDataThun
 import { motion } from "framer-motion";
 // import * as XLSX from "xlsx";
 import { Printer, FileUp, UserRoundPlus, UserPen, UserRoundSearch, Trash2 } from "lucide-react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Alert, FormHelperText, FormControl as MuiFormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Alert, FormHelperText, FormControl as MuiFormControl, InputLabel, Select, MenuItem, Checkbox } from "@mui/material";
 import { TextField, Button, IconButton, FormControl, RadioGroup, FormControlLabel, Radio } from "@mui/material";
 import { addStudentsThunk } from "../redux/slices/STUDENTS/addStudentsThunk";
 import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
 import { getCoursesThunk } from "../redux/slices/COURSES/getCoursesThunk";
 import { updateStudentThunk } from "../redux/slices/STUDENTS/updateStudentThunk";
 import { deleteStudentThunk } from "../redux/slices/STUDENTS/deleteStudentThunk";
+import { deleteStudentsThunk } from "../redux/slices/STUDENTS/deleteStudentsThunk";
 import { getStudentByIdThunk } from "../redux/slices/STUDENTS/getStudentByIdThunk";
 import { ExportToExcel } from "../components/ExportToExcel"
 import { ExportBlankTemplate } from "../components/ExportBlankTemplate"
@@ -81,7 +82,7 @@ const formGroups = {
         "chetz",
         "bookshelf",
         "perach"],
-    payments: ["paid_amount", "Payment_method"],
+    payments: ["paid_amount", "payment_method"],
     photos: ["photoUrl"],
     documents: []
 };
@@ -143,7 +144,7 @@ const REQUIRED_MESSAGES = {
 
 // שדות שנפתחים כרשימה נפתחת מתוך נתוני המערכת (ולא כטקסט חופשי) —
 // כי הם מפתחות זרים לטבלת classes (class_kodesh/track*) או קבועים קבועים מראש.
-const DROPDOWN_FIELDS = ["class_kodesh", "track", "track2", "track3", "marital_status", "perach", "chetz", "is_graduate", "Payment_method"];
+const DROPDOWN_FIELDS = ["class_kodesh", "track", "track2", "track3", "marital_status", "perach", "chetz", "is_graduate", "payment_method"];
 
 const BOOLEAN_FIELDS = ["perach", "chetz", "is_graduate"];
 
@@ -237,7 +238,7 @@ const validateStudentField = (key, value, ctx = {}) => {
                 : "יש לבחור כן או לא";
         case "marital_status":
             return MARITAL_STATUS_OPTIONS.includes(raw) ? "" : "יש לבחור מצב אישי מהרשימה";
-        case "Payment_method":
+        case "payment_method":
             return PAYMENT_METHOD_OPTIONS.includes(raw) ? "" : "יש לבחור אמצעי תשלום מהרשימה";
         default:
             return "";
@@ -377,6 +378,11 @@ const StudentsTable = () => {
     const dispatch = useDispatch();
 
     const allStudentData = useSelector((state) => state.student.studentsData);
+    // לכל תלמידה חובה מזהה: ת.ז. (או id כגיבוי) — כך כל שורת טבלה ניתנת לזיהוי ייחודי
+    const getRowKey = (s) => {
+        const key = String(s?.id_number ?? s?.id ?? "").trim();
+        return key || `row-${s?.first_name || ""}-${s?.last_name || ""}`;
+    };
     const [selectedFields, setSelectedFields] = useState(
         Array.from(new Set([...(formGroups.basic || []), ...(formGroups.contact || [])]))
     );
@@ -410,6 +416,13 @@ const StudentsTable = () => {
     const [docsLoading, setDocsLoading] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const [sortConfig, setSortConfig] = useState({ field: null, direction: null });
+
+    // ── מחיקה מרובה ─────────────────────────────────────────────────────
+    const [selectedIds, setSelectedIds] = useState([]);          // ת.ז. של התלמידות המסומנות
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [bulkDeleteError, setBulkDeleteError] = useState(null);
+    const [bulkDeleteResult, setBulkDeleteResult] = useState(null);
 
     // ── דיאלוג הוספת תלמידה: שגיאות, מצב שמירה והודעות ────────────────────
     const [addFormErrors, setAddFormErrors] = useState({});
@@ -568,6 +581,37 @@ const StudentsTable = () => {
         setShowSearch((prev) => !prev);
     };
 
+    // ── בחירה מרובה ──────────────────────────────────────────────────────
+    const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+    const visibleRowKeys = useMemo(() => students.map(getRowKey), [students]);
+    const allVisibleSelected = visibleRowKeys.length > 0 && visibleRowKeys.every((k) => selectedSet.has(k));
+    const someVisibleSelected = visibleRowKeys.some((k) => selectedSet.has(k));
+
+    const toggleRowSelected = (key) => {
+        setSelectedIds((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+    };
+
+    // סימון/ביטול סימון של כל השורות המוצגות (כולל מסוננות)
+    const toggleSelectAll = () => {
+        setSelectedIds((prev) => {
+            if (allVisibleSelected) return prev.filter((k) => !visibleRowKeys.includes(k));
+            return [...new Set([...prev, ...visibleRowKeys])];
+        });
+    };
+
+    const clearSelection = () => setSelectedIds([]);
+
+    const selectedStudents = useMemo(
+        () => students.filter((s) => selectedSet.has(getRowKey(s))),
+        [students, selectedSet]
+    );
+
+    // ולידציה לפני מחיקה מרובה: חובה ת.ז. אמיתית (9 ספרות) לכל שורה — השרת מזהה לפי ת.ז.
+    const selectedMissingId = useMemo(
+        () => selectedStudents.filter((s) => !/^\d{9}$/.test(getRowKey(s))),
+        [selectedStudents]
+    );
+
     // חשב מס׳ סידורי הבא לפי שנת רישום מהנתונים הקיימים
     const computeNextSerialNumber = (year) => {
         const yearStr = year?.toString();
@@ -644,7 +688,7 @@ const StudentsTable = () => {
                 return BOOLEAN_FIELDS.includes(field)
                     ? [{ value: "true", label: "כן" }, { value: "false", label: "לא" }]
                     : null;
-            case "Payment_method":
+            case "payment_method":
                 return PAYMENT_METHOD_OPTIONS.map((v) => ({ value: v, label: v }));
             default:
                 return null;
@@ -858,16 +902,12 @@ const StudentsTable = () => {
 
 
     const handleImport = (data) => {
+        // דיאלוג הסיכום מוצג רק לייבוא מאקסל — לא להוספת תלמידה בודדת מהטופס
+        setImportSummary(null);
+        dispatch(studentSlice.actions.clearImportResult());
         dispatch(addStudentsThunk(data));
         console.log("Data imported:", data);
     };
-
-    // הצגת סיכום הייבוא בדיאלוג לאחר שהבקשה מסתיימת
-    useEffect(() => {
-        if (lastImportResult) {
-            setImportSummary(lastImportResult);
-        }
-    }, [lastImportResult]);
 
     const closeImportSummary = () => {
         setImportSummary(null);
@@ -1139,6 +1179,34 @@ const StudentsTable = () => {
                 )}
             </div>
 
+            {/* ── סרגל מחיקה מרובה — מופיע כשיש תלמידות מסומנות ── */}
+            {selectedIds.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    className="sticky top-2 z-20 mx-auto mb-4 max-w-6xl rounded-xl bg-white border border-[#0A3960]/30 shadow-lg px-4 py-2 flex items-center justify-between gap-3"
+                >
+                    <span className="text-sm font-semibold text-[#0A3960]">
+                        נבחרו {selectedIds.length} תלמידות
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <Button size="small" onClick={clearSelection}>ביטול בחירה</Button>
+                        <Button
+                            size="small"
+                            color="error"
+                            variant="contained"
+                            startIcon={<Trash2 size={16} />}
+                            onClick={() => {
+                                setBulkDeleteError(null);
+                                setBulkDeleteResult(null);
+                                setBulkDeleteOpen(true);
+                            }}
+                        >
+                            מחיקת הנבחרות
+                        </Button>
+                    </div>
+                </motion.div>
+            )}
+
             {selectedGroup === 'photos' && students.length > 0 && (
                 <motion.div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
@@ -1276,6 +1344,18 @@ const StudentsTable = () => {
                     <table id="students-table" className="min-w-full mt-6 border-collapse border border-gray-400 text-sm text-right bg-white shadow rounded-xl overflow-hidden">
                         <thead>
                             <tr className="bg-[#0A3960] text-white">
+                                {/* בחירת שורות למחיקה מרובה */}
+                                <th className="border px-2 py-2" style={{ width: "48px", minWidth: "48px" }} title="בחירת תלמידות למחיקה">
+                                    <Checkbox
+                                        size="small"
+                                        color="default"
+                                        checked={allVisibleSelected}
+                                        indeterminate={someVisibleSelected && !allVisibleSelected}
+                                        onChange={toggleSelectAll}
+                                        inputProps={{ "aria-label": "בחר את כל התלמידות המוצגות" }}
+                                        sx={{ color: "white", "&.Mui-checked": { color: "white" }, "&.MuiCheckbox-indeterminate": { color: "white" } }}
+                                    />
+                                </th>
                                 {/* עמודות הפעולות מוצגות בכל תצוגת תלמידות, לא רק ב"נתונים אישיים" */}
                                 <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>עריכה</th>
                                 <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>קבצים</th>
@@ -1287,8 +1367,20 @@ const StudentsTable = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {students.map((student, idx) => (
-                                <motion.tr key={idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.03 }}>
+                            {students.map((student, idx) => {
+                                const rowKey = getRowKey(student);
+                                const isSelected = selectedSet.has(rowKey);
+                                return (
+                                <motion.tr key={rowKey} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.03 }}
+                                    className={isSelected ? "bg-blue-50" : undefined}>
+                                    <Cell>
+                                        <Checkbox
+                                            size="small"
+                                            checked={isSelected}
+                                            onChange={() => toggleRowSelected(rowKey)}
+                                            inputProps={{ "aria-label": `בחירת ${student.first_name || ""} ${student.last_name || ""}`.trim() }}
+                                        />
+                                    </Cell>
                                     <Cell style={{ width: "80px", minWidth: "80px" }}>
                                         <IconButton onClick={() => {
                                             const id = student?.id_number ?? student?.id;
@@ -1316,7 +1408,8 @@ const StudentsTable = () => {
                                         <Cell key={field}>{student[field]}</Cell>
                                     ))}
                                 </motion.tr>
-                            ))}
+                                );
+                            })}
                         </tbody>
                     </table>
                 </motion.div>
@@ -1460,6 +1553,113 @@ const StudentsTable = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setFilesDialogOpen(false)}>סגור</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* אישור מחיקה מרובה — בלתי הפיכה, לכן מציגים את שמות הנבחרות לפני המחיקה */}
+            <Dialog
+                open={bulkDeleteOpen}
+                onClose={() => !bulkDeleting && setBulkDeleteOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>מחיקת תלמידות</DialogTitle>
+                <DialogContent className="rtl text-right space-y-3">
+                    {bulkDeleteResult ? (
+                        <>
+                            <Alert severity={bulkDeleteResult.failedCount > 0 ? "warning" : "success"}>
+                                נמחקו {bulkDeleteResult.deletedCount} תלמידות
+                                {bulkDeleteResult.failedCount > 0 && `, ${bulkDeleteResult.failedCount} לא נמחקו`}
+                            </Alert>
+                            {bulkDeleteResult.failed.length > 0 && (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm border border-gray-300">
+                                        <thead>
+                                            <tr className="bg-gray-100">
+                                                <th className="border px-2 py-1">ת.ז.</th>
+                                                <th className="border px-2 py-1">סיבה</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {bulkDeleteResult.failed.map((f) => (
+                                                <tr key={f.id_number}>
+                                                    <td className="border px-2 py-1 text-center">{f.id_number}</td>
+                                                    <td className="border px-2 py-1 text-center">{f.error}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <p>
+                                האם למחוק <b>{selectedStudents.length}</b> תלמידות?
+                            </p>
+                            <div className="max-h-48 overflow-auto rounded border border-gray-200">
+                                <ul className="divide-y divide-gray-100 text-sm">
+                                    {selectedStudents.map((s) => (
+                                        <li key={getRowKey(s)} className="px-3 py-1.5 flex justify-between gap-3">
+                                            <span>{[s.first_name, s.last_name].filter(Boolean).join(' ') || 'ללא שם'}</span>
+                                            <span className="text-gray-500">{getRowKey(s)}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <p className="text-sm text-red-700">
+                                המחיקה סופית ומוחקת גם את המסמכים, הנוכחות וההישגים שלהן. לא ניתן לשחזר.
+                            </p>
+                            {selectedMissingId.length > 0 && (
+                                <Alert severity="error">
+                                    {selectedMissingId.length} תלמידות ללא ת.ז. תקינה (9 ספרות) ולא ניתן למחוק אותן.
+                                    יש להסיר אותן מהבחירה.
+                                </Alert>
+                            )}
+                            {bulkDeleteError && <Alert severity="error">{bulkDeleteError}</Alert>}
+                        </>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    {bulkDeleteResult ? (
+                        <Button
+                            variant="contained"
+                            onClick={() => {
+                                setBulkDeleteOpen(false);
+                                setBulkDeleteResult(null);
+                                // נשארות מסומנות רק אלו שלא נמחקו
+                                const failedIds = new Set(bulkDeleteResult.failed.map((f) => f.id_number));
+                                setSelectedIds((prev) => prev.filter((id) => failedIds.has(id)));
+                            }}
+                        >
+                            סגור
+                        </Button>
+                    ) : (
+                        <>
+                            <Button onClick={() => setBulkDeleteOpen(false)} disabled={bulkDeleting}>ביטול</Button>
+                            <Button
+                                color="error"
+                                variant="contained"
+                                disabled={bulkDeleting || selectedMissingId.length > 0 || selectedStudents.length === 0}
+                                onClick={async () => {
+                                    setBulkDeleting(true);
+                                    setBulkDeleteError(null);
+                                    try {
+                                        const result = await dispatch(deleteStudentsThunk(selectedStudents.map(getRowKey)));
+                                        if (deleteStudentsThunk.rejected.match(result)) {
+                                            setBulkDeleteError(String(result.payload || 'שגיאה במחיקת התלמידות'));
+                                            return;
+                                        }
+                                        setBulkDeleteResult(result.payload);
+                                    } finally {
+                                        setBulkDeleting(false);
+                                    }
+                                }}
+                            >
+                                {bulkDeleting ? 'מוחק...' : `מחיקת ${selectedStudents.length} תלמידות`}
+                            </Button>
+                        </>
+                    )}
                 </DialogActions>
             </Dialog>
 

@@ -3,6 +3,7 @@ import { getStudentDataThunk } from "./getStudentDataThunk.js";
 import { addStudentsThunk } from "./addStudentsThunk.js";
 import { updateStudentThunk } from "./updateStudentThunk.js";
 import { deleteStudentThunk } from "./deleteStudentThunk.js";
+import { deleteStudentsThunk } from "./deleteStudentsThunk.js";
 import { getStudentByIdThunk } from "./getStudentByIdThunk.js";
 import { uploadStudentFilesThunk } from "./uploadStudentFilesThunk.js";
 import { getDocumentsByStudentThunk } from "./getDocumentsByStudentThunk.js";
@@ -105,6 +106,28 @@ export const studentSlice = createSlice({
       .addCase(deleteStudentThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'שגיאה במחיקת התלמידה';
+      })
+      .addCase(deleteStudentsThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteStudentsThunk.fulfilled, (state, action) => {
+        const deletedIds = new Set(
+          (action.payload?.deleted || [])
+            .map((d) => String(d?.id_number ?? ''))
+            .filter(Boolean)
+        );
+        state.loading = false;
+        state.studentsData = state.studentsData.filter(
+          (s) => !deletedIds.has(String(s.id_number ?? s.id))
+        );
+        if (deletedIds.has(String(state.selectedStudent?.id_number ?? ''))) {
+          state.selectedStudent = null;
+        }
+      })
+      .addCase(deleteStudentsThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'שגיאה במחיקת התלמידות';
       });
     // File upload handling
     builder
