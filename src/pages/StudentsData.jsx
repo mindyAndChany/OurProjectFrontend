@@ -17,6 +17,7 @@ import StudentFilesManager from "../components/StudentFilesManager";
 import { getDocumentsByStudentThunk } from "../redux/slices/STUDENTS/getDocumentsByStudentThunk";
 import { getDocumentsByClassThunk } from "../redux/slices/STUDENTS/getDocumentsByClassThunk";
 import { getDocumentsByTrackThunk } from "../redux/slices/STUDENTS/getDocumentsByTrackThunk";
+import { studentSlice } from "../redux/slices/STUDENTS/studentsSlice";
 import { formatHebrewYear } from "../utils/hebrewGematria";
 import { fieldsDict, fieldsDictHeb } from "../utils/fieldsDict";
 
@@ -394,6 +395,8 @@ const StudentsTable = () => {
     const documentsByClass = useSelector((state) => state.student.documentsByClass);
     const documentsByTrack = useSelector((state) => state.student.documentsByTrack);
     const selectedStudent = useSelector((state) => state.student.selectedStudent);
+    const lastImportResult = useSelector((state) => state.student.lastImportResult);
+    const [importSummary, setImportSummary] = useState(null);
     const studentLoading = useSelector((state) => state.student.loading);
     const [activeDocs, setActiveDocs] = useState([]);
     const [docFilters, setDocFilters] = useState({ id_number: "", class_kodesh: "", track: "" });
@@ -853,6 +856,18 @@ const StudentsTable = () => {
         dispatch(addStudentsThunk(data));
         console.log("Data imported:", data);
     };
+
+    // הצגת סיכום הייבוא בדיאלוג לאחר שהבקשה מסתיימת
+    useEffect(() => {
+        if (lastImportResult) {
+            setImportSummary(lastImportResult);
+        }
+    }, [lastImportResult]);
+
+    const closeImportSummary = () => {
+        setImportSummary(null);
+        dispatch(studentSlice.actions.clearImportResult());
+    };
     return (
         <div className="pt-28 p-6 [direction:rtl] font-sans bg-gray-100 min-h-screen">
             <div className="mb-6 space-y-6 max-w-6xl mx-auto">
@@ -927,6 +942,52 @@ const StudentsTable = () => {
                     initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                     <ExportToExcel data={students} selectedFields={selectedFields} />
                     <ExcelImport onData={handleImport} columns={fieldsDict} />
+                    <Dialog open={!!importSummary} onClose={closeImportSummary} maxWidth="md" fullWidth>
+                        <DialogTitle>תוצאות ייבוא מאקסל</DialogTitle>
+                        <DialogContent>
+                            {importSummary?.error ? (
+                                <p className="text-red-600 font-semibold">{importSummary.error}</p>
+                            ) : (
+                                <>
+                                    <p className="text-green-700 font-semibold">
+                                        נוספו בהצלחה {importSummary?.addedCount ?? 0} תלמידות
+                                    </p>
+                                    {importSummary?.failures?.length > 0 && (
+                                        <>
+                                            <p className="text-red-600 font-semibold mt-2">
+                                                {importSummary.failures.length} שורות לא יובאו:
+                                            </p>
+                                            <div className="overflow-x-auto mt-2">
+                                                <table className="w-full text-sm border border-gray-300">
+                                                    <thead>
+                                                        <tr className="bg-gray-100">
+                                                            <th className="border px-2 py-1">שורה</th>
+                                                            <th className="border px-2 py-1">שם</th>
+                                                            <th className="border px-2 py-1">ת.ז</th>
+                                                            <th className="border px-2 py-1">סיבה</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {importSummary.failures.map((f) => (
+                                                            <tr key={`${f.index}-${f.id_number ?? ''}`}>
+                                                                <td className="border px-2 py-1 text-center">{f.index}</td>
+                                                                <td className="border px-2 py-1 text-center">{f.name || "-"}</td>
+                                                                <td className="border px-2 py-1 text-center">{f.id_number || "-"}</td>
+                                                                <td className="border px-2 py-1 text-center">{f.reason}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </>
+                                    )}
+                                </>
+                            )}
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={closeImportSummary} variant="contained">סגור</Button>
+                        </DialogActions>
+                    </Dialog>
                     <button
                         onClick={printTable}
                         className="p-2 rounded-full hover:bg-gray-200 transition"

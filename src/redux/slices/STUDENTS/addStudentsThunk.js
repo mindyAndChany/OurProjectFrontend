@@ -17,12 +17,13 @@ export const addStudentsThunk = createAsyncThunk(
       });
 
       if (!res.ok) {
-        const error = await res.json();
-        return rejectWithValue(error);
+        // גם אם התשובה אינה JSON תקין — לא לזרוק שגיאת pars
+        const body = await res.json().catch(() => ({}));
+        return rejectWithValue(body?.error ?? `HTTP ${res.status}`);
       }
 
       const data = await res.json();
-      console.log("addStudentsThunk success");
+      console.log("addStudentsThunk success", data);
       return data;
     } catch (err) {
       return rejectWithValue(err.message || 'Network error');

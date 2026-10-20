@@ -51,7 +51,7 @@ export const ExcelImport = ({ onData, columns }) => {
                         const normKey = normalizeKey(key);
                         const field = columns[normKey];
                         if (field && value !== "") {
-                            newStudent[field] = value;
+                            newStudent[field] = typeof value === "string" ? normalizeValue(value) : value;
                         }
                     });
                     return newStudent;
@@ -77,6 +77,12 @@ export const ExcelImport = ({ onData, columns }) => {
         reader.readAsArrayBuffer(file);
 
     };
+
+    // ניקוי ערכי מחרוזת: תווי כיווניות נסתרים ורווחים מיותרים
+    const normalizeValue = (value) =>
+        value
+            .replace(/[‎‏‪-‮]/g, '')
+            .trim();
 
     const normalizeKey = (key) =>
         key
