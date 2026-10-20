@@ -3,13 +3,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { getStudentDataThunk } from "../redux/slices/STUDENTS/getStudentDataThunk";
 import { motion } from "framer-motion";
 // import * as XLSX from "xlsx";
-import { Printer, FileUp, UserRoundPlus, UserPen, UserRoundSearch } from "lucide-react";
+import { Printer, FileUp, UserRoundPlus, UserPen, UserRoundSearch, Trash2 } from "lucide-react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Alert, FormHelperText, FormControl as MuiFormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { TextField, Button, IconButton, FormControl, RadioGroup, FormControlLabel, Radio } from "@mui/material";
 import { addStudentsThunk } from "../redux/slices/STUDENTS/addStudentsThunk";
 import { getClassesThunk } from "../redux/slices/CLASSES/getClassesThunk";
 import { getCoursesThunk } from "../redux/slices/COURSES/getCoursesThunk";
 import { updateStudentThunk } from "../redux/slices/STUDENTS/updateStudentThunk";
+import { deleteStudentThunk } from "../redux/slices/STUDENTS/deleteStudentThunk";
 import { getStudentByIdThunk } from "../redux/slices/STUDENTS/getStudentByIdThunk";
 import { ExportToExcel } from "../components/ExportToExcel"
 import { ExportBlankTemplate } from "../components/ExportBlankTemplate"
@@ -55,7 +56,7 @@ const formGroups = {
         "father_name_he",
         "father_mobile_he",
         "mother_name_he",
-        "mother_m_he",
+        "mother_mobile_he",
         "external_mother",
         "external_father",
     ],
@@ -80,7 +81,7 @@ const formGroups = {
         "chetz",
         "bookshelf",
         "perach"],
-    payments: ["paid_amount", "Payment method"],
+    payments: ["paid_amount", "Payment_method"],
     photos: ["photoUrl"],
     documents: []
 };
@@ -103,7 +104,7 @@ const placeholdersMap = {
     father_name_he: "שם האב",
     father_mobile_he: "נייד אבא (050-...)",
     mother_name_he: "שם האם",
-    mother_m_he: "נייד אמא (050-...)",
+    mother_mobile_he: "נייד אמא (050-...)",
     external_mother: "ארץ מוצא של האם",
     external_father: "ארץ מוצא של האב",
     birthdate_hebrew: "תאריך לידה עברי (לדוגמה: י״ד ניסן תשס״ז)",
@@ -119,7 +120,7 @@ const placeholdersMap = {
     chetz: "חץ",
     bookshelf: "מס׳ מדפית",
     paid_amount: "סכום ששולם (מספר)",
-    Payment_method: "אופן תשלום (מזומן/העברה/צ׳ק)",
+    payment_method: "אופן תשלום (מזומן/העברה/צ׳ק)",
     notes: "הערות נוספות",
     perach: "פרח (כן/לא)",
     is_graduate: "הוראה (כן/לא)",
@@ -142,7 +143,7 @@ const REQUIRED_MESSAGES = {
 
 // שדות שנפתחים כרשימה נפתחת מתוך נתוני המערכת (ולא כטקסט חופשי) —
 // כי הם מפתחות זרים לטבלת classes (class_kodesh/track*) או קבועים קבועים מראש.
-const DROPDOWN_FIELDS = ["class_kodesh", "track", "track2", "track3", "marital_status", "perach", "chetz", "is_graduate", "Payment method"];
+const DROPDOWN_FIELDS = ["class_kodesh", "track", "track2", "track3", "marital_status", "perach", "chetz", "is_graduate", "Payment_method"];
 
 const BOOLEAN_FIELDS = ["perach", "chetz", "is_graduate"];
 
@@ -153,8 +154,6 @@ const PAYMENT_METHOD_OPTIONS = ["מזומן", "העברה", "צ׳ק", "אשרא�
 // מיפוי תווית -> מפתח שהשרת מכיר (ב-service: mother_mobile_he / payment_method).
 // שמות השדות בפרונט נגזרו מהמילון (fieldsDict) ולא תמיד תואמים למודל.
 const API_FIELD_ALIASES = {
-    mother_m_he: "mother_mobile_he",
-    "Payment method": "payment_method",
     photoUrl: "photo_url",
 };
 
@@ -204,7 +203,7 @@ const validateStudentField = (key, value, ctx = {}) => {
         case "phone":
         case "personal_mobile":
         case "father_mobile_he":
-        case "mother_m_he":
+        case "mother_mobile_he":
             return /^[0-9\-\s+]+$/.test(raw) && isDigits(raw.replace(/[-\s+]/g, ""), 9, 10)
                 ? ""
                 : "מספר טלפון: 9–10 ספרות";
@@ -238,7 +237,7 @@ const validateStudentField = (key, value, ctx = {}) => {
                 : "יש לבחור כן או לא";
         case "marital_status":
             return MARITAL_STATUS_OPTIONS.includes(raw) ? "" : "יש לבחור מצב אישי מהרשימה";
-        case "Payment method":
+        case "Payment_method":
             return PAYMENT_METHOD_OPTIONS.includes(raw) ? "" : "יש לבחור אמצעי תשלום מהרשימה";
         default:
             return "";
@@ -329,6 +328,7 @@ const fieldLabels = {
     mother_name_he: "שם אמא",
     mother_mobile_he: "נייד אמא",
     payment_status: "סטטוס תשלום",
+    payment_method: "אופן תשלום",
     paid_amount: "סכום שולם",
     class_kodesh: "כיתה",
     photoUrl: "תמונה"
@@ -389,6 +389,10 @@ const StudentsTable = () => {
     const [studentToEdit, setStudentToEdit] = useState(null);
     const [editStudentId, setEditStudentId] = useState(null);
     const [filesDialogOpen, setFilesDialogOpen] = useState(false);
+    // מחיקת תלמידה מתוך מסך העריכה
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState(null);
     const [studentForFiles, setStudentForFiles] = useState(null);
     const [selectedRegistrationYear, setSelectedRegistrationYear] = useState(null);
     // Documents view state
@@ -640,7 +644,7 @@ const StudentsTable = () => {
                 return BOOLEAN_FIELDS.includes(field)
                     ? [{ value: "true", label: "כן" }, { value: "false", label: "לא" }]
                     : null;
-            case "Payment method":
+            case "Payment_method":
                 return PAYMENT_METHOD_OPTIONS.map((v) => ({ value: v, label: v }));
             default:
                 return null;
@@ -1368,6 +1372,17 @@ const StudentsTable = () => {
                     )}
                 </DialogContent>
                 <DialogActions>
+                    <Button
+                        color="error"
+                        startIcon={<Trash2 size={18} />}
+                        onClick={() => {
+                            setDeleteError(null);
+                            setDeleteConfirmOpen(true);
+                        }}
+                        sx={{ marginInlineEnd: 'auto' }}
+                    >
+                        מחיקת התלמידה
+                    </Button>
                     <Button onClick={() => setEditDialogOpen(false)}>ביטול</Button>
                     <Button
                         onClick={() => {
@@ -1376,6 +1391,53 @@ const StudentsTable = () => {
                         }}
                     >
                         שמירה
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* אישור מחיקה — פעולה בלתי הפיכה, לכן מבקשים אישור מפורש */}
+            <Dialog open={deleteConfirmOpen} onClose={() => !deleting && setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>מחיקת תלמידה</DialogTitle>
+                <DialogContent className="rtl text-right space-y-3">
+                    <p>
+                        האם למחוק את <b>{[studentToEdit?.first_name, studentToEdit?.last_name].filter(Boolean).join(' ') || 'התלמידה'}</b>
+                        {" "}(ת.ז. {studentToEdit?.id_number ?? '—'})?
+                    </p>
+                    <p className="text-sm text-red-700">
+                        המחיקה סופית ומוחקת גם את המסמכים, הנוכחות וההישגים שלה. לא ניתן לשחזר.
+                    </p>
+                    {deleteError && <Alert severity="error">{deleteError}</Alert>}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>ביטול</Button>
+                    <Button
+                        color="error"
+                        variant="contained"
+                        disabled={deleting}
+                        onClick={async () => {
+                            const id = editStudentId ?? studentToEdit?.id_number;
+                            if (!id) {
+                                setDeleteError('חסר מספר זהות למחיקה');
+                                return;
+                            }
+                            setDeleting(true);
+                            setDeleteError(null);
+                            try {
+                                const result = await dispatch(deleteStudentThunk(id));
+                                if (deleteStudentThunk.rejected.match(result)) {
+                                    setDeleteError(String(result.payload || 'שגיאה במחיקת התלמידה'));
+                                    return;
+                                }
+                                setDeleteConfirmOpen(false);
+                                setEditDialogOpen(false);
+                                setStudentToEdit(null);
+                                setEditStudentId(null);
+                            } finally {
+                                setDeleting(false);
+                            }
+                        }}
+                    >
+                        {deleting ? 'מוחק...' : 'מחיקה'}
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import { getStudentDataThunk } from "./getStudentDataThunk.js";
 import { addStudentsThunk } from "./addStudentsThunk.js";
 import { updateStudentThunk } from "./updateStudentThunk.js";
+import { deleteStudentThunk } from "./deleteStudentThunk.js";
 import { getStudentByIdThunk } from "./getStudentByIdThunk.js";
 import { uploadStudentFilesThunk } from "./uploadStudentFilesThunk.js";
 import { getDocumentsByStudentThunk } from "./getDocumentsByStudentThunk.js";
@@ -86,6 +87,24 @@ export const studentSlice = createSlice({
 
       .addCase(updateStudentThunk.rejected, (state, action) => {
         console.log("updateStudents error:", action.error);
+      })
+      .addCase(deleteStudentThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteStudentThunk.fulfilled, (state, action) => {
+        const deletedId = String(action.payload?.id_number ?? '');
+        state.loading = false;
+        state.studentsData = state.studentsData.filter(
+          (s) => String(s.id_number ?? s.id) !== deletedId
+        );
+        if (String(state.selectedStudent?.id_number ?? '') === deletedId) {
+          state.selectedStudent = null;
+        }
+      })
+      .addCase(deleteStudentThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'שגיאה במחיקת התלמידה';
       });
     // File upload handling
     builder
