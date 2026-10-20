@@ -12,6 +12,7 @@ import { getCoursesThunk } from "../redux/slices/COURSES/getCoursesThunk";
 import { updateStudentThunk } from "../redux/slices/STUDENTS/updateStudentThunk";
 import { getStudentByIdThunk } from "../redux/slices/STUDENTS/getStudentByIdThunk";
 import { ExportToExcel } from "../components/ExportToExcel"
+import { ExportBlankTemplate } from "../components/ExportBlankTemplate"
 import { ExcelImport } from "../components/ExcelImport";
 import StudentFilesManager from "../components/StudentFilesManager";
 import { getDocumentsByStudentThunk } from "../redux/slices/STUDENTS/getDocumentsByStudentThunk";
@@ -940,6 +941,7 @@ const StudentsTable = () => {
 
                 <motion.div className="flex gap-6 flex-wrap justify-center items-center"
                     initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+                    <ExportBlankTemplate />
                     <ExportToExcel data={students} selectedFields={selectedFields} />
                     <ExcelImport onData={handleImport} columns={fieldsDict} />
                     <Dialog open={!!importSummary} onClose={closeImportSummary} maxWidth="md" fullWidth>
@@ -1270,12 +1272,9 @@ const StudentsTable = () => {
                     <table id="students-table" className="min-w-full mt-6 border-collapse border border-gray-400 text-sm text-right bg-white shadow rounded-xl overflow-hidden">
                         <thead>
                             <tr className="bg-[#0A3960] text-white">
-                                {selectedGroup === 'personal' && (
-                                    <>
-                                        <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>עריכה</th>
-                                        <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>קבצים</th>
-                                    </>
-                                )}
+                                {/* עמודות הפעולות מוצגות בכל תצוגת תלמידות, לא רק ב"נתונים אישיים" */}
+                                <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>עריכה</th>
+                                <th className="border px-2 py-2" style={{ width: "80px", minWidth: "80px" }}>קבצים</th>
                                 {selectedFields.map((field) => (
                                     <th key={field} className="border border-gray-300 px-4 py-2 cursor-pointer hover:bg-[#0d4a7a]" onClick={() => handleSort(field)}>
                                         {getHebrewLabel(field)}{getSortIcon(field)}
@@ -1286,32 +1285,28 @@ const StudentsTable = () => {
                         <tbody>
                             {students.map((student, idx) => (
                                 <motion.tr key={idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.03 }}>
-                                    {selectedGroup === 'personal' && (
-                                        <>
-                                            <Cell style={{ width: "80px", minWidth: "80px" }}>
-                                                <IconButton onClick={() => {
-                                                    const id = student?.id_number ?? student?.id;
-                                                    setEditStudentId(id ?? null);
-                                                    setStudentToEdit({ ...initialNewStudent, ...student });
-                                                    setEditDialogOpen(true);
-                                                    if (id) {
-                                                        dispatch(getStudentByIdThunk(id));
-                                                    }
-                                                }}>
-                                                    <UserPen size={24} />
-                                                </IconButton>
-                                            </Cell>
+                                    <Cell style={{ width: "80px", minWidth: "80px" }}>
+                                        <IconButton onClick={() => {
+                                            const id = student?.id_number ?? student?.id;
+                                            setEditStudentId(id ?? null);
+                                            setStudentToEdit({ ...initialNewStudent, ...student });
+                                            setEditDialogOpen(true);
+                                            if (id) {
+                                                dispatch(getStudentByIdThunk(id));
+                                            }
+                                        }}>
+                                            <UserPen size={24} />
+                                        </IconButton>
+                                    </Cell>
 
-                                            <Cell style={{ width: "80px", minWidth: "80px" }}>
-                                                <IconButton onClick={() => {
-                                                    setStudentForFiles({ ...initialNewStudent, ...student });
-                                                    setFilesDialogOpen(true);
-                                                }}>
-                                                    <FileUp size={24} />
-                                                </IconButton>
-                                            </Cell>
-                                        </>
-                                    )}
+                                    <Cell style={{ width: "80px", minWidth: "80px" }}>
+                                        <IconButton onClick={() => {
+                                            setStudentForFiles({ ...initialNewStudent, ...student });
+                                            setFilesDialogOpen(true);
+                                        }}>
+                                            <FileUp size={24} />
+                                        </IconButton>
+                                    </Cell>
 
                                     {selectedFields.map((field) => (
                                         <Cell key={field}>{student[field]}</Cell>

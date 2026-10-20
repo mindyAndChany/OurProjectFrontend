@@ -30,7 +30,15 @@ export const ExcelImport = ({ onData, columns }) => {
 
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+                // בתבנית המיוצאת מהמערכת שורה 1 = כותרות ושורה 2 = פירוט חוקי
+                // הבדיקה. שורות שתאיהן מכילים רק את חוקי הבדיקה מדולגות.
+                const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" })
+                    .filter((row) => {
+                        const values = Object.values(row);
+                        const isRulesRow = values.some((v) => typeof v === "string" && /(חובה|רשות)\./.test(v))
+                            && !values.some((v) => typeof v === "number");
+                        return !isRulesRow;
+                    });
 
                 if (rows.length === 0) {
                     console.warn("❗ הקובץ ריק או ללא שורות נתונים");
@@ -48,6 +56,10 @@ export const ExcelImport = ({ onData, columns }) => {
                 const mappedStudents = rows.map((row, i) => {
                     const newStudent = {};
                     Object.entries(row).forEach(([key, value]) => {
+                        // "כן/לא" (כך מיוצאות עמודות בוליאניות) -> 1/0 כמו בשדות במערכת
+                        if (typeof value === "string" && (value.trim() === "כן" || value.trim() === "לא")) {
+                            value = value.trim() === "כן" ? 1 : 0;
+                        }
                         const normKey = normalizeKey(key);
                         const field = columns[normKey];
                         if (field && value !== "") {

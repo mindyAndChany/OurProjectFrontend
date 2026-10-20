@@ -17,7 +17,7 @@ export const fieldsDict = {
     "שם האם": "mother_name_he",
     "נייד אמא": "mother_mobile_he",
     "התמחות": "track",
-    "התמתחות נוספת": "track2",
+    "התמחות נוספת": "track2",
     "אופציה ב": "track3",
     "מצב אישי": "marital_status",
     "מדפית": "bookshelf",
