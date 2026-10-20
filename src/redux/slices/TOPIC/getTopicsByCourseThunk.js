@@ -10,7 +10,9 @@ export const getTopicsByCourseThunk = createAsyncThunk(
     if (res.ok) {
       const data = await res.json();
       console.log("✔️ fetch topics by course success");
-      return data;
+      // מחזירים גם את הקורס שהתבקש: רשימה של קורס 7/8 מכילה גם נושאים משותפים של 19,
+      // ולכן אסור לגזור את המפתח מהפריט הראשון בתשובה.
+      return { courseId, topics: Array.isArray(data) ? data : [] };
     } else {
       throw new Error('❌ failed to fetch topics by course');
     }

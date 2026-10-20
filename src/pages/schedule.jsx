@@ -13,6 +13,7 @@ import { getRoomsThunk } from "../redux/slices/ROOMS/getRoomsThunk";
 import HebrewDateSelector from "../components/HebrewDateSelector.jsx";
 import HebrewDateShow from "../components/HebrewDateShow.jsx";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
+import { CURRENT_YEAR, SCHOOL_YEARS } from "../utils/constants";
 
 /**
  * קומפוננטת מערכת שבועית - מציגה את לוח השעות של כל הכיתות או כיתה ספציפית
@@ -74,7 +75,7 @@ export default function ScheduleViewer() {
   const courses = useSelector((state) => state.courses?.data ?? []); // רשימת קורסים
   const rooms = useSelector((state) => state.rooms?.data ?? []); // רשימת חדרים
 
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
 
   // Hebrew date helpers (display + conversion)
   const HEB_MONTH_NAME_BY_INDEX = {
@@ -674,7 +675,7 @@ export default function ScheduleViewer() {
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
               >
-                {[2024, 2025, 2026, 2027].map((year) => (
+                {SCHOOL_YEARS.map((year) => (
                   <option key={year} value={year}>
                     {year}
                   </option>
@@ -1082,7 +1083,7 @@ export default function ScheduleViewer() {
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
               >
-                {[2024, 2025, 2026, 2027].map((year) => (
+                {SCHOOL_YEARS.map((year) => (
                   <option key={year} value={year}>
                     {year}
                   </option>

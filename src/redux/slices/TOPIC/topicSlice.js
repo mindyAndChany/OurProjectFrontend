@@ -45,12 +45,11 @@ const topicSlice = createSlice({
         console.log('getTopicsByCourse start');
       })
       .addCase(getTopicsByCourseThunk.fulfilled, (state, action) => {
-        const topics = action.payload || [];
-        if (topics.length > 0) {
-          const cid = String(topics[0].course_id ?? topics[0].courseId);
-          if (cid) {
-            state.byCourse[cid] = topics;
-          }
+        // המפתח הוא הקורס שהתבקש — גם כשרשימה ריקה (כדי לא להציג רשימה ישנה מקורס אחר)
+        const { courseId, topics = [] } = action.payload || {};
+        const cid = String(courseId ?? topics[0]?.course_id ?? topics[0]?.courseId ?? '');
+        if (cid) {
+          state.byCourse[cid] = topics;
         }
         console.log('topics by course loaded:', topics.length);
       })

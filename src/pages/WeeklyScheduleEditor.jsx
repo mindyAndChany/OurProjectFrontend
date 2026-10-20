@@ -11,8 +11,18 @@ import { addTopicThunk } from '../redux/slices/TOPIC/addTopicThunk';
 import { getTopicsByCourseThunk } from '../redux/slices/TOPIC/getTopicsByCourseThunk';
 import { getTopicsThunk } from '../redux/slices/TOPIC/getTopicsThunk';
 import { updateWeeklyLessonThunk } from '../redux/slices/SCHEDULE/updateWeeklyLessonThunk';
+import { CURRENT_YEAR, SCHOOL_YEARS } from '../utils/constants';
 
 const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
+
+/**
+ * פונקציה לעיצוב שעה - מסירה שניות מהתצוגה
+ * @param {string} timeStr - שעה בפורמט HH:MM:SS או HH:MM
+ * @returns {string} - שעה בפורמט HH:MM
+ */
+const formatTime = (timeStr = "") => {
+  return timeStr.length >= 5 ? timeStr.slice(0, 5) : timeStr;
+};
 
 export default function WeeklyScheduleEditor() {
   const dispatch = useDispatch();
@@ -21,8 +31,7 @@ export default function WeeklyScheduleEditor() {
   const schedule = useSelector(state => state.weekly_schedule?.data ?? []);
   const courses = useSelector(state => state.courses?.data || []);
 
-  const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   // תחום: קודש/הוראה/התמחויות
   const [selectedDomain, setSelectedDomain] = useState('kodesh');
   // ברירת מחדל: קודש, אחרת אין כיתה נבחרת (כללי לתחום)
@@ -203,12 +212,31 @@ export default function WeeklyScheduleEditor() {
     [filteredSchedule]
   );
   const visibleLessonIds = useMemo(() => visibleLessons.map((l) => l.id), [visibleLessons]);
+
+  // שיעורים ממוינים לפי שעת התחלה — עבור "רגיל לפי כיתה"
+  const scheduleByDay = useMemo(() => {
+    const grouped = dayNames.map(() => []);
+    filteredSchedule.forEach((l) => {
+      if (l.day_of_week >= 0 && l.day_of_week < dayNames.length) grouped[l.day_of_week].push(l);
+    });
+    return grouped.map((lessons) =>
+      lessons.sort((a, b) => formatTime(a.start_time).localeCompare(formatTime(b.start_time)))
+    );
+  }, [filteredSchedule]);
   const allVisibleSelected =
     visibleLessonIds.length > 0 && visibleLessonIds.every((id) => selectedIds.has(id));
 
   const openModal = (day, class_id, options = {}) => {
     if (selectedClassId === 'kodesh') {
-      updateCourseForKodesh();
+      // שיעור לכיתה מסוימת: נושאי הקורס של אותה כיתה (ה' → 7, ו' → 8); השרת מוסיף להם את
+      // הנושאים המשותפים של קורס 19. הוספה ללא כיתה מקבלת את הרשימה המשותפת בלבד.
+      const cls = class_id ? classes.find(c => String(c.id) === String(class_id)) : null;
+      if (cls?.course_id) {
+        setCourse_id(cls.course_id);
+        dispatch(getTopicsByCourseThunk(cls.course_id));
+      } else {
+        updateCourseForKodesh();
+      }
     } else {
       updateCourseByClassId(class_id);
     }
@@ -221,7 +249,8 @@ export default function WeeklyScheduleEditor() {
       topic_id: '',
       teacher_name: '',
       room_id: '',
-      group: 'all',
+      // ברירת מחדל: רק הכיתה של התא שנלחץ. הרחבה לקבוצה/לכל הכיתות רק בבחירה מפורשת
+      group: 'single',
       isDayGroup: options.isDayGroup ?? false,
     });
     setModalOpen(true);
@@ -235,8 +264,13 @@ export default function WeeklyScheduleEditor() {
     return kodeshClasses.map(c => c.id);
   };
 
+  // במצב עריכה אין class_id/group ב-modalData — לוקחים אותם מהשיעור עצמו ומהגבול "כיתה אחת"
   const saveLesson = async () => {
-    const { id, class_id, day_of_week, start_time, end_time, topic_id, room_id, group } = modalData;
+    const { id, day_of_week, start_time, end_time, topic_id, room_id } = modalData;
+    const group = modalData.group ?? 'single';
+    // מזהה הכיתה של התא/שיעור — בשיעור קיים הוא מגיע מהרשומה עצמה
+    const class_id = modalData.class_id
+      ?? (id ? schedule.find(l => String(l.id) === String(id))?.class_id : undefined);
     if ((day_of_week === null || day_of_week === undefined) || !start_time || !end_time || !topic_id || !room_id) {
       alert('נא למלא את כל השדות');
       return;
@@ -378,6 +412,15 @@ export default function WeeklyScheduleEditor() {
 
   const handleEditLesson = (lesson) => {
     if (!lesson) return;
+    // לפני הטעינה נוודא שהנושאים שנטענים הם של הקורס שאליו שייכת הכיתה של השיעור
+    // (בקודש הכיתה קובעת: ה' → קורס 7, ו' → קורס 8). השרת מוסיף לשתיהן את נושאי 19 המשותפים.
+    if (selectedClassId === 'kodesh') {
+      const cls = classes.find(c => String(c.id) === String(lesson.class_id));
+      if (cls?.course_id) {
+        setCourse_id(cls.course_id);
+        dispatch(getTopicsByCourseThunk(cls.course_id));
+      }
+    }
     setModalData({
       id: lesson.id,
       day_of_week: lesson.day_of_week,
@@ -422,15 +465,6 @@ export default function WeeklyScheduleEditor() {
   //     setNewTopicDialog(false);
   //   });
   // };
-
-    /**
-   * פונקציה לעיצוב שעה - מסירה שניות מהתצוגה
-   * @param {string} timeStr - שעה בפורמט HH:MM:SS או HH:MM
-   * @returns {string} - שעה בפורמט HH:MM
-   */
-  const formatTime = (timeStr = "") => {
-    return timeStr.length >= 5 ? timeStr.slice(0, 5) : timeStr;
-  };
 
   const renderDayGrid = () => {
     // תצוגה כללית לתחום (אין כיתה נבחרת): טבלת יום מול כיתות בתחום
@@ -604,7 +638,7 @@ export default function WeeklyScheduleEditor() {
             >
               הוסף שיעור ליום זה
             </button>
-            {filteredSchedule.filter(l => l.day_of_week === i).map((l, idx) => (
+            {scheduleByDay[i].map((l, idx) => (
               <div
                 key={idx}
                 className="border px-2 py-1 rounded mb-2 flex flex-col gap-1 bg-gray-50"
@@ -647,14 +681,15 @@ export default function WeeklyScheduleEditor() {
 
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    // pt-24: התפריט העליון קבוע (fixed) וגובהו עד 68px — הריפוד מוריד את הכותרת מתחתיו
+    <div className="px-8 pb-8 pt-24 bg-gray-50 min-h-screen">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-3xl font-bold text-[#0A3960]">עריכת מערכת שבועית</h1>
         <button
           onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
-          className={`text-sm px-3 py-1 rounded border ${selectionMode ? 'border-red-600 text-red-700 bg-red-50' : 'border-[#0A3960] text-[#0A3960]'}`}
+          className={`text-sm font-semibold px-4 py-2 rounded border-2 shadow-sm ${selectionMode ? 'border-red-600 text-red-700 bg-red-50' : 'border-red-600 text-white bg-red-600 hover:bg-red-700'}`}
         >
-          {selectionMode ? 'יציאה מבחירה' : 'בחירה מרובה / מחיקה'}
+          {selectionMode ? 'יציאה מבחירה' : '☑ בחירה מרובה ומחיקה'}
         </button>
       </div>
       {/* בחירת תחום */}
@@ -678,7 +713,7 @@ export default function WeeklyScheduleEditor() {
             onChange={(e) => setSelectedYear(Number(e.target.value))}
             className="border rounded px-3 py-2"
           >
-            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+            {SCHOOL_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         {/* סינון שנה א/ב בהתמחויות */}
@@ -750,13 +785,20 @@ export default function WeeklyScheduleEditor() {
         <DialogContent className="space-y-4">
           <TextField label="שעת התחלה" type="time" fullWidth value={modalData.start_time || ''} onChange={e => setModalData({ ...modalData, start_time: e.target.value })} />
           <TextField label="שעת סיום" type="time" fullWidth value={modalData.end_time || ''} onChange={e => setModalData({ ...modalData, end_time: e.target.value })} />
-          {selectedClassId === 'kodesh' && !modalData?.id && modalData?.isDayGroup && (
+          {selectedClassId === 'kodesh' && !modalData?.id && (
             <Select
               fullWidth
-              value={modalData.group || 'all'}
+              value={modalData.group || 'single'}
               onChange={e => setModalData({ ...modalData, group: e.target.value })}
               displayEmpty
             >
+              <MenuItem value="single">
+                רק הכיתה הזו
+                {(() => {
+                  const cls = classes.find(c => String(c.id) === String(modalData.class_id));
+                  return cls ? ` (${cls.name})` : '';
+                })()}
+              </MenuItem>
               <MenuItem value="all">כל הכיתות</MenuItem>
               <MenuItem value="heh">כיתות ה</MenuItem>
               <MenuItem value="vav">כיתות ו</MenuItem>
@@ -764,6 +806,10 @@ export default function WeeklyScheduleEditor() {
           )}
           <Select fullWidth value={modalData.topic_id || ''} onChange={e => setModalData({ ...modalData, topic_id: e.target.value })} displayEmpty>
             <MenuItem value=""><em>בחר נושא</em></MenuItem>
+            {/* הנושא הנוכחי נשמר ברשימה גם אם הוא שייך לקורס אחר — אחרת עריכת שיעור הייתה מאבדת אותו */}
+            {modalData.topic_id && teachers.every(t => String(t.id) !== String(modalData.topic_id)) && (
+              <MenuItem value={modalData.topic_id}>{modalData.topic_name || 'נושא נוכחי'}</MenuItem>
+            )}
             {teachers.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
             <MenuItem value="__new__" onClick={() => { setNewTopicDialog(true); setModalOpen(false); }}>+ נושא חדש</MenuItem>
           </Select>

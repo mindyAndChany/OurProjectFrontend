@@ -21,8 +21,8 @@ import { getDocumentsByStudentThunk } from "../redux/slices/STUDENTS/getDocument
 import { getDocumentsByClassThunk } from "../redux/slices/STUDENTS/getDocumentsByClassThunk";
 import { getDocumentsByTrackThunk } from "../redux/slices/STUDENTS/getDocumentsByTrackThunk";
 import { studentSlice } from "../redux/slices/STUDENTS/studentsSlice";
-import { formatHebrewYear } from "../utils/hebrewGematria";
 import { fieldsDict, fieldsDictHeb } from "../utils/fieldsDict";
+import { CURRENT_YEAR, DEFAULT_REG_YEAR, HEB_SCHOOL_YEAR } from "../utils/constants";
 
 // const fieldOptions = [...new Set(Object.values(fieldsDict))];
 
@@ -342,19 +342,9 @@ const Cell = ({ children }) => (
     <td className="border border-gray-300 px-4 py-2 text-center text-sm">{children || "-"}</td>
 );
 
-// שנת המערכת — לעדכן ידנית פעם בשנה, בפתיחת שנת הלימודים.
-// זו השנה של מחזור "כיתות ו׳" (כלומר ו׳ = SYSTEM_YEAR - 1, ה׳ = SYSTEM_YEAR, נרשמות = SYSTEM_YEAR + 1).
-// דוגמה: בשנת הלימודים תשפ״ז — כיתות ו׳ נרשמו ב-2026, כיתות ה׳ נרשמו ב-2027.
-const SYSTEM_YEAR = 2027;
-const CURRENT_YEAR = SYSTEM_YEAR;
-const DEFAULT_REG_YEAR = SYSTEM_YEAR + 1;
-
-// מספר השנה העברית של שנת המערכת. קבוע ויציב — לא תלוי בתאריך של היום.
-// 2027 -> 5787 (תשפ״ז). ההפרש הקבוע הוא 3760.
-const SYSTEM_HEBREW_YEAR = SYSTEM_YEAR + 3760;
-
-// מחזיר תווית שנה עברית (אותיות). offset=0 -> שנת המערכת, offset=1 -> השנה הבאה.
-const HEB_SCHOOL_YEAR = (offset = 0) => formatHebrewYear(SYSTEM_HEBREW_YEAR + offset);
+// שנת המערכת מוגדרת במקום אחד בלבד: src/utils/constants.js
+// (CURRENT_YEAR = השנה של מחזור "כיתות ה׳", DEFAULT_REG_YEAR = השנה הבאה,
+//  HEB_SCHOOL_YEAR(offset) = התווית העברית, למשל תשפ״ז).
 
 
 const initialNewStudent = (() => {
