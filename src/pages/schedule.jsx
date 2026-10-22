@@ -15,6 +15,13 @@ import HebrewDateShow from "../components/HebrewDateShow.jsx";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
 import { CURRENT_YEAR, SCHOOL_YEARS } from "../utils/constants";
 
+// השוואת שיעורים לפי שעת התחלה (מטפל גם בפורמט HH:MM:SS מול HH:MM)
+const toMinutes = (timeStr = "") => {
+  const [h = 0, m = 0] = String(timeStr).split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+const byStartTime = (a, b) => toMinutes(a?.start_time) - toMinutes(b?.start_time);
+
 /**
  * קומפוננטת מערכת שבועית - מציגה את לוח השעות של כל הכיתות או כיתה ספציפית
  * התצוגה משתנה בהתאם לבחירת המשתמש:
@@ -491,7 +498,6 @@ export default function ScheduleViewer() {
   const getDailyLessons = (date) => {
     const dayOfWeek = date.getDay();
     const dateStr = format(date, "yyyy-MM-dd");
-
     // Real lessons for the specific date
     const realLessons = lessons.filter((l) => l.date === dateStr);
     const filteredByClass = selectedClassId
@@ -535,7 +541,8 @@ export default function ScheduleViewer() {
       status: l.is_cancelled ? "canceled" : "held",
     }));
 
-    return [...combinedLessons, ...extraRealMapped];
+    // מיון לפי שעת התחלה — מהמוקדם למאוחר
+    return [...combinedLessons, ...extraRealMapped].sort(byStartTime);
   };
 
   /**
@@ -562,7 +569,9 @@ export default function ScheduleViewer() {
    * @returns {Array} - מערך שיעורים
    */
   const getLessonsAtTime = (date, time) => {
-    return getDailyLessons(date).filter((lesson) => lesson.start_time === time);
+    return getDailyLessons(date)
+      .filter((lesson) => lesson.start_time === time)
+      .sort(byStartTime);
   };
 
   // שמות הימים בעברית

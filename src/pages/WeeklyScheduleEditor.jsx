@@ -21,8 +21,18 @@ const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמיש�
  * @returns {string} - שעה בפורמט HH:MM
  */
 const formatTime = (timeStr = "") => {
-  return timeStr.length >= 5 ? timeStr.slice(0, 5) : timeStr;
+  const str = String(timeStr ?? "");
+  return str.length >= 5 ? str.slice(0, 5) : str;
 };
+
+// המרת שעה לדקות — להשוואה מספרית (עובד גם עם HH:MM:SS)
+const toMinutes = (timeStr = "") => {
+  const [h = 0, m = 0] = String(timeStr).split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+
+// מיון לפי שעת התחלה, מהמוקדם למאוחר
+const byStartTime = (a, b) => toMinutes(a?.start_time) - toMinutes(b?.start_time);
 
 export default function WeeklyScheduleEditor() {
   const dispatch = useDispatch();
@@ -219,9 +229,23 @@ export default function WeeklyScheduleEditor() {
     filteredSchedule.forEach((l) => {
       if (l.day_of_week >= 0 && l.day_of_week < dayNames.length) grouped[l.day_of_week].push(l);
     });
-    return grouped.map((lessons) =>
-      lessons.sort((a, b) => formatTime(a.start_time).localeCompare(formatTime(b.start_time)))
-    );
+    return grouped.map((lessons) => [...lessons].sort(byStartTime));
+  }, [filteredSchedule]);
+
+  // שיעורים ממוינים לפי שעת התחלה — עבור טבלאות יום מול כיתות (תחום / לימודי קודש)
+  const groupedByDayAndClass = useMemo(() => {
+    const grouped = dayNames.map(() => ({}));
+    filteredSchedule.forEach((l) => {
+      const day = l.day_of_week;
+      if (!(day >= 0 && day < dayNames.length)) return;
+      const key = l.class_id;
+      if (!grouped[day][key]) grouped[day][key] = [];
+      grouped[day][key].push(l);
+    });
+    Object.values(grouped).forEach((byClass) => {
+      Object.values(byClass).forEach((lessons) => lessons.sort(byStartTime));
+    });
+    return grouped;
   }, [filteredSchedule]);
   const allVisibleSelected =
     visibleLessonIds.length > 0 && visibleLessonIds.every((id) => selectedIds.has(id));
@@ -286,6 +310,34 @@ export default function WeeklyScheduleEditor() {
     );
     if (roomTaken) {
       alert('⚠️ החדר כבר תפוס בזמן הזה');
+      return;
+    }
+
+    // בדיקת כפילות: לאותו יום, אותה שנה — לא ייתכן שיעור נוסף בכיתה באותה שעת התחלה
+    // (שיעור קיים מחוץ לתחום/שנה שנבחר עדיין נבדק, כדי שלא תיווצר כפילות)
+    const findDuplicateClass = (classIdsToCheck) => {
+      for (const cid of classIdsToCheck) {
+        const existing = schedule.find(l =>
+          String(l.class_id) === String(cid) &&
+          Number(l.day_of_week) === Number(day_of_week) &&
+          Number(l.year) === Number(selectedYear) &&
+          (id ? String(l.id) !== String(id) : true) &&
+          toMinutes(l.start_time) === toMinutes(start_time)
+        );
+        if (existing) return { cid, existing };
+      }
+      return null;
+    };
+    const duplicate = findDuplicateClass(
+      id ? [class_id] : group === 'single' || group == null ? [class_id] : getGroupClassIds(group)
+    );
+    if (duplicate) {
+      const cls = classes.find(c => String(c.id) === String(duplicate.cid));
+      alert(
+        `⚠️ לכיתה ${cls?.name || duplicate.cid} כבר יש שיעור בשעה זו ` +
+        `(${formatTime(duplicate.existing.start_time)}-${formatTime(duplicate.existing.end_time)}). ` +
+        'לא ניתן להוסיף שיעור נוסף לאותה כיתה באותה שעה.'
+      );
       return;
     }
 
@@ -472,13 +524,6 @@ export default function WeeklyScheduleEditor() {
       const domainClassList = filteredClasses;
       const classIds = domainClassList.map(c => c.id);
       const classNames = domainClassList.map(c => c.name);
-      const grouped = {};
-      for (let d = 0; d < 6; d++) grouped[d] = {};
-      filteredSchedule.forEach(l => {
-        const day = l.day_of_week;
-        if (!grouped[day][l.class_id]) grouped[day][l.class_id] = [];
-        grouped[day][l.class_id].push(l);
-      });
       return dayNames.map((name, i) => (
         <div key={i} className="mb-10" dir="rtl">
           <div className="flex items-center justify-between mb-2">
@@ -503,7 +548,7 @@ export default function WeeklyScheduleEditor() {
                 <tr>
                   {classIds.map(cid => (
                     <td key={cid} className="border p-2 align-top">
-                      {(grouped[i]?.[cid] || []).map((lesson, idx) => (
+                      {(groupedByDayAndClass[i]?.[cid] || []).map((lesson, idx) => (
                         <div
                           key={idx}
                           className="mb-2 p-1 bg-gray-50 rounded border text-xs"
@@ -547,13 +592,6 @@ export default function WeeklyScheduleEditor() {
     }
     // לימודי קודש: טבלת יום מול כיתות (ללא שעות קבועות)
     if (selectedClassId === 'kodesh') {
-      const grouped = {};
-      for (let d = 0; d < 6; d++) grouped[d] = {};
-      filteredSchedule.forEach(l => {
-        const day = l.day_of_week;
-        if (!grouped[day][l.class_id]) grouped[day][l.class_id] = [];
-        grouped[day][l.class_id].push(l);
-      });
       const filteredKodesh = getKodeshClasses();
       const classIds = filteredKodesh.map(c => c.id);
       const classNames = classIds.map(cid => {
@@ -584,7 +622,7 @@ export default function WeeklyScheduleEditor() {
                 <tr>
                   {classIds.map(cid => (
                     <td key={cid} className="border p-2 align-top">
-                      {(grouped[i]?.[cid] || []).map((lesson, idx) => (
+                      {(groupedByDayAndClass[i]?.[cid] || []).map((lesson, idx) => (
                         <div
                           key={idx}
                           className="mb-2 p-1 bg-gray-50 rounded border text-xs"
