@@ -669,7 +669,7 @@ export default function ScheduleViewer() {
             </div>
             {/* בחירת שנה */}
             <div className="flex items-center gap-2">
-              <label className="text-sm font-semibold text-gray-700">שנה:</label>
+              <label className="text-sm font-semibold text-gray-700">שנת לימודים:</label>
               <select
                 className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 min-w-24"
                 value={selectedYear}
@@ -1077,7 +1077,7 @@ export default function ScheduleViewer() {
             </button>
             {/* בחירת שנה */}
             <div className="flex items-center gap-2">
-              <label className="text-sm font-semibold text-gray-700">שנה:</label>
+              <label className="text-sm font-semibold text-gray-700">שנת לימודים:</label>
               <select
                 className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 min-w-24"
                 value={selectedYear}

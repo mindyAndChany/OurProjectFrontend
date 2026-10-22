@@ -707,7 +707,7 @@ export default function WeeklyScheduleEditor() {
           </select>
         </div>
         <div>
-          <label className="block font-semibold mb-1">שנה</label>
+          <label className="block font-semibold mb-1">שנת לימודים</label>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}

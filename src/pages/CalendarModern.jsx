@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 // import { updateEvent, removeEvent } from "../redux/slices/calendar/calendarSlice.js";
 import { numberToHebrewLetters, formatHebrewYear } from "../utils/hebrewGematria";
+import { getSchoolYearLabel } from "../utils/constants";
 import { addEvent } from "../redux/slices/calendar/calendarThunk.js";
 import { getEvents } from "../redux/slices/calendar/getEventThunk.js";
 import { updateEvent } from "../redux/slices/calendar/calendarThunk.js";
@@ -728,6 +729,9 @@ export default function CalendarModern() {
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div>
             <h1 className="text-5xl font-bold text-gray-900">לוח שנה</h1>
+            <div className="mt-2 inline-block text-sm font-semibold text-[#295f8b]">
+              שנת לימודים: {getSchoolYearLabel()}
+            </div>
 
             {/* תאריך מדויק למעלה (לפי hover/selected) */}
             <div className="mt-4 inline-flex flex-col sm:flex-row sm:items-center gap-2">

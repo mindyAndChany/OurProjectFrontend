@@ -8,13 +8,14 @@ import * as fontkit from "fontkit";
 import moment from "moment";
 import 'moment/locale/he';
 import { getStudentDataThunk } from "../redux/slices/STUDENTS/getStudentDataThunk";
+import { getSchoolYearLabel, HEB_SCHOOL_YEAR } from "../utils/constants";
 
 const defaultTemplates = [
   {
     id: "student",
     label: "אישור לימודים",
     file: "/backgrounds/student.jpg",
-    defaultText: (s) => `לכל המעוניין:\n\nהננו לאשר שהתלמידה:\n\n${s.first_name} ${s.last_name}\nמספר זהות: ${s.id_number}\nסטודנטית במוסדנו\nבשנת הלימודים תשפ"ד (2024-2025)\nבסמינר גור ירושלים`,
+    defaultText: (s) => `לכל המעוניין:\n\nהננו לאשר שהתלמידה:\n\n${s.first_name} ${s.last_name}\nמספר זהות: ${s.id_number}\nסטודנטית במוסדנו\nבשנת הלימודים ${getSchoolYearLabel()}\nבסמינר גור ירושלים`,
     isCustom: false
   },
   {
@@ -309,7 +310,7 @@ const generateMultiplePDFs = async () => {
   }
 
   // תאריך מוצג למעלה בצד ימין
-  const dateHebrew = student.birthdate_hebrew || "תשפ\"ד";
+  const dateHebrew = student.birthdate_hebrew || HEB_SCHOOL_YEAR();
   const dateEnglish = moment().locale("he").format("DD.MM.YYYY");
   page.drawText(`${dateHebrew} / ${dateEnglish}`, {
     x: 450,
