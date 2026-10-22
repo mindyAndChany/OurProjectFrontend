@@ -673,7 +673,7 @@ export default function ScheduleViewer() {
                 className="border border-[#0A3960] text-[#0A3960] font-semibold rounded-xl px-5 py-2 text-sm shadow-sm hover:bg-[#0A3960] hover:text-white"
                 onClick={openComponent}
               >
-                עריכת מערכת חדשה
+                עריכת מערכת
               </button>
             </div>
             {/* בחירת שנה */}
